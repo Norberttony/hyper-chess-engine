@@ -1,7 +1,7 @@
 debug:
-	gcc hyper-active.c -o bin/hyper-active
+	gcc hyper-active.c bitboard-utility.c -o bin/hyper-active
 all:
-	gcc -oFast hyper-active.c -o bin/hyper-active
+	gcc -oFast hyper-active.c bitboard-utility.c -o bin/hyper-active
 
 magic-gen:
 	gcc -oFast magic-gen.c bitboard-utility.c -o bin/magic-gen

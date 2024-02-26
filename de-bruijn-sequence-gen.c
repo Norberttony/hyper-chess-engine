@@ -4,7 +4,7 @@
 #include <math.h>
 
 // the order of the debruijn sequence. it is assumed that an alphabet of {0, 1} is used every time.
-// ORDER should not exceed 6
+// ORDER can not exceed 6
 #define ORDER 6
 #define TWO_POW_ORDER (1 << ORDER)
 
@@ -18,7 +18,9 @@ struct Node
 struct Node nodes[TWO_POW_ORDER];
 
 const int bitmask = TWO_POW_ORDER - 1;
-unsigned long long hasFound = 0; // only one debruijn sequence is necessary.
+unsigned long long foundSeq = 0; // only one debruijn sequence is necessary.
+
+int DeBruijnLookup[64];
 
 void search(struct Node*);
 void search_helper(struct Node*, unsigned long long seq, int);
@@ -41,11 +43,39 @@ int main()
     {
         search(&nodes[i]);
 
+        if (foundSeq)
+        {
+            break;
+        }
+
         // clear nodes for next traversal
         for (int j = 0; j < TWO_POW_ORDER; j++)
         {
             nodes[j].visited = 0;
         }
+    }
+
+    // now generate the index lookup table based on a debruijn substring
+    if (foundSeq)
+    {
+        printf("\nGenerating debruijn lookup table\n");
+
+        for (int i = 0; i < TWO_POW_ORDER; i++)
+        {
+            DeBruijnLookup[((1ULL << i) * foundSeq) >> 58] = i;
+        }
+
+        // print out the sequence
+        printf("{\n\t");
+        for (int i = 0; i < TWO_POW_ORDER; i++)
+        {
+            printf("%d", DeBruijnLookup[i]);
+            if (i + 1 < TWO_POW_ORDER)
+            {
+                printf(", ");
+            }
+        }
+        printf("\n}\n");
     }
     
     return 0;
@@ -61,18 +91,19 @@ void search(struct Node* node)
 
 void search_helper(struct Node* node, unsigned long long seq, int numVisited)
 {
-    if (hasFound)
+    // only one found sequence is necessary
+    if (foundSeq)
     {
         return;
     }
 
-    // base case
+    // base case (keep visiting until node is revisited)
     if (node->visited)
     {
         // must end up where it started, and must have visited each node
         if (node == startNode && numVisited == TWO_POW_ORDER)
         {
-            hasFound = seq;
+            foundSeq = seq;
 
             // scan entire sequence to print it out
             unsigned long long i = 1ULL << 63;
@@ -83,7 +114,6 @@ void search_helper(struct Node* node, unsigned long long seq, int numVisited)
             }
             printf("\n");
         }
-
 
         return;
     }

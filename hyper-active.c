@@ -52,6 +52,27 @@ int main(void)
 {
     populateKingMoves();
 
+    // pop_lsb example
+    U64 universe = -1;
+    while (universe)
+    {
+        int index = pop_lsb(universe);
+        printf("%d ", index);
+        universe ^= 1ULL << index;
+    }
+
+    printf("\n");
+
+    // pop_lsb example
+    U64 example = 8039458309723978478ULL;
+    printBitboard(example);
+    while (example)
+    {
+        int index = pop_lsb(example);
+        printf("%d ", index);
+        example ^= 1ULL << index;
+    }
+
     getchar();
 
     return 0;
