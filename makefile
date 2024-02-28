@@ -1,12 +1,15 @@
+.PHONY: magic-gen
+.PHONY: de-bruijn-gen
+
 debug:
-	gcc hyper-active.c bitboard-utility.c -o bin/hyper-active
+	gcc src/hyper-active.c src/bitboard-utility.c -o bin/hyper-active
 all:
-	gcc -oFast hyper-active.c bitboard-utility.c -o bin/hyper-active
+	gcc -oFast src/hyper-active.c src/bitboard-utility.c -o bin/hyper-active
 
 magic-gen:
-	gcc -oFast magic-gen.c bitboard-utility.c -o bin/magic-gen
+	gcc -oFast src/magic-gen.c src/bitboard-utility.c src/magic-bitboards.c -o bin/magic-gen
 	./bin/magic-gen
 
 de-bruijn-gen:
-	gcc -oFast de-bruijn-sequence-gen.c -o bin/de-bruijn-sequence-gen
+	gcc -oFast de-bruijn-gen/de-bruijn-sequence-gen.c -o bin/de-bruijn-sequence-gen
 	./bin/de-bruijn-sequence-gen
