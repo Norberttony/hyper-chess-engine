@@ -8,12 +8,12 @@ typedef unsigned long long U64;
 
 // macros
 #define set_bit(board, sq) board | (1ULL << sq)
-#define pop_lsb(board) DebruijnIndices64[((board & -board) * DebruinSequence64) >> 58]
+#define pop_lsb(board) DebruijnIndexes64[((board & -board) * DebruinSequence64) >> 58]
 
 
 extern const U64 DebruinSequence64;
 
-extern const int DebruijnIndices64[];
+extern const int DebruijnIndexes64[];
 
 // easier representation of square indices
 enum
