@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #include "bitboard-utility.h"
+#include "magic-bitboards.h"
+#include "defines.h"
 
 const U64 ranks[8];
 const U64 files[8];
@@ -52,26 +54,11 @@ int main(void)
 {
     populateKingMoves();
 
-    // pop_lsb example
-    U64 universe = -1;
-    while (universe)
-    {
-        int index = pop_lsb(universe);
-        printf("%d ", index);
-        universe ^= 1ULL << index;
-    }
+    // initial board set up
+    loadFEN(StartingFEN);
 
-    printf("\n");
-
-    // pop_lsb example
-    U64 example = 8039458309723978478ULL;
-    printBitboard(example);
-    while (example)
-    {
-        int index = pop_lsb(example);
-        printf("%d ", index);
-        example ^= 1ULL << index;
-    }
+    // print retractor bitboard
+    prettyPrintBoard();
 
     getchar();
 

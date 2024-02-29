@@ -46,12 +46,6 @@ int main()
     genRookMasks();
     genBishopMasks();
 
-    for (int i = 0; i < 64; i++)
-    {
-        printf("%lluULL, ", rookMasks[i]);
-    }
-    printf("\n");
-
     // initialize smallest
     for (int s = 0; s < 64; s++)
     {
