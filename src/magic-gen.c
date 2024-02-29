@@ -9,7 +9,7 @@
 #include "bitboard-utility.h"
 #include "magic-bitboards.h"
 
-#define MAX_BOARD_INDEX 1024
+#define MAX_BOARD_INDEX 4096
 
 U64 rookAttacks[MAX_BOARD_INDEX];
 
@@ -37,42 +37,35 @@ void displayTableStats();
 
 int main()
 {
+    // generate rook masks
+    printf("Generating rook masks...\n");
+    genRookMasks();
+
     // initialize rookSmallest
     for (int s = 0; s < 64; s++)
     {
+        rookSmallest[s] = MAX_BOARD_INDEX;
         if (rookMagics[s])
         {
             // populates rookSmallest but... is kind of inefficient maybe? eh.
             testRookMagicNumber(s, rookMagics[s]);
-        }
-        else
-        {
-            rookSmallest[s] = MAX_BOARD_INDEX;
         }
     }
 
     // seed random number generator
     srand(time(NULL));
 
-    // generate rook masks
-    printf("Generating rook masks...\n");
-    genRookMasks();
-
     // search for magics!!!
     printf("Looking for magics...\n");
 
     // time to test every magic number in known existence :)
-    for (int sq = 0; sq < 64; sq++)
+    for (int i = 0; i < 1000000; i++)
     {
-
-        if (!rookMagics[sq])
+        for (int sq = 7; sq < 8; sq++)
         {
-            for (int i = 0; i < 1000000; i++)
-            {
-                U64 toTest = randomU64() & randomU64() & randomU64();
-                // only search squares without a magic number
-                    testRookMagicNumber(sq, toTest);
-            }
+            U64 toTest = randomU64() & randomU64() & randomU64();
+            // only search squares without a magic number
+            testRookMagicNumber(sq, toTest);
         }
     }
 
@@ -104,7 +97,7 @@ void testRookMagicNumber(int s, U64 number)
     // try every defender combination
     int success = 1;
     int smallest = -1;
-    for (int c = 0; c < (2 << rookMaskBitCount[s]); c++)
+    for (int c = 0; c < (1 << rookMaskBitCount[s]); c++)
     {
         // generate test mask given bit indexes
         U64 testMask = 0ULL;
@@ -114,8 +107,10 @@ void testRookMagicNumber(int s, U64 number)
         }
 
         // use the testMask to test the magic number
-        int testIndex = (testMask * number) >> (64 - bits);
+        int testIndex = (int)((testMask * number) >> (64 - bits));
         U64 attacks = genRookAttacks(s, testMask);
+
+        //printf("testIndex: %d\n", testIndex);
 
         // if this won't make the table smaller, don't bother
         // or if it even exceeds the max index
@@ -149,7 +144,7 @@ void testRookMagicNumber(int s, U64 number)
         rookMagics[s] = number;
         rookSmallest[s] = smallest;
 
-        printf("New rook magic number for square %d: %llu\n", s, number);
+        printf("New rook magic number for square %d: %llu largest index is %d\n", s, number, smallest);
     }
 }
 
