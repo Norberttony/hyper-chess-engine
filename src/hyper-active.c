@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "bitboard-utility.h"
 #include "magic-bitboards.h"
@@ -14,6 +15,9 @@ const U64 not_h_file =  9187201950435737471ULL;
 
 U64 kingMoves[64];
 U64 deathSquares[64][64];
+
+U64 springerCaptures[64][64];
+U64 springerLeaps[64][64];
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
 void populateRanksAndFiles();
@@ -30,13 +34,20 @@ U64 genKingMoves(int sqIndex);
 // populates king move lookup table
 void populateKingMoves();
 
+// generates the valid leap given a springer and an enemy piece (springerLeap)
+U64 genSpringerLeap(int springerSq, int enemySq);
+
+// populates springer leap lookup table
+void populateSpringerLeaps();
+
 int main(void)
 {
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
     populateDeathSquares();
+    populateSpringerLeaps();
 
-    printBitboard(genDeathSquares(h8, h1));
+    printBitboard(genSpringerLeap(h8, c8));
 
     // initial board set up
     loadFEN(StartingFEN);
@@ -135,5 +146,107 @@ void populateKingMoves()
     for (int s = 0; s < 64; s++)
     {
         kingMoves[s] = genKingMoves(s);
+    }
+}
+
+U64 genSpringerLeap(int springerSq, int enemySq)
+{
+    // get file and rank of both squares
+    int fs = springerSq % 8;
+    int rs = springerSq / 8;
+
+    int fe = enemySq % 8;
+    int re = enemySq / 8;
+
+    // difference in rank and file
+    int fd = fs - fe;
+    int rd = rs - re;
+
+    // enemy cannot occupy same square as springer
+    if (fs == fe && rs == re)
+    {
+        return 0ULL;
+    }
+
+    // make sure enemy is aligned in some way...
+    if (fs == fe)
+    {
+        // same file. different ranks.
+        // if on the edge of the board, no capture
+        if (re == 0 || re == 7)
+        {
+            return 0ULL;
+        }
+        else if (enemySq < springerSq)
+        {
+            return 1ULL << (enemySq - 8);
+        }
+        else
+        {
+            return 1ULL << (enemySq + 8);
+        }
+    }
+    else if (rs == re)
+    {
+        // same rank. different files.
+        // if on the edge of the board, no capture
+        if (fe == 0 || fe == 7)
+        {
+            return 0ULL;
+        }
+        else if (enemySq < springerSq)
+        {
+            return 1ULL << (enemySq - 1);
+        }
+        else
+        {
+            return 1ULL << (enemySq + 1);
+        }
+    }
+    // diagonal alignment
+    else if (abs(rd) == abs(fd))
+    {
+        // no capture if on the edge of the board
+        if (re == 0 || re == 7 || fe == 0 || fe == 7)
+        {
+            return 0ULL;
+        }
+
+        // determine which diagonal this is
+        // rank values are reversed from U64's interpretation
+        // up left
+        if (rd > 0 && fd > 0)
+        {
+            return 1ULL << (enemySq - 9);
+        }
+        // up right
+        else if (rd > 0 && fd < 0)
+        {
+            return 1ULL << (enemySq - 7);
+        }
+        // down left
+        else if (rd < 0 && fd > 0)
+        {
+            return 1ULL << (enemySq + 7);
+        }
+        // down right
+        else if (rd < 0 && fd < 0)
+        {
+            return 1ULL << (enemySq + 9);
+        }
+    }
+
+    // no alignment, no attack
+    return 0ULL;
+}
+
+void populateSpringerLeaps()
+{
+    for (int s = 0; s < 64; s++)
+    {
+        for (int e = 0; e < 64; e++)
+        {
+            springerLeaps[s][e] = genSpringerLeap(s, e);
+        }
     }
 }
