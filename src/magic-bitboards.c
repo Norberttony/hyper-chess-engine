@@ -1,6 +1,12 @@
 
 #include "magic-bitboards.h"
 
+// to prevent wrapping around bitboard
+static const U64 not_8_rank = 18446744073709551360ULL;
+static const U64 not_1_rank =    72057594037927935ULL;
+static const U64 not_a_file = 18374403900871474942ULL;
+static const U64 not_h_file =  9187201950435737471ULL;
+
 U64 rookMagics[64] = 
 {
     36028909233389568ULL,
@@ -83,8 +89,10 @@ int rookMaskBitCount[64] =
     11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11,
     11, 10, 10, 10, 10, 10, 10, 11,
-    12, 11, 11, 11, 11, 11, 11, 12,
+    12, 11, 11, 11, 11, 11, 11, 12
 };
+
+U64 rookAttacks[64][4096];
 
 U64 bishopMagics[64] =
 {
@@ -170,3 +178,138 @@ int bishopMaskBitCount[64] =
     5, 5, 5, 5, 5, 5, 5, 5,
     6, 5, 5, 5, 5, 5, 5, 6
 };
+
+U64 bishopAttacks[64][512];
+
+
+void initMagicBitboards(int isBishop)
+{
+    for (int s = 0; s < 64; s++)
+    {
+        U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
+        U64 number = isBishop ? bishopMagics[s] : rookMagics[s];
+
+        // get all of the bit indexes on defender mask
+        int bitIndexes[20] = {0};
+        int bits = 0;
+        while (maxDefenders)
+        {
+            int index = pop_lsb(maxDefenders);
+            bitIndexes[bits++] = index;
+            maxDefenders ^= 1ULL << index;
+        }
+
+        for (int c = 0; c < (1 << bits); c++)
+        {
+            // generate test mask given bit indexes
+            U64 testMask = 0ULL;
+            for (int b = 0; b < bits; b++)
+            {
+                testMask |= (1ULL << bitIndexes[b]) * ((c & (1ULL << b)) > 0);
+            }
+
+            // use the testMask to test the magic number
+            int testIndex = (int)((testMask * number) >> (64 - bits));
+            U64 attacks = isBishop ? genBishopAttacks(s, testMask) : genRookAttacks(s, testMask);
+
+            if (isBishop)
+            {
+                bishopAttacks[s][testIndex] = attacks;
+            }
+            else
+            {
+                rookAttacks[s][testIndex] = attacks;
+            }
+        }
+    }
+}
+
+U64 genRookAttacks(int sq, U64 blockers)
+{
+    U64 attacks = 0;
+    U64 iterSq = 1ULL << sq;
+
+    // keep looping while no blocker and not about to wrap around the board
+    // to the right
+    while (!(blockers & attacks) && iterSq & not_h_file)
+    {
+        iterSq <<= 1;
+        attacks |= iterSq;
+    }
+    // so that all future loops do not think they are immediately attacking a piece
+    blockers &= ~attacks;
+
+    // to the left
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_a_file)
+    {
+        iterSq >>= 1;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    // up
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_8_rank)
+    {
+        iterSq >>= 8;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    // down
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_1_rank)
+    {
+        iterSq <<= 8;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    return attacks;
+}
+
+U64 genBishopAttacks(int sq, U64 blockers)
+{
+    U64 attacks = 0;
+    U64 iterSq = 1ULL << sq;
+
+    // keep looping while no blocker and not about to wrap around the board
+    // down and right
+    while (!(blockers & attacks) && iterSq & not_h_file && iterSq & not_1_rank)
+    {
+        iterSq <<= 9;
+        attacks |= iterSq;
+    }
+    // so that all future loops do not think they are immediately attacking a piece
+    blockers &= ~attacks;
+
+    // down and left
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_a_file && iterSq & not_1_rank)
+    {
+        iterSq <<= 7;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    // up and right
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_8_rank && iterSq & not_h_file)
+    {
+        iterSq >>= 7;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    // up and left
+    iterSq = 1ULL << sq;
+    while (!(blockers & attacks) && iterSq & not_1_rank && iterSq & not_a_file)
+    {
+        iterSq >>= 9;
+        attacks |= iterSq;
+    }
+    blockers &= ~attacks;
+
+    return attacks;
+}

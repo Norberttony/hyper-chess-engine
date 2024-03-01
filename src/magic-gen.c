@@ -11,26 +11,15 @@
 
 #define MAX_BOARD_INDEX 4096
 
-U64 rookAttacks[MAX_BOARD_INDEX];
-U64 bishopAttacks[MAX_BOARD_INDEX];
+U64 testAttacks[MAX_BOARD_INDEX];
 
 // determines the smallest number of indexes necessary for a given square
 int rookSmallest[64];
 int bishopSmallest[64];
 
-// to prevent wrapping around bitboard
-const U64 not_8_rank = 18446744073709551360ULL;
-const U64 not_1_rank =    72057594037927935ULL;
-const U64 not_a_file = 18374403900871474942ULL;
-const U64 not_h_file =  9187201950435737471ULL;
-
 // populates the rookMasks array
 void genRookMasks();
 void genBishopMasks();
-
-// assumes that sq is not set to 1 in blockers
-U64 genRookAttacks(int sq, U64 blockers);
-U64 genBishopAttacks(int sq, U64 blockers);
 
 // returns a random U64 number assuming that RAND_MAX is the largest 32 bit integer
 U64 randomU64();
@@ -92,17 +81,10 @@ int main()
 
 void testMagicNumber(int s, U64 number, int isBishop)
 {
-    // zero out the rookAttacks array
+    // zero out the testAttacks array
     // Courtesy of
     // https://stackoverflow.com/questions/9146395/reset-c-int-array-to-zero-the-fastest-way
-    if (isBishop)
-    {
-        memset(bishopAttacks, 0, sizeof(bishopAttacks));
-    }
-    else
-    {
-        memset(rookAttacks, 0, sizeof(rookAttacks));
-    }
+    memset(testAttacks, 0, sizeof(testAttacks));
 
     U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
 
@@ -143,17 +125,10 @@ void testMagicNumber(int s, U64 number, int isBishop)
         }
 
         // is this a unique index OR a constructive collision?
-        U64 stored = isBishop ? bishopAttacks[testIndex] : rookAttacks[testIndex];
+        U64 stored = testAttacks[testIndex];
         if (!stored || stored == attacks)
         {
-            if (isBishop)
-            {
-                bishopAttacks[testIndex] = attacks;
-            }
-            else
-            {
-                rookAttacks[testIndex] = attacks;
-            }
+            testAttacks[testIndex] = attacks;
         }
         else
         {
@@ -321,96 +296,6 @@ void genBishopMasks()
         // generate attacks and send them to the lookup table
         bishopMasks[s] = mask;
     }
-}
-
-U64 genRookAttacks(int sq, U64 blockers)
-{
-    U64 attacks = 0;
-    U64 iterSq = 1ULL << sq;
-
-    // keep looping while no blocker and not about to wrap around the board
-    // to the right
-    while (!(blockers & attacks) && iterSq & not_h_file)
-    {
-        iterSq <<= 1;
-        attacks |= iterSq;
-    }
-    // so that all future loops do not think they are immediately attacking a piece
-    blockers &= ~attacks;
-
-    // to the left
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_a_file)
-    {
-        iterSq >>= 1;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    // up
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_8_rank)
-    {
-        iterSq >>= 8;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    // down
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_1_rank)
-    {
-        iterSq <<= 8;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    return attacks;
-}
-
-U64 genBishopAttacks(int sq, U64 blockers)
-{
-    U64 attacks = 0;
-    U64 iterSq = 1ULL << sq;
-
-    // keep looping while no blocker and not about to wrap around the board
-    // down and right
-    while (!(blockers & attacks) && iterSq & not_h_file && iterSq & not_1_rank)
-    {
-        iterSq <<= 9;
-        attacks |= iterSq;
-    }
-    // so that all future loops do not think they are immediately attacking a piece
-    blockers &= ~attacks;
-
-    // down and left
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_a_file && iterSq & not_1_rank)
-    {
-        iterSq <<= 7;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    // up and right
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_8_rank && iterSq & not_h_file)
-    {
-        iterSq >>= 7;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    // up and left
-    iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_1_rank && iterSq & not_a_file)
-    {
-        iterSq >>= 9;
-        attacks |= iterSq;
-    }
-    blockers &= ~attacks;
-
-    return attacks;
 }
 
 U64 randomU64()

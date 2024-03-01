@@ -10,8 +10,8 @@
 U64 ranks[8];
 U64 files[8];
 
-const U64 not_a_file = 18374403900871474942ULL;
-const U64 not_h_file =  9187201950435737471ULL;
+static const U64 not_a_file = 18374403900871474942ULL;
+static const U64 not_h_file =  9187201950435737471ULL;
 
 U64 kingMoves[64];
 U64 deathSquares[64][64];
@@ -48,6 +48,7 @@ void populateSpringerLeaps();
 // generates valid capture given a springer and an enemy piece (springerCapture)
 U64 genSpringerCapture(int startSq, int endSq);
 
+// populates springer capture lookup table
 void populateSpringerCaptures();
 
 int main(void)
@@ -57,12 +58,14 @@ int main(void)
     populateDeathSquares();
     populateSpringerLeaps();
     populateSpringerCaptures();
-
-    printBitboard(genSpringerLeap(e4, c2));
-    printBitboard(genSpringerCapture(e4, b1));
+    initMagicBitboards(0); // rook magic bitboards
+    initMagicBitboards(1); // bishop magic bitboards
 
     // initial board set up
     loadFEN(StartingFEN);
+
+    U64 totalBoard = position[white] | position[black];
+    printBitboard(rookAttacks[e2][((rookMasks[e2] & totalBoard) * rookMagics[e2]) >> (64 - rookMaskBitCount[e2])] & ~totalBoard);
 
     // print position
     prettyPrintBoard();
