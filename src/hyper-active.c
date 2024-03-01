@@ -16,8 +16,13 @@ const U64 not_h_file =  9187201950435737471ULL;
 U64 kingMoves[64];
 U64 deathSquares[64][64];
 
+// where the springer captured given where it started and where it moved to
 U64 springerCaptures[64][64];
+
+// where the springer has to leap to to capture enemy
+// springerLeaps[springerSq][enemySq]
 U64 springerLeaps[64][64];
+
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
 void populateRanksAndFiles();
@@ -40,14 +45,21 @@ U64 genSpringerLeap(int springerSq, int enemySq);
 // populates springer leap lookup table
 void populateSpringerLeaps();
 
+// generates valid capture given a springer and an enemy piece (springerCapture)
+U64 genSpringerCapture(int startSq, int endSq);
+
+void populateSpringerCaptures();
+
 int main(void)
 {
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
     populateDeathSquares();
     populateSpringerLeaps();
+    populateSpringerCaptures();
 
-    printBitboard(genSpringerLeap(h8, c8));
+    printBitboard(genSpringerLeap(e4, c2));
+    printBitboard(genSpringerCapture(e4, b1));
 
     // initial board set up
     loadFEN(StartingFEN);
@@ -247,6 +259,92 @@ void populateSpringerLeaps()
         for (int e = 0; e < 64; e++)
         {
             springerLeaps[s][e] = genSpringerLeap(s, e);
+        }
+    }
+}
+
+U64 genSpringerCapture(int start, int end)
+{
+    // get file and rank of both squares
+    int fs = start % 8;
+    int rs = start / 8;
+
+    int fe = end % 8;
+    int re = end / 8;
+
+    // difference in rank and file
+    int fd = fs - fe;
+    int rd = rs - re;
+
+    // springer cannot start and end at the same square
+    if (fs == fe && rs == re)
+    {
+        return 0ULL;
+    }
+
+    // make sure end is aligned in some way...
+    if (fs == fe)
+    {
+        // same file. different ranks.
+        if (end < start)
+        {
+            return 1ULL << (end + 8);
+        }
+        else
+        {
+            return 1ULL << (end - 8);
+        }
+    }
+    else if (rs == re)
+    {
+        // same rank. different files.
+        if (end < start)
+        {
+            return 1ULL << (end + 1);
+        }
+        else
+        {
+            return 1ULL << (end - 1);
+        }
+    }
+    // diagonal alignment
+    else if (abs(rd) == abs(fd))
+    {
+        // determine which diagonal this is
+        // rank values are reversed from U64's interpretation
+        // up left
+        if (rd > 0 && fd > 0)
+        {
+            return 1ULL << (end + 9);
+        }
+        // up right
+        else if (rd > 0 && fd < 0)
+        {
+            return 1ULL << (end + 7);
+        }
+        // down left
+        else if (rd < 0 && fd > 0)
+        {
+            return 1ULL << (end - 7);
+        }
+        // down right
+        else if (rd < 0 && fd < 0)
+        {
+            return 1ULL << (end - 9);
+        }
+    }
+
+    // no alignment, no attack
+    return 0ULL;
+}
+
+void populateSpringerCaptures()
+{
+    for (int s = 0; s < 64; s++)
+    {
+        for (int e = 0; e < 64; e++)
+        {
+            springerCaptures[s][e] = genSpringerCapture(s, e);
         }
     }
 }
