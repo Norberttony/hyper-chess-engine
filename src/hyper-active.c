@@ -5,6 +5,7 @@
 #include "bitboard-utility.h"
 #include "magic-bitboards.h"
 #include "defines.h"
+#include "move.h"
 
 // ranks are in reverse order, [0] accesses 8th rank, [1] accesses 7th, etc.
 U64 ranks[8];
@@ -69,6 +70,8 @@ int main(void)
 
     // print position
     prettyPrintBoard();
+
+    generateMoves();
 
     getchar();
 
