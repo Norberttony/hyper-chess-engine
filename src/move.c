@@ -16,6 +16,13 @@ const char* squareNames[] =
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
 };
 
+int rookOffsets[] = {-8, -1, 1, 8};
+U64 straddlerBounds[] = {
+    18446744073709486080ULL,// up
+    18229723555195321596ULL,// left
+    4557430888798830399ULL, // right
+    281474976710655ULL      // down
+};
 
 void generateMoves()
 {
@@ -34,20 +41,49 @@ void generateMoves()
         U64 moves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] & ~totalBoard;
         //bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
-        // extract and consider each move
-        while (moves)
-        {
-            int to = pop_lsb(moves);
-
-            Move move = (to << 9) | (sq << 3) | straddler;
-
-            prettyPrintMove(move);
-
-            moveList[moveListSize++] = move;
-            moves &= moves - 1;
-        }
+        generateStraddlerMoves(sq, moves);
 
         straddlers &= straddlers - 1;
+    }
+}
+
+void generateStraddlerMoves(int sq, U64 moves)
+{
+    // extract and consider each move
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | straddler;
+
+        // each rook direction
+        for (int d = 0; d < 4; d++)
+        {
+            U64 dirBoard = 1ULL << (to + rookOffsets[d]);
+            U64 dDirBoard = 1ULL << (to + 2 * rookOffsets[d]);
+            // is straddler threatening enemy piece?
+            if (position[notToPlay] & dirBoard && straddlerBounds[d] & (1ULL << to))
+            {
+                // must team up with straddler
+                if (position[toPlay + straddler] & dDirBoard)
+                {
+                    for (int v = 1; v <= 7; v++)
+                    {
+                        if (position[notToPlay + v] & dirBoard)
+                        {
+                            move |= v << (15 + d * 3);
+                        }
+                    }
+                }
+                else
+                {
+                    // special chameleon rule only against straddlers
+                    move |= (position[notToPlay + straddler] & dirBoard && position[toPlay + chameleon] & dDirBoard > 0) << (15 + d * 3);
+                }
+            }
+        }
+
+        moveList[moveListSize++] = move;
+        moves &= moves - 1;
     }
 }
 
@@ -83,4 +119,58 @@ void prettyPrintMove(Move m)
 
     // print movement
     printf("moves from %s to %s with capture of %d\n", squareNames[(m >> 3) & 0b111111], squareNames[(m >> 9) & 0b111111], (m >> 15) & 0b111111111111);
+}
+
+void makeMove(Move m)
+{
+    // decode move
+    int from = (m >> 3) & 0b111111;
+    int to = (m >> 9) & 0b111111;
+
+    // interpret capture bits
+    switch(m & 0b111)
+    {
+        case straddler:
+            position[notToPlay + ((m >> 15) & 0b111)] ^= 1ULL * (((m >> 15) & 0b111) > 0) << (to - 8); // up
+            position[notToPlay + ((m >> 18) & 0b111)] ^= 1ULL * (((m >> 18) & 0b111) > 0) << (to - 1); // left
+            position[notToPlay + ((m >> 21) & 0b111)] ^= 1ULL * (((m >> 21) & 0b111) > 0) << (to + 1); // right
+            position[notToPlay + ((m >> 24) & 0b111)] ^= 1ULL * (((m >> 24) & 0b111) > 0) << (to + 8); // down
+            break;
+    }
+
+    // move piece
+    U64 toggle = (1ULL << from) | (1ULL << to);
+    position[toPlay + (m & 0b111)] ^= toggle;
+    position[toPlay] ^= toggle;
+
+    // toggle turn
+    toPlay = !toPlay * 8;
+    notToPlay = !notToPlay * 8;
+}
+
+void unmakeMove(Move m)
+{
+    // decode move
+    int from = (m >> 3) & 0b111111;
+    int to = (m >> 9) & 0b111111;
+
+    // toggle turn
+    toPlay = !toPlay * 8;
+    notToPlay = !notToPlay * 8;
+
+    // unmove piece
+    U64 toggle = (1ULL << from) | (1ULL << to);
+    position[toPlay + (m & 0b111)] ^= toggle;
+    position[toPlay] ^= toggle;
+
+    // interpret capture bits
+    switch(m & 0b111)
+    {
+        case straddler:
+            position[notToPlay + ((m >> 15) & 0b111)] |= 1ULL << (to - 8); // up
+            position[notToPlay + ((m >> 18) & 0b111)] |= 1ULL << (to - 1); // left
+            position[notToPlay + ((m >> 21) & 0b111)] |= 1ULL << (to + 1); // right
+            position[notToPlay + ((m >> 24) & 0b111)] |= 1ULL << (to + 8); // down
+            break;
+    }
 }

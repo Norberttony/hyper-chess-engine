@@ -13,6 +13,7 @@
 // - next 6 from bits
 // - next 6 to bits
 // - next 12 capture bits, meaning changes based on piece
+// - - for the straddler, U L R D (directions) piece captures
 typedef uint32_t Move;
 
 extern Move moveList[300];
@@ -20,6 +21,10 @@ extern int moveListSize;
 
 
 void generateMoves();
+void generateStraddlerMoves(int sq, U64 moves);
 void prettyPrintMove(Move);
+
+void makeMove(Move);
+void unmakeMove(Move);
 
 #endif

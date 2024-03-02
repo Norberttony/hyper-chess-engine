@@ -65,13 +65,37 @@ int main(void)
     // initial board set up
     loadFEN(StartingFEN);
 
-    U64 totalBoard = position[white] | position[black];
-    printBitboard(rookAttacks[e2][((rookMasks[e2] & totalBoard) * rookMagics[e2]) >> (64 - rookMaskBitCount[e2])] & ~totalBoard);
-
     // print position
     prettyPrintBoard();
 
+    // play a move on the board!!
     generateMoves();
+    Move chosen = moveList[10];
+    puts("Playing move:");
+    prettyPrintMove(chosen);
+    makeMove(chosen);
+
+    prettyPrintBoard();
+    generateMoves();
+    chosen = moveList[6];
+    puts("Playing move:");
+    prettyPrintMove(chosen);
+    makeMove(chosen);
+
+    prettyPrintBoard();
+    printBitboard(position[black]);
+    generateMoves();
+    chosen = moveList[11];
+    puts("Playing move:");
+    prettyPrintMove(chosen);
+    makeMove(chosen);
+
+    prettyPrintBoard();
+
+    puts("Undoing the last move...");
+    unmakeMove(chosen);
+
+    prettyPrintBoard();
 
     getchar();
 

@@ -26,6 +26,7 @@ enum
 };
 
 extern int toPlay;
+extern int notToPlay;
 extern int fullmove;
 
 extern U64 position[17];

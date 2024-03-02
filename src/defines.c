@@ -7,6 +7,7 @@ const char pieceFEN[] = ".PQNRUBK.pqnrubk";
 const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
 
 int toPlay = white;
+int notToPlay = black;
 int fullmove = 0;
 
 
