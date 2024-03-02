@@ -16,12 +16,14 @@
 // - - for the straddler, U L R D (directions) piece captures
 typedef uint32_t Move;
 
-extern Move moveList[300];
-extern int moveListSize;
+struct MoveList
+{
+    Move list[300];
+    int size;
+};
 
-
-void generateMoves();
-void generateStraddlerMoves(int sq, U64 moves);
+struct MoveList* generateMoves();
+void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);
 void prettyPrintMove(Move);
 
 void makeMove(Move);

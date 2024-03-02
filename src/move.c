@@ -1,9 +1,6 @@
 
 #include "move.h"
 
-Move moveList[300];
-int moveListSize = 0;
-
 const char* squareNames[] =
 {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
@@ -24,9 +21,10 @@ U64 straddlerBounds[] = {
     281474976710655ULL      // down
 };
 
-void generateMoves()
+struct MoveList* generateMoves()
 {
-    moveListSize = 0;
+    struct MoveList *list = (struct MoveList*)malloc(sizeof(struct MoveList));
+    list->size = 0;
 
     // all piece occupancy
     U64 totalBoard = position[white] | position[black];
@@ -41,13 +39,15 @@ void generateMoves()
         U64 moves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] & ~totalBoard;
         //bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
-        generateStraddlerMoves(sq, moves);
+        generateStraddlerMoves(sq, moves, list);
 
         straddlers &= straddlers - 1;
     }
+
+    return list;
 }
 
-void generateStraddlerMoves(int sq, U64 moves)
+void generateStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
 {
     // extract and consider each move
     while (moves)
@@ -71,6 +71,7 @@ void generateStraddlerMoves(int sq, U64 moves)
                         if (position[notToPlay + v] & dirBoard)
                         {
                             move |= v << (15 + d * 3);
+                            break;
                         }
                     }
                 }
@@ -82,7 +83,7 @@ void generateStraddlerMoves(int sq, U64 moves)
             }
         }
 
-        moveList[moveListSize++] = move;
+        movelist->list[movelist->size++] = move;
         moves &= moves - 1;
     }
 }

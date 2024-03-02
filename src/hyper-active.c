@@ -69,26 +69,29 @@ int main(void)
     prettyPrintBoard();
 
     // play a move on the board!!
-    generateMoves();
-    Move chosen = moveList[10];
+    struct MoveList* moveList = generateMoves();
+    Move chosen = moveList->list[10];
     puts("Playing move:");
     prettyPrintMove(chosen);
     makeMove(chosen);
+    free(moveList); // must now free memory
 
     prettyPrintBoard();
-    generateMoves();
-    chosen = moveList[6];
+    moveList = generateMoves();
+    chosen = moveList->list[6];
     puts("Playing move:");
     prettyPrintMove(chosen);
     makeMove(chosen);
+    free(moveList);
 
     prettyPrintBoard();
     printBitboard(position[black]);
-    generateMoves();
-    chosen = moveList[11];
+    moveList = generateMoves();
+    chosen = moveList->list[11];
     puts("Playing move:");
     prettyPrintMove(chosen);
     makeMove(chosen);
+    free(moveList);
 
     prettyPrintBoard();
 
