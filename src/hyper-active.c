@@ -65,9 +65,10 @@ int main(void)
 
     printPieceList();
 
-    loadFEN("p1P5/4p3/Pp2P2p/3Pp3/p1Pp4/1Pp2P2/P2p4/3Pp3 w -");
+    loadFEN("pUP5/4p3/Pp2P2p/3Pp3/p1Pp4/1Pp2P2/P2u4/3Pp3 w -");
     puts("Test position:");
     prettyPrintBoard();
+    printPieceList();
 
     int depth = 5;
 

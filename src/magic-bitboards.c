@@ -154,12 +154,12 @@ U64 bishopMagics[64] =
     319773170108211328ULL,
     1876030995998969875ULL,
     146435998722ULL,
-    4503814419513600ULL,
-    5497658949890ULL,
+    554199040ULL,
+    39582422864000ULL,
     4467438134272ULL,
-    1125899917328520ULL,
-    79302295027712ULL,
-    4647717031653673492ULL,
+    5764607587526377984ULL,
+    4611986253856374868ULL,
+    2323859625016950804ULL,
 };
 
 U64 bishopMasks[64] =
@@ -184,6 +184,7 @@ U64 bishopAttacks[64][512];
 
 void initMagicBitboards(int isBishop)
 {
+    printBitboard(not_1_rank);
     for (int s = 0; s < 64; s++)
     {
         U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
@@ -304,7 +305,7 @@ U64 genBishopAttacks(int sq, U64 blockers)
 
     // up and left
     iterSq = 1ULL << sq;
-    while (!(blockers & attacks) && iterSq & not_1_rank && iterSq & not_a_file)
+    while (!(blockers & attacks) && iterSq & not_8_rank && iterSq & not_a_file)
     {
         iterSq >>= 9;
         attacks |= iterSq;

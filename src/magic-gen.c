@@ -24,7 +24,7 @@ void genBishopMasks();
 // returns a random U64 number assuming that RAND_MAX is the largest 32 bit integer
 U64 randomU64();
 
-void testMagicNumber(int s, U64 number, int isBishop);
+int testMagicNumber(int s, U64 number, int isBishop);
 
 void displayTableStats();
 
@@ -43,11 +43,17 @@ int main()
         if (rookMagics[s])
         {
             // populates rookSmallest but... is kind of inefficient maybe? eh.
-            testMagicNumber(s, rookMagics[s], 0);
+            if (!testMagicNumber(s, rookMagics[s], 0))
+            {
+                rookMagics[s] = 0ULL; // invalid magic!!
+            }
         }
         if (bishopMagics[s])
         {
-            testMagicNumber(s, bishopMagics[s], 1);
+            if (!testMagicNumber(s, bishopMagics[s], 1))
+            {
+                bishopMagics[s] = 0ULL; // invalid magic!!
+            }
         }
     }
 
@@ -57,7 +63,7 @@ int main()
     // search for magics!!!
     printf("Looking for magics...\n");
 
-    // time to test every magic number in known existence :)
+    // generates random magic number candidates and tests them
     for (int i = 0; i < 1000000; i++)
     {
         for (int sq = 0; sq < 64; sq++)
@@ -69,7 +75,10 @@ int main()
                 testMagicNumber(sq, toTest, 1);
             }
 
-            //testMagicNumber(sq, toTest, 0);
+            if (!rookMagics[sq])
+            {
+                testMagicNumber(sq, toTest, 0);
+            }
         }
     }
 
@@ -79,7 +88,7 @@ int main()
     return 0;
 }
 
-void testMagicNumber(int s, U64 number, int isBishop)
+int testMagicNumber(int s, U64 number, int isBishop)
 {
     // zero out the testAttacks array
     // Courtesy of
@@ -161,6 +170,8 @@ void testMagicNumber(int s, U64 number, int isBishop)
         }
         printf("magic number for square %d: %llu largest index is %d\n", s, number, smallest);
     }
+
+    return success;
 }
 
 void displayTableStats()

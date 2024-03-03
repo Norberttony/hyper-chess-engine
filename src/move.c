@@ -35,11 +35,15 @@ struct MoveList* generateMoves()
     struct MoveList *list = (struct MoveList*)malloc(sizeof(struct MoveList));
     list->size = 0;
 
+    // get squares that enemy immobilizer is not influencing
+    U64 enemImm = position[notToPlay + immobilizer];
+    U64 notImmInfl = ~(kingMoves[pop_lsb(enemImm)] * (enemImm > 0));
+
     // all piece occupancy
     U64 totalBoard = position[white] | position[black];
 
     // all straddler moves
-    U64 straddlers = position[toPlay + straddler];
+    U64 straddlers = position[toPlay + straddler] & notImmInfl;
     while (straddlers)
     {
         int sq = pop_lsb(straddlers);
@@ -51,6 +55,17 @@ struct MoveList* generateMoves()
         generateStraddlerMoves(sq, moves, list);
 
         straddlers &= straddlers - 1;
+    }
+
+    // immobilizer moves (there's only one)
+    {
+        U64 immBoard = position[toPlay + immobilizer] & notImmInfl;
+        int sq = pop_lsb(immBoard);
+        U64 moves = (immBoard > 0) * (
+            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
+            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+        ) & ~totalBoard;
+        generateImmobilizerMoves(sq, moves, list);
     }
 
     return list;
@@ -89,6 +104,20 @@ void generateStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
                 move |= (position[notToPlay + straddler] & dirBoard && position[toPlay + chameleon] & dDirBoard) << (15 + d * 3);
             }
         }
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
+void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    // surely there's a faster way, right?
+    // immobilizers can never capture pieces.
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | immobilizer;
 
         movelist->list[movelist->size++] = move;
         moves &= moves - 1;
@@ -165,6 +194,9 @@ void makeMove(Move m)
             position[notToPlay] ^= 1ULL * (c4 > 0) << (to + 8);
             pieceList[to + 8] = pieceList[to + 8] * (c4 == 0);
 
+            break;
+        
+        case immobilizer:
             break;
     }
 

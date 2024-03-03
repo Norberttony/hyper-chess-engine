@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "magic-bitboards.h"
+#include "look-up-tables.h"
 #include "defines.h"
 
 // 32-bit moves
@@ -35,6 +36,7 @@ extern const char* squareNames[];
 
 struct MoveList* generateMoves();
 void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);
+void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist);
 void prettyPrintMove(Move);
 
 void makeMove(Move);
