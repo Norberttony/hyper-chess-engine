@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <time.h>
+
 #include "bitboard-utility.h"
 #include "magic-bitboards.h"
 #include "defines.h"
 #include "move.h"
+#include "perft.h"
 
 // ranks are in reverse order, [0] accesses 8th rank, [1] accesses 7th, etc.
 U64 ranks[8];
@@ -52,6 +55,9 @@ U64 genSpringerCapture(int startSq, int endSq);
 // populates springer capture lookup table
 void populateSpringerCaptures();
 
+int captureMoves = 0;
+int pieceCaptures = 0;
+
 int main(void)
 {
     populateKingMoves();
@@ -77,6 +83,7 @@ int main(void)
     free(moveList); // must now free memory
 
     prettyPrintBoard();
+
     moveList = generateMoves();
     chosen = moveList->list[6];
     puts("Playing move:");
@@ -85,6 +92,7 @@ int main(void)
     free(moveList);
 
     prettyPrintBoard();
+
     printBitboard(position[black]);
     moveList = generateMoves();
     chosen = moveList->list[11];
@@ -95,12 +103,32 @@ int main(void)
 
     prettyPrintBoard();
 
+    printPieceList();
+
     puts("Undoing the last move...");
     unmakeMove(chosen);
 
     prettyPrintBoard();
 
-    getchar();
+    printPieceList();
+
+    loadFEN("p1P5/4p3/Pp2P2p/3Pp3/p1Pp4/1Pp2P2/P2p4/3Pp3 w -");
+    puts("Test position:");
+    prettyPrintBoard();
+
+    int depth = 5;
+
+    clock_t start = clock();
+    struct MoveCounter counter = divide(depth);
+    clock_t end = clock();
+
+    printf("At depth %d there are %d moves and %d of them capture something. Among all captures, %d pieces are captured.\n", depth, counter.moves, counter.captureMoves, counter.pieceCaptures);
+    printf("Time taken: %f\n", (float)(end - start) / CLOCKS_PER_SEC);
+
+    prettyPrintBoard();
+    printPieceList();
+
+    //getchar();
 
     return 0;
 }

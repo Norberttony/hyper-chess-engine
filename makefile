@@ -2,9 +2,9 @@
 .PHONY: de-bruijn-gen
 
 debug:
-	gcc src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c -o bin/hyper-active
+	gcc src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c -o bin/hyper-active
 all:
-	gcc -oFast src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c -o bin/hyper-active
+	gcc -oFast src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c -o bin/hyper-active
 
 magic-gen:
 	gcc -oFast src/magic-gen.c src/bitboard-utility.c src/magic-bitboards.c -o bin/magic-gen

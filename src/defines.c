@@ -9,6 +9,7 @@ const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
 int toPlay = white;
 int notToPlay = black;
 int fullmove = 0;
+int pieceList[64];
 
 
 void prettyPrintBoard()
@@ -60,6 +61,18 @@ void prettyPrintBoard()
 
 void loadFEN(const char* fen)
 {
+    // clear all boards
+    for (int i = 0; i < 17; i++)
+    {
+        position[i] = 0ULL;
+    }
+
+    // clear piece list
+    for (int s = 0; s < 64; s++)
+    {
+        pieceList[s] = 0;
+    }
+
     // interpret board string
     int i;
     int r = 0;
@@ -93,6 +106,9 @@ void loadFEN(const char* fen)
             // do this on the occupancy board as well
             position[offset] |= 1ULL << (f + r * 8);
 
+            // set piece list
+            pieceList[f + r * 8] = val;
+
             // next square!
             f++;
         }
@@ -111,10 +127,12 @@ void loadFEN(const char* fen)
     if (fen[i] == 'w')
     {
         toPlay = white;
+        notToPlay = black;
     }
     else if (fen[i] == 'b')
     {
         toPlay = black;
+        notToPlay = white;
     }
     else
     {
@@ -158,4 +176,25 @@ int convertFENToValue(const char v)
 
     // no piece value
     return 0;
+}
+
+void printPieceList()
+{
+    puts("Piece list:");
+    for (int r = 0; r < 8; r++)
+    {
+        printf(" %d  ", 8 - r);
+        for (int f = 0; f < 8; f++)
+        {
+            int s = f + r * 8;
+
+            printf("%c ", pieceFEN[pieceList[s]]);
+        }
+
+        // next rank
+        puts("");
+    }
+
+    // file names
+    puts("    a b c d e f g h");
 }

@@ -16,11 +16,22 @@
 // - - for the straddler, U L R D (directions) piece captures
 typedef uint32_t Move;
 
+extern const int move_typeMask; // piece performing move
+extern const int move_fromMask; // from
+extern const int move_toMask;   // to
+extern const int move_c1Mask;   // tends to be first capture
+extern const int move_c2Mask;   // tends to be second capture
+extern const int move_c3Mask;   // tends to be third capture
+extern const int move_c4Mask;   // tends to be fourth capture
+extern const int move_captMask; // all capture bits
+
 struct MoveList
 {
     Move list[300];
     int size;
 };
+
+extern const char* squareNames[];
 
 struct MoveList* generateMoves();
 void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);

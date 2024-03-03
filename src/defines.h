@@ -35,6 +35,8 @@ extern const char pieceFEN[];
 
 extern const char StartingFEN[];
 
+extern int pieceList[64];
+
 // prints all positions onto one board with FEN symbols
 void prettyPrintBoard();
 
@@ -47,5 +49,7 @@ void loadFEN(const char* fen);
 
 // converts the given piece FEN to its corresponding value
 int convertFENToValue(const char v);
+
+void printPieceList();
 
 #endif
