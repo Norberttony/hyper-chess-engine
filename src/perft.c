@@ -107,6 +107,7 @@ struct MoveCounter countMoves(int depth)
 
 int isMoveLegal(Move m)
 {
+    return 1;
     makeMove(m);
 
     struct MoveList *moves = generateMoves();

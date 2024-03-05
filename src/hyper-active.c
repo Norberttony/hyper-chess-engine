@@ -27,12 +27,12 @@ int main(void)
     // print position
     prettyPrintBoard();
 
-    loadFEN("Pk5p/r7/8/8/p4R2/8/8/K4p1p w -");
+    loadFEN("4p3/1n2p3/6p1/5p2/1p1pN2p/8/2n1P3/7n w -");
     puts("Test position:");
     prettyPrintBoard();
     printPieceList();
 
-    int depth = 4;
+    int depth = 3;
 
     clock_t start = clock();
     struct MoveCounter counter = divide(depth);

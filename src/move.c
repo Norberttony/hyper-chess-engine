@@ -92,6 +92,23 @@ struct MoveList* generateMoves()
         generateKingMoves(sq, moves, list);
     }
 
+    // all springer moves
+    U64 springers = position[toPlay + springer] & notImmInfl;
+    while (springers)
+    {
+        int sq = pop_lsb(springers);
+
+        // generate moves
+        U64 moves =
+            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
+            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
+
+        generateSpringerMoves(sq, moves & ~totalBoard, list);
+        generateSpringerCaptures(sq, moves & position[notToPlay], list);
+
+        springers &= springers - 1;
+    }
+
     return list;
 }
 
@@ -216,6 +233,37 @@ void generateKingMoves(int sq, U64 moves, struct MoveList* movelist)
     }
 }
 
+void generateSpringerMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | springer;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
+void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
+{
+    while (moves)
+    {
+        int capturing = pop_lsb(moves);
+
+        // determine where the springer lands
+        int to = pop_lsb(springerLeaps[sq][capturing]);
+
+        Move move = (pieceList[capturing] << 15) | (to << 9) | (sq << 3) | springer;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+
+        // actually, don't count the move if it did not result in a capture
+        movelist->size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
+    }
+}
+
 void prettyPrintMove(Move m)
 {
     // get correct piece type
@@ -254,11 +302,11 @@ void prettyPrintMove(Move m)
         case straddler:
         case coordinator:
         case immobilizer:
+        case springer:
+        case retractor:
             printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, (m & move_c4Mask) >> 24);
             break;
-        case retractor:
         case chameleon:
-        case springer:
             printf("not implemented");
             break;
         case king:
@@ -382,6 +430,17 @@ void makeMove(Move m)
 
             break;
 
+        case springer:
+
+            // just a garbage variable... coordinateSq in this case is where the springer captured
+            // a piece at
+            coordinateSq = pop_lsb(springerCaptures[from][to]);
+
+            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
+            position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
+            pieceList[coordinateSq] = pieceList[coordinateSq] * (c1 == 0);
+
+            break;
     }
 
     // move piece
@@ -522,5 +581,16 @@ void unmakeMove(Move m)
 
             break;
 
+        case springer:
+
+            // just a garbage variable... coordinateSq in this case is where the springer captured
+            // a piece at
+            coordinateSq = pop_lsb(springerCaptures[from][to]);
+
+            position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
+            position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
+            pieceList[coordinateSq] += c1;
+
+            break;
     }
 }

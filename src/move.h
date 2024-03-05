@@ -50,6 +50,12 @@ void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);
 void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist);
 void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist);
 void generateKingMoves(int sq, U64 moves, struct MoveList* movelist);
+
+// assumes that the given moves do not capture any pieces
+void generateSpringerMoves(int sq, U64 moves, struct MoveList* movelist);
+
+void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
+
 void prettyPrintMove(Move);
 
 void makeMove(Move);
