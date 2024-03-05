@@ -21,4 +21,6 @@ struct MoveCounter divide(int depth);
 // this is insanely temporary. for testing/debugging purposes.
 int isMoveLegal(Move);
 
+int countCaptures(Move);
+
 #endif

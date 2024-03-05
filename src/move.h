@@ -30,11 +30,23 @@ extern const int move_c1Mask;   // tends to be first capture
 extern const int move_c2Mask;   // tends to be second capture
 extern const int move_c3Mask;   // tends to be third capture
 extern const int move_c4Mask;   // tends to be fourth capture
+
 extern const int move_kingcmask;
 extern const int move_kingc1mask;
 extern const int move_kingc2mask;
 extern const int move_kingc3mask;
 extern const int move_kingc4mask;
+
+extern const int move_cham_c_mask;  // capture mask
+extern const int move_cham_u_mask;  // straddler up
+extern const int move_cham_l_mask;  // left
+extern const int move_cham_r_mask;  // right
+extern const int move_cham_d_mask;  // down
+extern const int move_cham_d1_mask; // death square 1
+extern const int move_cham_d2_mask; // death square 2
+extern const int move_cham_q_mask;  // retractor
+extern const int move_cham_n_mask;  // springer
+
 extern const int move_captMask; // all capture bits
 
 struct MoveList
@@ -60,6 +72,9 @@ void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
 void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist);
 
 void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist);
+
+void generateChameleonMoves(int sq, U64 moves, struct MoveList* movelist);
+void generateChameleonStraddlerMoves(int sq, U64 moves, struct MoveList* movelist);
 
 void prettyPrintMove(Move);
 
