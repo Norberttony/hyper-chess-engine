@@ -56,6 +56,11 @@ void generateSpringerMoves(int sq, U64 moves, struct MoveList* movelist);
 
 void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
 
+// assumes that the given moves do not capture any pieces
+void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist);
+
+void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist);
+
 void prettyPrintMove(Move);
 
 void makeMove(Move);

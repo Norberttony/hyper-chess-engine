@@ -109,6 +109,20 @@ struct MoveList* generateMoves()
         springers &= springers - 1;
     }
 
+    // retractor moves (there's only one per side)
+    {
+        U64 retractorBoard = position[toPlay + retractor] & notImmInfl;
+        int sq = pop_lsb(retractorBoard);
+        U64 moves = (retractorBoard > 0) * (
+            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
+            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+        );
+
+        // consider moves separately from (potential) captures.
+        generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, list);
+        generateRetractorCaptures(sq, kingMoves[sq] & ~totalBoard, list);        
+    }
+
     return list;
 }
 
@@ -261,6 +275,34 @@ void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
 
         // actually, don't count the move if it did not result in a capture
         movelist->size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
+    }
+}
+
+void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | retractor;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
+void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist)
+{
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+
+        // determine where retractor lands
+        int capturing = pop_lsb(retractorCaptures[sq][to]);
+
+        Move move = ((pieceList[capturing] << 15) * ((position[notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
     }
 }
 
@@ -441,6 +483,17 @@ void makeMove(Move m)
             pieceList[coordinateSq] = pieceList[coordinateSq] * (c1 == 0);
 
             break;
+        
+        case retractor:
+
+            // coordinateSq in this case is where the retractor captured a piece at
+            coordinateSq = pop_lsb(retractorCaptures[from][to]);
+
+            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
+            position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
+            pieceList[coordinateSq]  *= (c1 == 0);
+
+            break;
     }
 
     // move piece
@@ -586,6 +639,17 @@ void unmakeMove(Move m)
             // just a garbage variable... coordinateSq in this case is where the springer captured
             // a piece at
             coordinateSq = pop_lsb(springerCaptures[from][to]);
+
+            position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
+            position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
+            pieceList[coordinateSq] += c1;
+
+            break;
+
+        case retractor:
+
+            // coordinateSq in this case is where the retractor captured a piece at
+            coordinateSq = pop_lsb(retractorCaptures[from][to]);
 
             position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;

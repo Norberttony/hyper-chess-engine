@@ -18,6 +18,7 @@ int main(void)
     populateDeathSquares();
     populateSpringerLeaps();
     populateSpringerCaptures();
+    populateRetractorCaptures();
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
 
@@ -27,7 +28,7 @@ int main(void)
     // print position
     prettyPrintBoard();
 
-    loadFEN("4p3/1n2p3/6p1/5p2/1p1pN2p/8/2n1P3/7n w -");
+    loadFEN("pp6/pp6/8/3p1QP1/3pPp2/3p4/8/8 w -");
     puts("Test position:");
     prettyPrintBoard();
     printPieceList();

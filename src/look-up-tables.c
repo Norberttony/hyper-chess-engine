@@ -15,6 +15,8 @@ U64 springerCaptures[64][64];
 // springerLeaps[springerSq][enemySq]
 U64 springerLeaps[64][64];
 
+U64 retractorCaptures[64][64];
+
 
 static const U64 not_a_file = 18374403900871474942ULL;
 static const U64 not_h_file =  9187201950435737471ULL;
@@ -317,3 +319,54 @@ void populateSpringerCaptures()
     }
 }
 
+U64 genRetractorCapture(int startSq, int enemySq)
+{
+    U64 captures = 0ULL;
+
+    int file = startSq % 8;
+    int rank = startSq / 8;
+    int diff = enemySq - startSq;
+
+    // retractor makes moves away from the enemy
+    captures |= 1ULL << (startSq - diff);
+
+    // no wrapping around the board by moving
+    if (file == 0)
+    {
+        captures &= not_h_file;
+    }
+    else if (file == 7)
+    {
+        captures &= not_a_file;
+    }
+    if (rank == 0)
+    {
+        captures &= ~ranks[7];
+    }
+    else if (rank == 7)
+    {
+        captures &= ~ranks[0];
+    }
+
+    // no wrapping around the board by capturing
+    // aka retractor must make a 1 square move away from enemy
+    int enemyFile = enemySq % 8;
+    int enemyRank = enemySq / 8;
+    if (abs(enemyFile - file) > 1 || abs(enemyRank - rank) > 1 || enemyFile == file && enemyRank == rank)
+    {
+        return 0ULL;
+    }
+
+    return captures;
+}
+
+void populateRetractorCaptures()
+{
+    for (int s = 0; s < 64; s++)
+    {
+        for (int e = 0; e < 64; e++)
+        {
+            retractorCaptures[s][e] = genRetractorCapture(s, e);
+        }
+    }
+}

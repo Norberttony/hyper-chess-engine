@@ -14,9 +14,13 @@ extern U64 deathSquares[64][64][2];
 // where the springer captured given where it started and where it moved to
 extern U64 springerCaptures[64][64];
 
-// where the springer has to leap to to capture enemy
+// where the springer has to leap to capture enemy
 // springerLeaps[springerSq][enemySq]
 extern U64 springerLeaps[64][64];
+
+// where the retractor has to move to capture an enemy piece
+// retractorCaptures[retractorSq][enemySq]
+extern U64 retractorCaptures[64][64];
 
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
@@ -46,5 +50,11 @@ U64 genSpringerCapture(int startSq, int endSq);
 
 // populates springer capture lookup table
 void populateSpringerCaptures();
+
+// generates valid capture given a retractor and an enemy piece (retractorCapture)
+U64 genRetractorCapture(int startSq, int enemySq);
+
+// populates retractor capture lookup table
+void populateRetractorCaptures();
 
 #endif
