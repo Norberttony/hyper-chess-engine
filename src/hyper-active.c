@@ -27,50 +27,12 @@ int main(void)
     // print position
     prettyPrintBoard();
 
-    // play a move on the board!!
-    struct MoveList* moveList = generateMoves();
-    Move chosen = moveList->list[10];
-    puts("Playing move:");
-    prettyPrintMove(chosen);
-    makeMove(chosen);
-    free(moveList); // must now free memory
-
-    prettyPrintBoard();
-
-    moveList = generateMoves();
-    chosen = moveList->list[6];
-    puts("Playing move:");
-    prettyPrintMove(chosen);
-    makeMove(chosen);
-    free(moveList);
-
-    prettyPrintBoard();
-
-    printBitboard(position[black]);
-    moveList = generateMoves();
-    chosen = moveList->list[11];
-    puts("Playing move:");
-    prettyPrintMove(chosen);
-    makeMove(chosen);
-    free(moveList);
-
-    prettyPrintBoard();
-
-    printPieceList();
-
-    puts("Undoing the last move...");
-    unmakeMove(chosen);
-
-    prettyPrintBoard();
-
-    printPieceList();
-
-    loadFEN("pUP5/4p3/Pp2P2p/3Pp3/p1Pp4/1Pp2P2/P2u4/3Pp3 w -");
+    loadFEN("Pk5p/r7/8/8/p4R2/8/8/K4p1p w -");
     puts("Test position:");
     prettyPrintBoard();
     printPieceList();
 
-    int depth = 5;
+    int depth = 4;
 
     clock_t start = clock();
     struct MoveCounter counter = divide(depth);

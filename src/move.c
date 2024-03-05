@@ -13,14 +13,19 @@ const char* squareNames[] =
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
 };
 
-const int move_typeMask = 0b000000000000000000000000111; // piece performing move
-const int move_fromMask = 0b000000000000000000111111000; // from
-const int move_toMask   = 0b000000000000111111000000000; // to
-const int move_c1Mask   = 0b000000000111000000000000000; // tends to be first capture
-const int move_c2Mask   = 0b000000111000000000000000000; // tends to be second capture
-const int move_c3Mask   = 0b000111000000000000000000000; // tends to be third capture
-const int move_c4Mask   = 0b111000000000000000000000000; // tends to be fourth capture
-const int move_captMask = 0b111111111111000000000000000; // all capture bits
+const int move_typeMask     = 0b0000000000000000000000000111; // piece performing move
+const int move_fromMask     = 0b0000000000000000000111111000; // from
+const int move_toMask       = 0b0000000000000111111000000000; // to
+const int move_c1Mask       = 0b0000000000111000000000000000; // tends to be first capture
+const int move_c2Mask       = 0b0000000111000000000000000000; // tends to be second capture
+const int move_c3Mask       = 0b0000111000000000000000000000; // tends to be third capture
+const int move_c4Mask       = 0b0111000000000000000000000000; // tends to be fourth capture
+const int move_kingcmask    = 0b1111000000000000000000000000;
+const int move_kingc1mask   = 0b0001000000000000000000000000;
+const int move_kingc2mask   = 0b0010000000000000000000000000;
+const int move_kingc3mask   = 0b0100000000000000000000000000;
+const int move_kingc4mask   = 0b1000000000000000000000000000;
+const int move_captMask     = 0b1111111111111000000000000000; // all capture bits
 
 int rookOffsets[] = {-8, -1, 1, 8};
 U64 straddlerBounds[] = {
@@ -66,6 +71,25 @@ struct MoveList* generateMoves()
             bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
         ) & ~totalBoard;
         generateImmobilizerMoves(sq, moves, list);
+    }
+
+    // coordinator moves (there's only one)
+    {
+        U64 coordBoard = position[toPlay + coordinator] & notImmInfl;
+        int sq = pop_lsb(coordBoard);
+        U64 moves = (coordBoard > 0) * (
+            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
+            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+        ) & ~totalBoard;
+        generateCoordinatorMoves(sq, moves, list);
+    }
+
+    // king moves (there's only one)
+    {
+        U64 kingBoard = position[toPlay + king] & notImmInfl;
+        int sq = pop_lsb(kingBoard);
+        U64 moves = (kingBoard > 0) * kingMoves[sq] & ~position[toPlay];
+        generateKingMoves(sq, moves, list);
     }
 
     return list;
@@ -124,6 +148,74 @@ void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist)
     }
 }
 
+void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    // if a coordinator is on the board, there should always be a king as well.
+    int kingSq = pop_lsb(position[toPlay + king]);
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | coordinator;
+
+        // capture bits (death squares with king)
+        // note: coordinator potentially teaming up with a chameleon to take the king is not considered here.
+        // the king is not considered to be a capturable piece
+        U64 death1 = deathSquares[kingSq][to][0];
+        move |= (pieceList[pop_lsb(death1)] * ((position[notToPlay] & death1) > 0)) << 15;
+
+        U64 death2 = deathSquares[kingSq][to][1];
+        move |= (pieceList[pop_lsb(death2)] * ((position[notToPlay] & death2) > 0)) << 18;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
+void generateKingMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    // king can coordinate with the coordinator
+    U64 coordBoard = position[toPlay + coordinator];
+    int coordSq = pop_lsb(coordBoard);
+
+    // king can also coordinate with the chameleon, but only against the coordinator
+    U64 chamBoard = position[toPlay + chameleon];
+    int cham1 = pop_lsb(chamBoard);
+    int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
+
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | king;
+
+        // capture by displacement
+        move |= pieceList[to] << 15;
+
+        // capture by coordinator death square
+        U64 deathco1 = deathSquares[coordSq][to][0] * (coordBoard > 0);
+        move |= (pieceList[pop_lsb(deathco1)] * ((position[notToPlay] & deathco1) > 0)) << 18;
+
+        U64 deathco2 = deathSquares[coordSq][to][1] * (coordBoard > 0);
+        move |= (pieceList[pop_lsb(deathco2)] * ((position[notToPlay] & deathco2) > 0)) << 21;
+
+        // capture an enemy coordinator by coordinating with a chameleon, only against the coordinator
+        // make sure a double capture doesn't happen (coordinator-king and chameleon-king both capture same coordinator)
+        U64 death = deathSquares[cham1][to][0] * (chamBoard > 0);
+        move |= (pieceList[pop_lsb(death)] * (position[notToPlay + coordinator] & death > 0) * (death != deathco1)) << 24;
+
+        death = deathSquares[cham1][to][1] * (chamBoard > 0);
+        move |= (pieceList[pop_lsb(death)] * (position[notToPlay + coordinator] & death > 0) * (death != deathco2)) << 25;
+
+        death = deathSquares[cham2][to][0] * ((chamBoard - 1 & chamBoard) > 0);
+        move |= (pieceList[pop_lsb(death)] * (position[notToPlay + coordinator] & death > 0) * (death != deathco1)) << 26;
+
+        death = deathSquares[cham2][to][1] * ((chamBoard - 1 & chamBoard) > 0);
+        move |= (pieceList[pop_lsb(death)] * (position[notToPlay + coordinator] & death > 0) * (death != deathco2)) << 27;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
 void prettyPrintMove(Move m)
 {
     // get correct piece type
@@ -155,7 +247,27 @@ void prettyPrintMove(Move m)
     }
 
     // print movement
-    printf("moves from %s to %s with capture of %d\n", squareNames[(m >> 3) & 0b111111], squareNames[(m >> 9) & 0b111111], (m >> 15) & 0b111111111111);
+    printf("moves from %s to %s ", squareNames[(m >> 3) & 0b111111], squareNames[(m >> 9) & 0b111111]);
+
+    switch(m & 0b111)
+    {
+        case straddler:
+        case coordinator:
+        case immobilizer:
+            printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, (m & move_c4Mask) >> 24);
+            break;
+        case retractor:
+        case chameleon:
+        case springer:
+            printf("not implemented");
+            break;
+        case king:
+            printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, ((m & move_kingcmask) > 0) * coordinator);
+            break;
+        default:
+            printf("???");
+    }
+    printf("\n");
 }
 
 void makeMove(Move m)
@@ -169,6 +281,8 @@ void makeMove(Move m)
     int c2 = (m >> 18) & 0b111;
     int c3 = (m >> 21) & 0b111;
     int c4 = (m >> 24) & 0b111;
+
+    int coordinateSq;
 
     // interpret capture bits
     switch(type)
@@ -198,6 +312,76 @@ void makeMove(Move m)
         
         case immobilizer:
             break;
+
+        case coordinator:
+            coordinateSq = pop_lsb(position[toPlay + king]);
+            
+            // top death square
+            int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << top;
+            position[notToPlay]      ^= 1ULL * (c1 > 0) << top;
+            pieceList[top] *= c1 == 0;
+
+            // bottom death square
+            int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+            position[notToPlay + c2] ^= 1ULL * (c2 > 0) << bottom;
+            position[notToPlay]      ^= 1ULL * (c2 > 0) << bottom;
+            pieceList[bottom] *= c2 == 0;
+
+            break;
+
+        case king:
+
+            // can capture by displacement
+            // assumes pieceList will be updated by king overwriting square
+            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << to;
+            position[notToPlay]      ^= 1ULL * (c1 > 0) << to;
+
+            // can form death squares with own coordinator
+            coordinateSq = pop_lsb(position[toPlay + coordinator]);
+
+            int deathSq = pop_lsb(deathSquares[coordinateSq][to][0]);
+            position[notToPlay + c2] ^= 1ULL * (c2 > 0) << deathSq;
+            position[notToPlay]      ^= 1ULL * (c2 > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (c2 == 0);
+
+            deathSq = pop_lsb(deathSquares[coordinateSq][to][1]);
+            position[notToPlay + c3] ^= 1ULL * (c3 > 0) << deathSq;
+            position[notToPlay]      ^= 1ULL * (c3 > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (c3 == 0);
+
+            // can form death squares with chameleons (only against coordinator)
+            U64 chamBoard = position[toPlay + chameleon];
+            int cham1 = pop_lsb(chamBoard);
+            int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
+
+            // to-do: combine all of the boards into one and then apply them.
+            int isDeath = m & move_kingc1mask;
+            deathSq = pop_lsb(deathSquares[cham1][to][0]);
+            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (isDeath == 0);
+
+            isDeath = m & move_kingc2mask;
+            deathSq = pop_lsb(deathSquares[cham1][to][1]);
+            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (isDeath == 0);
+
+            isDeath = m & move_kingc3mask;
+            deathSq = pop_lsb(deathSquares[cham2][to][0]);
+            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (isDeath == 0);
+
+            isDeath = m & move_kingc4mask;
+            deathSq = pop_lsb(deathSquares[cham2][to][1]);
+            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] = pieceList[deathSq] * (isDeath == 0);
+
+            break;
+
     }
 
     // move piece
@@ -225,6 +409,8 @@ void unmakeMove(Move m)
     int c2 = (m >> 18) & 0b111;
     int c3 = (m >> 21) & 0b111;
     int c4 = (m >> 24) & 0b111;
+
+    int coordinateSq;
 
     // toggle turn
     toPlay = !toPlay * 8;
@@ -263,5 +449,78 @@ void unmakeMove(Move m)
             position[notToPlay] |= 1ULL * (c4 > 0) << (to + 8);
             pieceList[to + 8] += c4;
             break;
+
+        case immobilizer:
+            break;
+        
+        case coordinator:
+            coordinateSq = pop_lsb(position[toPlay + king]);
+            
+            // top death square
+            int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+            position[notToPlay + c1] |= 1ULL * (c1 > 0) << top;
+            position[notToPlay]      |= 1ULL * (c1 > 0) << top;
+            pieceList[top] += c1;
+
+            // bottom death square
+            int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+            position[notToPlay + c2] |= 1ULL * (c2 > 0) << bottom;
+            position[notToPlay]      |= 1ULL * (c2 > 0) << bottom;
+            pieceList[bottom] += c2;
+            
+            break;
+
+        case king:
+
+            // capture by displacement
+            position[notToPlay + c1] |= 1ULL * (c1 > 0) << to;
+            position[notToPlay]      |= 1ULL * (c1 > 0) << to;
+            pieceList[to] += c1;
+
+            // death squares with coordinator
+            // can form death squares with own coordinator
+            coordinateSq = pop_lsb(position[toPlay + coordinator]);
+
+            int deathSq = pop_lsb(deathSquares[coordinateSq][to][0]);
+            position[notToPlay + c2] |= 1ULL * (c2 > 0) << deathSq;
+            position[notToPlay]      |= 1ULL * (c2 > 0) << deathSq;
+            pieceList[deathSq] += c2;
+
+            deathSq = pop_lsb(deathSquares[coordinateSq][to][1]);
+            position[notToPlay + c3] |= 1ULL * (c3 > 0) << deathSq;
+            position[notToPlay]      |= 1ULL * (c3 > 0) << deathSq;
+            pieceList[deathSq] += c3;
+
+            // consider king-chameleon duo
+            U64 chamBoard = position[toPlay + chameleon];
+            int cham1 = pop_lsb(chamBoard);
+            int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
+
+            int isDeath = m & move_kingc1mask;
+            deathSq = pop_lsb(deathSquares[cham1][to][0]);
+            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] += coordinator * (isDeath > 0);
+
+            isDeath = m & move_kingc2mask;
+            deathSq = pop_lsb(deathSquares[cham1][to][1]);
+            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] += coordinator * (isDeath > 0);
+
+            isDeath = m & move_kingc3mask;
+            deathSq = pop_lsb(deathSquares[cham2][to][0]);
+            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] += coordinator * (isDeath > 0);
+
+            isDeath = m & move_kingc4mask;
+            deathSq = pop_lsb(deathSquares[cham2][to][1]);
+            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
+            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
+            pieceList[deathSq] += coordinator * (isDeath > 0);
+
+            break;
+
     }
 }

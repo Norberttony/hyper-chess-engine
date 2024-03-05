@@ -16,6 +16,11 @@ struct MoveCounter divide(int depth)
 
     for (int i = 0; i < moves->size; i++)
     {
+        if (!isMoveLegal(moves->list[i]))
+        {
+            continue;
+        }
+
         makeMove(moves->list[i]);
 
         // add stats from counter
@@ -65,6 +70,11 @@ struct MoveCounter countMoves(int depth)
 
     for (int i = 0; i < moves->size; i++)
     {
+        if (!isMoveLegal(moves->list[i]))
+        {
+            continue;
+        }
+        
         makeMove(moves->list[i]);
 
         // add stats from counter
@@ -93,4 +103,32 @@ struct MoveCounter countMoves(int depth)
     free(moves);
     
     return counter;
+}
+
+int isMoveLegal(Move m)
+{
+    makeMove(m);
+
+    struct MoveList *moves = generateMoves();
+
+    for (int i = 0; i < moves->size; i++)
+    {
+        makeMove(moves->list[i]);
+
+        // just took the king. no good.
+        if (position[toPlay + king] == 0ULL)
+        {
+            unmakeMove(moves->list[i]);
+            unmakeMove(m);
+            free(moves);
+            return 0;
+        }
+
+        unmakeMove(moves->list[i]);
+    }
+
+    free(moves);
+
+    unmakeMove(m);
+    return 1;
 }

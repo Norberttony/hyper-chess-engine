@@ -5,8 +5,11 @@
 
 #include "bitboard-utility.h"
 
+extern U64 ranks[8];
+extern U64 files[8];
+
 extern U64 kingMoves[64];
-extern U64 deathSquares[64][64];
+extern U64 deathSquares[64][64][2];
 
 // where the springer captured given where it started and where it moved to
 extern U64 springerCaptures[64][64];
@@ -20,7 +23,8 @@ extern U64 springerLeaps[64][64];
 void populateRanksAndFiles();
 
 // sq1 and sq2 are locations of king/coordinator, doesn't matter which is which.
-U64 genDeathSquares(int sq1, int sq2);
+U64 genDeathSquares1(int sq1, int sq2);
+U64 genDeathSquares2(int sq1, int sq2);
 
 // populates deathSquares lookup table
 void populateDeathSquares();
