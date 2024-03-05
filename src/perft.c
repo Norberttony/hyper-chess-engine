@@ -30,7 +30,6 @@ struct MoveCounter divide(int depth)
         }
 
         makeMove(move);
-        prettyPrintMove(move);
 
         // add stats from counter
         temp = countMoves(depth - 1);
@@ -44,7 +43,8 @@ struct MoveCounter divide(int depth)
             counter.captureMoves++;
         }
         
-        counter.pieceCaptures += countCaptures(move);
+        int captureCount = countCaptures(move);
+        counter.pieceCaptures += captureCount;
 
         // purpose of divide is to print the top level move and its move count
         printf("%s%s %d\n", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111], temp.moves);

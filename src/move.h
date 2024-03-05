@@ -73,8 +73,9 @@ void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist);
 
 void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist);
 
-void generateChameleonMoves(int sq, U64 moves, struct MoveList* movelist);
-void generateChameleonStraddlerMoves(int sq, U64 moves, struct MoveList* movelist);
+void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist);
+void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist);
+void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
 
 void prettyPrintMove(Move);
 

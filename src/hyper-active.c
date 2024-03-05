@@ -28,7 +28,7 @@ int main(void)
     // print position
     prettyPrintBoard();
 
-    loadFEN("1Bu5/1pP5/8/3b4/5U2/8/8/8 w -");
+    loadFEN("4p3/1b2p3/6p1/5p2/1p1pB2p/8/2n1P3/7n w -");
     puts("Test position:");
     prettyPrintBoard();
     printPieceList();

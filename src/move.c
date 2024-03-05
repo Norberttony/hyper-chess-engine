@@ -27,15 +27,15 @@ const int move_kingc2mask   = 0b0010000000000000000000000000;
 const int move_kingc3mask   = 0b0100000000000000000000000000;
 const int move_kingc4mask   = 0b1000000000000000000000000000;
 
-const int move_cham_c_mask  = 0b0000000000001000000000000000;
-const int move_cham_u_mask  = 0b0000000000010000000000000000;
-const int move_cham_l_mask  = 0b0000000000100000000000000000;
-const int move_cham_r_mask  = 0b0000000001000000000000000000;
-const int move_cham_d_mask  = 0b0000000010000000000000000000;
-const int move_cham_d1_mask = 0b0000000100000000000000000000;
-const int move_cham_d2_mask = 0b0000001000000000000000000000;
-const int move_cham_q_mask  = 0b0000010000000000000000000000;
-const int move_cham_n_mask  = 0b0000100000000000000000000000;
+const int move_cham_c_mask  = 0b0000011111111000000000000000;
+const int move_cham_u_mask  = 0b0000000000001000000000000000;
+const int move_cham_l_mask  = 0b0000000000010000000000000000;
+const int move_cham_r_mask  = 0b0000000000100000000000000000;
+const int move_cham_d_mask  = 0b0000000001000000000000000000;
+const int move_cham_d1_mask = 0b0000000010000000000000000000;
+const int move_cham_d2_mask = 0b0000000100000000000000000000;
+const int move_cham_q_mask  = 0b0000001000000000000000000000;
+const int move_cham_n_mask  = 0b0000010000000000000000000000;
 
 const int move_captMask     = 0b1111111111111000000000000000; // all capture bits
 
@@ -153,8 +153,9 @@ struct MoveList* generateMoves()
         U64 bishopMoves =
             bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
-        generateChameleonMoves(sq, bishopMoves & ~totalBoard, list);
-        generateChameleonStraddlerMoves(sq, rookMoves & ~totalBoard, list); // already considers rookMoves
+        generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list);
+        generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, list);
+        generateChameleonSpringerCaptures(sq, (rookMoves | bishopMoves) & position[notToPlay + springer], list);
 
         chameleons &= chameleons - 1;
     }
@@ -337,30 +338,12 @@ void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist)
 
         Move move = ((pieceList[capturing] << 15) * ((position[notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
 
-        if (sq == a8 && to == a7)
-        {
-            puts("Retractor capture");
-        }
-
         movelist->list[movelist->size++] = move;
         moves &= moves - 1;
     }
 }
 
-void generateChameleonMoves(int sq, U64 moves, struct MoveList* movelist)
-{
-    // for now just queen moves
-    while (moves)
-    {
-        int to = pop_lsb(moves);
-        Move move = (to << 9) | (sq << 3) | chameleon;
-
-        movelist->list[movelist->size++] = move;
-        moves &= moves - 1;
-    }
-}
-
-void generateChameleonStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
+void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist)
 {
     // extract and consider each move
     while (moves)
@@ -388,15 +371,57 @@ void generateChameleonStraddlerMoves(int sq, U64 moves, struct MoveList* movelis
             move |= (straddler * validTeamUp * validCapture * noWrap) << (15 + d);
         }
 
+        // also consider the possibility of this being a retractor move
+        // determine where retractor lands
+        int capturing = pop_lsb(retractorCaptures[sq][to]);
+        move |= move_cham_q_mask * ((position[notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
+
         movelist->list[movelist->size++] = move;
         moves &= moves - 1;
+    }
+}
+
+void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist)
+{
+    // extract and consider each move
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | chameleon;
+
+        // determine where retractor lands
+        int capturing = pop_lsb(retractorCaptures[sq][to]);
+        move |= move_cham_q_mask * ((position[notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+    }
+}
+
+void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
+{
+    // extract and consider each move
+    while (moves)
+    {
+        int capturing = pop_lsb(moves);
+
+        // determine where the springer lands
+        int to = pop_lsb(springerLeaps[sq][capturing]);
+
+        Move move = move_cham_n_mask | (to << 9) | (sq << 3) | chameleon;
+
+        movelist->list[movelist->size++] = move;
+        moves &= moves - 1;
+
+        // actually, don't count the move if it did not result in a capture
+        movelist->size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
     }
 }
 
 void prettyPrintMove(Move m)
 {
     // get correct piece type
-    switch(m & 0b111)
+    switch(m & move_typeMask)
     {
         case straddler:
             printf("Straddler ");
@@ -426,7 +451,7 @@ void prettyPrintMove(Move m)
     // print movement
     printf("moves from %s to %s ", squareNames[(m >> 3) & 0b111111], squareNames[(m >> 9) & 0b111111]);
 
-    switch(m & 0b111)
+    switch(m & move_typeMask)
     {
         case straddler:
         case coordinator:
@@ -436,7 +461,7 @@ void prettyPrintMove(Move m)
             printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, (m & move_c4Mask) >> 24);
             break;
         case chameleon:
-            printf("with capture of %d %d %d %d %d %d %d %d", (m & move_cham_u_mask) >> 15, (m & move_cham_l_mask) >> 16, (m & move_cham_r_mask) >> 17, (m & move_cham_d_mask) >> 18, (m & move_cham_d1_mask) >> 19, (m & move_cham_d2_mask) >> 20, (m & move_cham_q_mask) >> 21, (m & move_cham_n_mask) >> 22);
+            printf("with capture of %du %dl %dr %dd %dd1 %dd2 %dq %dn", (m & move_cham_u_mask) >> 15, (m & move_cham_l_mask) >> 16, (m & move_cham_r_mask) >> 17, (m & move_cham_d_mask) >> 18, (m & move_cham_d1_mask) >> 19, (m & move_cham_d2_mask) >> 20, (m & move_cham_q_mask) >> 21, (m & move_cham_n_mask) >> 22);
             break;
         case king:
             printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, ((m & move_kingcmask) > 0) * coordinator);
@@ -590,24 +615,38 @@ void makeMove(Move m)
             c4 = (m >> 18) & 1;
 
             // up
-            position[notToPlay + straddler] ^= 1ULL * (c1 > 0) << (to - 8);
-            position[notToPlay]             ^= 1ULL * (c1 > 0) << (to - 8);
-            pieceList[to - 8] *= (c1 == 0);
+            position[notToPlay + straddler] ^= 1ULL * c1 << (to - 8);
+            position[notToPlay]             ^= 1ULL * c1 << (to - 8);
+            pieceList[to - 8] *= !c1;
 
             // left
-            position[notToPlay + straddler] ^= 1ULL * (c2 > 0) << (to - 1);
-            position[notToPlay]             ^= 1ULL * (c2 > 0) << (to - 1);
-            pieceList[to - 1] *= (c2 == 0);
+            position[notToPlay + straddler] ^= 1ULL * c2 << (to - 1);
+            position[notToPlay]             ^= 1ULL * c2 << (to - 1);
+            pieceList[to - 1] *= !c2;
 
             // right
-            position[notToPlay + straddler] ^= 1ULL * (c3 > 0) << (to + 1);
-            position[notToPlay]             ^= 1ULL * (c3 > 0) << (to + 1);
-            pieceList[to + 1] *= (c3 == 0);
+            position[notToPlay + straddler] ^= 1ULL * c3 << (to + 1);
+            position[notToPlay]             ^= 1ULL * c3 << (to + 1);
+            pieceList[to + 1] *= !c3;
 
             // down
-            position[notToPlay + straddler] ^= 1ULL * (c4 > 0) << (to + 8);
-            position[notToPlay]             ^= 1ULL * (c4 > 0) << (to + 8);
-            pieceList[to + 8] *= (c4 == 0);
+            position[notToPlay + straddler] ^= 1ULL * c4 << (to + 8);
+            position[notToPlay]             ^= 1ULL * c4 << (to + 8);
+            pieceList[to + 8] *= !c4;
+
+            // consider retractor moves
+            c1 = (m >> 21) & 1;
+            int captureSq = pop_lsb(retractorCaptures[from][to]);
+            position[notToPlay + retractor] ^= 1ULL * c1 << captureSq;
+            position[notToPlay]             ^= 1ULL * c1 << captureSq;
+            pieceList[captureSq] *= !c1;
+
+            // consider springer moves
+            c1 = (m >> 22) & 1;
+            captureSq = pop_lsb(springerCaptures[from][to]);
+            position[notToPlay + springer]  ^= 1ULL * c1 << captureSq;
+            position[notToPlay]             ^= 1ULL * c1 << captureSq;
+            pieceList[captureSq] *= !c1;
 
             break;
     }
@@ -781,24 +820,38 @@ void unmakeMove(Move m)
             c4 = (m >> 18) & 1;
 
             // up
-            position[notToPlay + straddler] |= 1ULL * (c1 > 0) << (to - 8);
-            position[notToPlay]             |= 1ULL * (c1 > 0) << (to - 8);
+            position[notToPlay + straddler] |= 1ULL * c1 << (to - 8);
+            position[notToPlay]             |= 1ULL * c1 << (to - 8);
             pieceList[to - 8] += c1;
 
             // left
-            position[notToPlay + straddler] |= 1ULL * (c2 > 0) << (to - 1);
-            position[notToPlay]             |= 1ULL * (c2 > 0) << (to - 1);
+            position[notToPlay + straddler] |= 1ULL * c2 << (to - 1);
+            position[notToPlay]             |= 1ULL * c2 << (to - 1);
             pieceList[to - 1] += c2;
 
             // right
-            position[notToPlay + straddler] |= 1ULL * (c3 > 0) << (to + 1);
-            position[notToPlay]             |= 1ULL * (c3 > 0) << (to + 1);
+            position[notToPlay + straddler] |= 1ULL * c3 << (to + 1);
+            position[notToPlay]             |= 1ULL * c3 << (to + 1);
             pieceList[to + 1] += c3;
 
             // down
-            position[notToPlay + straddler] |= 1ULL * (c4 > 0) << (to + 8);
-            position[notToPlay]             |= 1ULL * (c4 > 0) << (to + 8);
+            position[notToPlay + straddler] |= 1ULL * c4 << (to + 8);
+            position[notToPlay]             |= 1ULL * c4 << (to + 8);
             pieceList[to + 8] += c4;
+
+            // consider retractor moves
+            c1 = (m >> 21) & 1;
+            int sq = pop_lsb(retractorCaptures[from][to]);
+            position[notToPlay + retractor] |= 1ULL * c1 << sq;
+            position[notToPlay]             |= 1ULL * c1 << sq;
+            pieceList[sq] += retractor * c1;
+
+            // consider springer moves
+            c1 = (m >> 22) & 1;
+            sq = pop_lsb(springerCaptures[from][to]);
+            position[notToPlay + springer]  |= 1ULL * c1 << sq;
+            position[notToPlay]             |= 1ULL * c1 << sq;
+            pieceList[sq] += springer * c1;
 
             break;
     }
