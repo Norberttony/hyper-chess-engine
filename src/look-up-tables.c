@@ -1,9 +1,13 @@
 
 #include "look-up-tables.h"
 
-// ranks are in reverse order, [0] accesses 8th rank, [1] accesses 7th, etc.
+// [0] accesses 8th rank, [1] accesses 7th, etc.
 U64 ranks[8];
 U64 files[8];
+
+// [0] accesses 8th rank, [1] accesses 7th, etc.
+U64 sqRanks[64];
+U64 sqFiles[64];
 
 U64 kingMoves[64];
 U64 deathSquares[64][64][2];
@@ -34,6 +38,12 @@ void populateRanksAndFiles()
         }
         ranks[i] = rank;
 
+        // populate sqRanks
+        for (int f = 0; f < 8; f++)
+        {
+            sqRanks[i * 8 + f] = rank;
+        }
+
         // get ith file
         U64 file = 0ULL;
         for (int r = 0; r < 8; r++)
@@ -41,6 +51,12 @@ void populateRanksAndFiles()
             file |= 1ULL << (r * 8 + i);
         }
         files[i] = file;
+
+        // populate sqFiles
+        for (int r = 0; r < 8; r++)
+        {
+            sqFiles[r * 8 + i] = file;
+        }
     }
 }
 

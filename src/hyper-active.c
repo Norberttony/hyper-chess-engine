@@ -28,19 +28,19 @@ int main(void)
     // print position
     prettyPrintBoard();
 
-    loadFEN("Pk5p/r7/8/5B2/p4B2/8/8/K4n1p b -");
+    //loadFEN("Pk5p/r6B/8/8/p4B2/8/8/K4n1p w -");
     puts("Test position:");
     prettyPrintBoard();
     printPieceList();
 
-    int depth = 2;
-
+    int depth = 5;
     clock_t start = clock();
     struct MoveCounter counter = divide(depth);
     clock_t end = clock();
 
-    printf("At depth %d there are %d moves and %d of them capture something. Among all captures, %d pieces are captured.\n", depth, counter.moves, counter.captureMoves, counter.pieceCaptures);
+    printf("At depth %d there are %d moves and %d of them capture something. Among all captures, %d pieces are captured. There are %d checkmates.\n", depth, counter.moves, counter.captureMoves, counter.pieceCaptures, counter.checkmates);
     printf("Time taken: %f\n", (float)(end - start) / CLOCKS_PER_SEC);
+    puts("");
 
     prettyPrintBoard();
     printPieceList();

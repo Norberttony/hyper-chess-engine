@@ -150,8 +150,7 @@ struct MoveList* generateMoves()
         int sq = pop_lsb(chameleons);
 
         U64 rookMoves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])];
-        U64 bishopMoves =
-            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
+        U64 bishopMoves = bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
         generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list);
         generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, list);
@@ -608,7 +607,7 @@ void makeMove(Move m)
 
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
-            pieceList[coordinateSq] = pieceList[coordinateSq] * (c1 == 0);
+            pieceList[coordinateSq] *= (c1 == 0);
 
             break;
         

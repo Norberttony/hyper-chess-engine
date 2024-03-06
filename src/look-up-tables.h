@@ -8,6 +8,9 @@
 extern U64 ranks[8];
 extern U64 files[8];
 
+extern U64 sqRanks[64];
+extern U64 sqFiles[64];
+
 extern U64 kingMoves[64];
 extern U64 deathSquares[64][64][2];
 

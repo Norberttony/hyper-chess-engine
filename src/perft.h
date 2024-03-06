@@ -20,9 +20,16 @@ struct MoveCounter divide(int depth);
 
 // this is insanely temporary. for testing/debugging purposes.
 int isMoveLegal(Move);
+int isPositionLegal();
 
 int countCaptures(Move);
 
 int chooseMove(int startSq, int endSq);
+
+// incomplete, only considers chameleon, king, and coordinator checks (excluding king walking up to king)
+int isAttackingKing();
+
+// just played a move. is it checkmate?
+int isCheckmate();
 
 #endif
