@@ -47,7 +47,7 @@ struct MoveCounter divide(int depth)
         counter.pieceCaptures += captureCount;
 
         // purpose of divide is to print the top level move and its move count
-        printf("%s%s %d\n", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111], temp.moves);
+        printf("%s%s %d | c %d | pc %d | ch %d\n", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111], temp.moves, temp.captureMoves, temp.pieceCaptures, temp.checkmates);
 
         // restore board state
         unmakeMove(move);
@@ -114,8 +114,23 @@ struct MoveCounter countMoves(int depth)
 
 int isMoveLegal(Move m)
 {
-    return 1;
     makeMove(m);
+
+    // make sure chameleons aren't nearby...
+    // they aren't programmed to take the king directly
+    U64 attacked = 0ULL;
+    U64 chameleons = position[toPlay + chameleon];
+    while (chameleons)
+    {
+        attacked |= kingMoves[pop_lsb(chameleons)];
+        chameleons &= chameleons - 1;
+    }
+
+    if (position[notToPlay + king] & attacked)
+    {
+        unmakeMove(m);
+        return 0;
+    }
 
     struct MoveList *moves = generateMoves();
 
@@ -180,4 +195,23 @@ int countCaptures(Move move)
         default:
             return 0;
     }
+}
+
+int chooseMove(int startSq, int endSq)
+{
+    struct MoveList *movelist = generateMoves();
+
+    for (int i = 0; i < movelist->size; i++)
+    {
+        Move m = movelist->list[i];
+
+        if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
+        {
+            makeMove(m);
+            return 1;
+        }
+    }
+
+    puts("Could not find move!");
+    return 0;
 }

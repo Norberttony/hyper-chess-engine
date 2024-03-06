@@ -23,4 +23,6 @@ int isMoveLegal(Move);
 
 int countCaptures(Move);
 
+int chooseMove(int startSq, int endSq);
+
 #endif
