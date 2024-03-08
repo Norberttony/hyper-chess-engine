@@ -2,7 +2,7 @@
 .PHONY: de-bruijn-gen
 
 all:
-	gcc -oFast src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c -o bin/hyper-active
+	gcc -O2 src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c -o bin/hyper-active
 	./bin/hyper-active
 
 debug:

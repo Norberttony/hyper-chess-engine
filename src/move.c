@@ -221,7 +221,6 @@ void generateStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
     while (moves)
     {
         int to = pop_lsb(moves);
-        U64 thisBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | straddler;
 
         movelist->list[movelist->size++] = move;

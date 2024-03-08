@@ -108,8 +108,6 @@ struct MoveCounter countMoves(int depth)
         if (checkmate)
         {
             temp.checkmates++;
-            //prettyPrintMove(move);
-            //prettyPrintBoard();
         }
         else
         {
@@ -226,6 +224,11 @@ int chooseMove(int startSq, int endSq)
     for (int i = 0; i < movelist->size; i++)
     {
         Move m = movelist->list[i];
+
+        if (!isMoveLegal(m))
+        {
+            continue;
+        }
 
         if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
         {

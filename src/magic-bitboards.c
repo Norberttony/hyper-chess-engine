@@ -184,7 +184,6 @@ U64 bishopAttacks[64][512];
 
 void initMagicBitboards(int isBishop)
 {
-    printBitboard(not_1_rank);
     for (int s = 0; s < 64; s++)
     {
         U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
