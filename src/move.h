@@ -58,9 +58,13 @@ struct MoveList
 extern const char* squareNames[];
 
 struct MoveList* generateMoves();
+
 void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);
+
 void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist);
+
 void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist);
+
 void generateKingMoves(int sq, U64 moves, struct MoveList* movelist);
 
 // assumes that the given moves do not capture any pieces
@@ -73,7 +77,7 @@ void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist);
 
 void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist);
 
-void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist);
+void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U64, U64, U64, U64);
 void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist);
 void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
 

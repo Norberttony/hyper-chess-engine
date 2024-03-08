@@ -61,15 +61,60 @@ struct MoveList* generateMoves()
 
     // all straddler moves
     U64 straddlers = position[toPlay + straddler] & notImmInfl;
+
+    // these boards determine potential straddler captures
+    // first segment is generic straddler rule.
+    // second segment is chameleon rule.
+    U64 straddlerUpBoard =
+        (position[notToPlay] << 8) & (position[toPlay + straddler] << 16) |
+        (position[notToPlay + straddler] << 8) & (position[toPlay + chameleon] << 16); // move any pieces down to match straddler board
+    U64 straddlerLeftBoard = (
+        (position[notToPlay] << 1) & (position[toPlay + straddler] << 2) |
+        (position[notToPlay + straddler] << 1) & (position[toPlay + chameleon] << 2)
+    ) & straddlerBounds[1];
+    U64 straddlerRightBoard = (
+        (position[notToPlay] >> 1) & (position[toPlay + straddler] >> 2) |
+        (position[notToPlay + straddler] >> 1) & (position[toPlay + chameleon] >> 2)
+    ) & straddlerBounds[2];
+    U64 straddlerDownBoard =
+        (position[notToPlay] >> 8) & (position[toPlay + straddler] >> 16) |
+        (position[notToPlay + straddler] >> 8) & (position[toPlay + chameleon] >> 16);
+
+    // combine all boards together to form the CAPTURE BOARD
+    U64 straddlerCaptureBoard = straddlerUpBoard | straddlerLeftBoard | straddlerRightBoard | straddlerDownBoard;
+
     while (straddlers)
     {
         int sq = pop_lsb(straddlers);
 
         // generate moves
         U64 moves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] & ~totalBoard;
-        //bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
-        generateStraddlerMoves(sq, moves, list);
+        U64 straddlerCaptures = moves & straddlerCaptureBoard;
+
+        generateStraddlerMoves(sq, moves & ~straddlerCaptures, list);
+
+        // also add the captures right here. right now. just to be able to use the up/left/right/down straddler board from before.
+        while (straddlerCaptures)
+        {
+            int to = pop_lsb(straddlerCaptures);
+            U64 toBoard = 1ULL << to;
+
+            Move move = (to << 9) | (sq << 3) | straddler;
+
+            // consider captures...
+            // up
+            move |= (pieceList[to - 8] * ((straddlerUpBoard & toBoard) > 0)) << 15;
+            // left
+            move |= (pieceList[to - 1] * ((straddlerLeftBoard & toBoard) > 0)) << 18;
+            // right
+            move |= (pieceList[to + 1] * ((straddlerRightBoard & toBoard) > 0)) << 21;
+            // down
+            move |= (pieceList[to + 8] * ((straddlerDownBoard & toBoard) > 0)) << 24;
+
+            list->list[list->size++] = move;
+            straddlerCaptures &= straddlerCaptures - 1;
+        }
 
         straddlers &= straddlers - 1;
     }
@@ -145,6 +190,14 @@ struct MoveList* generateMoves()
 
     // chameleon moves
     U64 chameleons = position[toPlay + chameleon] & notImmInfl;
+    U64 chamUpBoard = ((position[notToPlay + straddler] << 8) & ((position[toPlay + chameleon] | position[toPlay + straddler]) << 16));
+    U64 chamLeftBoard = (
+        ((position[notToPlay + straddler] << 1) & ((position[toPlay + chameleon] | position[toPlay + straddler]) << 2))
+    ) & straddlerBounds[1];
+    U64 chamRightBoard = (
+        ((position[notToPlay + straddler] >> 1) & ((position[toPlay + chameleon] | position[toPlay + straddler]) >> 2))
+    ) & straddlerBounds[2];
+    U64 chamDownBoard = ((position[notToPlay + straddler] >> 8) & ((position[toPlay + chameleon] | position[toPlay + straddler]) >> 16));
     while (chameleons)
     {
         int sq = pop_lsb(chameleons);
@@ -152,7 +205,7 @@ struct MoveList* generateMoves()
         U64 rookMoves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])];
         U64 bishopMoves = bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
 
-        generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list);
+        generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list, chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard);
         generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, list);
         generateChameleonSpringerCaptures(sq, (rookMoves | bishopMoves) & position[notToPlay + springer], list);
 
@@ -168,33 +221,8 @@ void generateStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
     while (moves)
     {
         int to = pop_lsb(moves);
+        U64 thisBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | straddler;
-
-        // each rook direction
-        for (int d = 0; d < 4; d++)
-        {
-            // represents U L R or D square from current square
-            U64 dirBoard = 1ULL << (to + rookOffsets[d]);
-
-            // straddler out of bounds if capture will wrap around board
-            // also check if there's an enemy one square away
-            if (!(straddlerBounds[d] & (1ULL << to)) || !(position[notToPlay] & dirBoard))
-            {
-                continue;
-            }
-
-            U64 dDirBoard = 1ULL << (to + 2 * rookOffsets[d]);
-            // must team up with straddler
-            if (position[toPlay + straddler] & dDirBoard)
-            {
-                move |= pieceList[to + rookOffsets[d]] << (15 + d * 3);
-            }
-            else
-            {
-                // special chameleon rule only against straddlers
-                move |= (position[notToPlay + straddler] & dirBoard && position[toPlay + chameleon] & dDirBoard) << (15 + d * 3);
-            }
-        }
 
         movelist->list[movelist->size++] = move;
         moves &= moves - 1;
@@ -342,7 +370,7 @@ void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist)
     }
 }
 
-void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist)
+void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U64 straddlerUpBoard, U64 straddlerLeftBoard, U64 straddlerRightBoard, U64 straddlerDownBoard)
 {
     U64 enemyCoordBoard = position[notToPlay + coordinator];
 
@@ -352,27 +380,19 @@ void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist)
     while (moves)
     {
         int to = pop_lsb(moves);
+        U64 toBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | chameleon;
 
         // each rook direction
-        for (int d = 0; d < 4; d++)
-        {
-            // represents U L R D square from current square
-            U64 dirBoard = 1ULL << (to + rookOffsets[d]);
-
-            U64 dDirBoard = 1ULL << (to + 2 * rookOffsets[d]);
-
-            // must have a friendly straddler or chameleon on the other side
-            int validTeamUp = (dDirBoard & (position[toPlay + straddler] | position[toPlay + chameleon])) > 0;
-
-            // must be capturing a straddler
-            int validCapture = (dirBoard & position[notToPlay + straddler]) > 0;
-
-            // prevent capture wrapping around the board
-            int noWrap = (straddlerBounds[d] & (1ULL << to)) > 0;
-
-            move |= (straddler * validTeamUp * validCapture * noWrap) << (15 + d);
-        }
+        // consider captures...
+        // up
+        move |= ((straddlerUpBoard & toBoard) > 0) << 15;
+        // left
+        move |= ((straddlerLeftBoard & toBoard) > 0) << 16;
+        // right
+        move |= ((straddlerRightBoard & toBoard) > 0) << 17;
+        // down
+        move |= ((straddlerDownBoard & toBoard) > 0) << 18;
 
         // also consider the possibility of this being a retractor move
         // determine where retractor lands

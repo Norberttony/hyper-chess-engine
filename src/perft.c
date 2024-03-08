@@ -108,8 +108,8 @@ struct MoveCounter countMoves(int depth)
         if (checkmate)
         {
             temp.checkmates++;
-            prettyPrintMove(move);
-            prettyPrintBoard();
+            //prettyPrintMove(move);
+            //prettyPrintBoard();
         }
         else
         {
