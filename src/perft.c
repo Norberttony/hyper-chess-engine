@@ -14,6 +14,7 @@ struct MoveCounter divide(int depth)
     if (moves->size == 0)
     {
         struct MoveCounter counter = { 1, 0, 0, 0 };
+        free(moves);
         return counter;
     }
 
@@ -83,6 +84,7 @@ struct MoveCounter countMoves(int depth)
     if (moves->size == 0)
     {
         struct MoveCounter counter = { 1, 0, 0, 0 };
+        free(moves);
         return counter;
     }
 
@@ -138,42 +140,13 @@ struct MoveCounter countMoves(int depth)
 
 int isMoveLegal(Move m)
 {
-    //return 1; // pseudo-legal moves
     makeMove(m);
 
-    int res = isPositionLegal();
+    int res = !isAttackingKing();
 
     unmakeMove(m);
 
     return res;
-}
-
-int isPositionLegal()
-{
-    if (isAttackingKing()){
-        return 0;
-    }
-
-    struct MoveList *moves = generateMoves();
-
-    for (int i = 0; i < moves->size; i++)
-    {
-        makeMove(moves->list[i]);
-
-        // just took the king. no good.
-        if (position[toPlay + king] == 0ULL)
-        {
-            unmakeMove(moves->list[i]);
-            free(moves);
-            return 0;
-        }
-
-        unmakeMove(moves->list[i]);
-    }
-
-    free(moves);
-
-    return 1;
 }
 
 int countCaptures(Move move)
@@ -263,12 +236,17 @@ int isAttackingKing()
     // specifically, coordinator AND (king/chameleon) death squares.
     U64 totalBoard = position[white] | position[black];
 
-    int targetKingSq = pop_lsb(position[notToPlay + king]);
-    U64 kingBoard = position[toPlay + king];
+    U64 targetKing = position[notToPlay + king];
+    int targetKingSq = pop_lsb(targetKing);
+    U64 kingBoard = position[toPlay + king] & notImmInfl;
     int realKingSq = pop_lsb(kingBoard);
-    int kingSq = pop_lsb(kingBoard & notImmInfl);
+    int kingSq = pop_lsb(kingBoard);
     U64 king1Board = (kingBoard > 0) * (kingMoves[kingSq] & ~position[toPlay]);
 
+    // of course, the king can take an immobilized king.
+    attacked |= (kingMoves[kingSq] & ~position[toPlay]) * (kingBoard > 0);
+
+    // coordinator AND chameleon(king)-coordinator checks!
     U64 coordPieceBoard = position[toPlay + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
     U64 coordBoard = ((coordPieceBoard & notImmInfl) > 0) * (
@@ -302,7 +280,63 @@ int isAttackingKing()
         sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && cham2Board & sqRanks[targetKingSq] ||
         sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && cham2Board & sqFiles[targetKingSq];
 
-    return position[notToPlay + king] & attacked || isCheck;
+    // check springer checks
+    U64 springerBoard = position[toPlay + springer] & notImmInfl;
+
+    // springer 1
+    int springer1Sq = pop_lsb(springerBoard);
+    U64 springer1Board = (springerBoard > 0) * (
+        rookAttacks[springer1Sq][((rookMasks[springer1Sq] & totalBoard) * rookMagics[springer1Sq]) >> (64 - rookMaskBitCount[springer1Sq])] |
+        bishopAttacks[springer1Sq][((bishopMasks[springer1Sq] & totalBoard) * bishopMagics[springer1Sq]) >> (64 - bishopMaskBitCount[springer1Sq])]
+    ) & targetKing;
+
+    // springer 2
+    int springer2Sq = pop_lsb(springerBoard - 1 & springerBoard);
+    U64 springer2Board = ((springerBoard - 1 & springerBoard) > 0) * (
+        rookAttacks[springer2Sq][((rookMasks[springer2Sq] & totalBoard) * rookMagics[springer2Sq]) >> (64 - rookMaskBitCount[springer2Sq])] |
+        bishopAttacks[springer2Sq][((bishopMasks[springer2Sq] & totalBoard) * bishopMagics[springer2Sq]) >> (64 - bishopMaskBitCount[springer2Sq])]
+    ) & targetKing;
+
+    int isSpringerCheck =
+        // springer 1
+        springer1Board > 0 && springerLeaps[springer1Sq][targetKingSq] & ~totalBoard ||
+        // springer 2
+        springer2Board > 0 && springerLeaps[springer2Sq][targetKingSq] & ~totalBoard;
+
+    // check retractor checks
+    U64 retractorBoard = position[toPlay + retractor] & notImmInfl;
+    int retractorSq = pop_lsb(retractorBoard);
+    // ensures that retractor attacks king AND can land one square away
+    int isRetractorCheck = retractorBoard && retractorCaptures[retractorSq][targetKingSq] & ~totalBoard;
+
+    // check straddler checks
+    // king is in check if straddler above, and another straddler can move below...
+    // this technique can be extended to find all squares that straddlers attack (can it be updated
+    // incrementally? probably not.. uh...)
+    
+    U64 straddlerBoard = position[toPlay + straddler] & notImmInfl;
+
+    int aboveSq = targetKingSq - 8;
+    int belowSq = targetKingSq + 8;
+    int leftSq  = targetKingSq - 1;
+    int rightSq = targetKingSq + 1;
+
+    int isAbove = aboveSq >= 0 && (position[toPlay + straddler] & (targetKing >> 8)); // true if straddler is above king
+    int isBelow = belowSq < 64 && (position[toPlay + straddler] & (targetKing << 8));
+    int isLeft  = targetKing & ~files[0] && (position[toPlay + straddler] & (targetKing >> 1));
+    int isRight = targetKing & ~files[7] && (position[toPlay + straddler] & (targetKing << 1));
+
+    int isStraddlerCheck =
+        // check if straddler is ready to take the king because of a straddler above
+        isAbove && (belowSq < 64) && !((targetKing << 8) & totalBoard) && (rookAttacks[belowSq][((rookMasks[belowSq] & totalBoard) * rookMagics[belowSq]) >> (64 - rookMaskBitCount[belowSq])] & straddlerBoard) ||
+        // check if straddler is ready to take the king because of a straddler below
+        isBelow && (aboveSq >= 0) && !((targetKing >> 8) & totalBoard) && (rookAttacks[aboveSq][((rookMasks[aboveSq] & totalBoard) * rookMagics[aboveSq]) >> (64 - rookMaskBitCount[aboveSq])] & straddlerBoard) ||
+        // check if straddler is ready to take the king because of a straddler to the left
+        isLeft && targetKing & ~files[7] && !((targetKing << 1) & totalBoard) && (rookAttacks[rightSq][((rookMasks[rightSq] & totalBoard) * rookMagics[rightSq]) >> (64 - rookMaskBitCount[rightSq])] & straddlerBoard) ||
+        // check if straddler is ready to take the king because of a straddler to the left
+        isRight && targetKing & ~files[0] && !((targetKing >> 1) & totalBoard) && (rookAttacks[leftSq][((rookMasks[leftSq] & totalBoard) * rookMagics[leftSq]) >> (64 - rookMaskBitCount[leftSq])] & straddlerBoard);
+
+    return position[notToPlay + king] & attacked || isCheck || isSpringerCheck || isRetractorCheck || isStraddlerCheck;
 }
 
 int isCheckmate()
@@ -320,18 +354,13 @@ int isCheckmate()
         }
     }
 
-    // make sure king is actually attacked
-    int isAttacked = 1;
-
     // toggle turn
     toPlay = !toPlay * 8;
     notToPlay = !notToPlay * 8;
 
-    // stalemate!!!
-    if (isPositionLegal())
-    {
-        isAttacked = 0;
-    }
+    // make sure king is actually attacked
+    // if not, then it's actually stalemate.
+    int isAttacked = isAttackingKing();
 
     // toggle turn back
     toPlay = !toPlay * 8;

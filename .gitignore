@@ -2,5 +2,6 @@
 .vscode
 
 /bin/*
+!/bin/.gitkeep
 
 *.exe

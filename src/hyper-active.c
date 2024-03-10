@@ -11,8 +11,9 @@
 #include "defines.h"
 #include "move.h"
 #include "perft.h"
+#include "test-suite.h"
 
-const int pieceValues[] = { 0, 1, 3, 4, 8, 8, 6, 9999999 };
+const int pieceValues[] = { 0, 100, 300, 400, 800, 800, 600, 999999900 };
 
 // greedy evaluation that counts material based on piece values
 int evaluate();
@@ -23,6 +24,9 @@ int compareMoves(const void*, const void*);
 
 int main(void)
 {
+    // output becomes unbuffered (immediately sent character by character)
+    setbuf(stdout, NULL);
+
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
     populateDeathSquares();
@@ -73,11 +77,18 @@ int main(void)
         {
             if (isCheckmate())
             {
-                puts("Checkmate!");
+                if (toPlay == white)
+                {
+                    puts("result 0-1");
+                }
+                else
+                {
+                    puts("result 1-0");
+                }
             }
             else
             {
-                puts("Stalemate!");
+                puts("result 1/2-1/2");
             }
             free(movelist);
             gameOver = 1;
@@ -96,13 +107,14 @@ int main(void)
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
 
+            printf("makemove %s%s\n", squareNames[(best & move_fromMask) >> 3], squareNames[(best & move_toMask) >> 9]);
             prettyPrintMove(best);
             makeMove(best);
             prettyPrintBoard();
         }
         else
         {
-            puts("Your turn! Type in a move:");
+            //puts("Your turn! Type in a move:");
             char move[10]; // yes, risks buffer overflow, I know...
             scanf("%s", &move);
 
