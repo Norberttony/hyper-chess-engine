@@ -13,20 +13,48 @@
 #include "perft.h"
 #include "test-suite.h"
 
-const int pieceValues[] = { 0, 100, 300, 400, 800, 800, 600, 999999900 };
+const int pieceValues[] = 
+{
+    0,          // empty
+    100,        // straddler
+    300,        // retractor
+    400,        // springer
+    800,        // coordinator
+    800,        // immobilizer
+    500,        // chameleon
+    999999900   // king
+};
+
+int thinkingTime = -1;
+clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 
 // greedy evaluation that counts material based on piece values
 int evaluate();
+
+// thinks in the allocated time and returns the best move it could find
+Move thinkFor(int time);
+
+// determines if engine is still allowed to think or not
+int getThinkAllowance();
+
+// gets the best move at the given depth
 Move getBestMove(int depth);
+
+// performs minmax search with alpha-beta pruning
 int think(int depth, int alpha, int beta);
+
+// performs minmax search with alpha-beta pruning for capturing moves only.
+// depth only serves as a counter (to value longest/shortest sequences of mate)
 int thinkCaptures(int depth, int alpha, int beta); // depth serves as a counter for finding fastest mate
+
+// returns a positive value if the second move is greater (in ordering)
 int compareMoves(const void*, const void*);
 
 int main(void)
 {
-    // output becomes unbuffered (immediately sent character by character)
-    setbuf(stdout, NULL);
+    srand(time(NULL));
 
+    // Initialization!
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
     populateDeathSquares();
@@ -43,6 +71,7 @@ int main(void)
 
     // prompt user for which side they will play
     puts("Which side do you want to play? (w/b)");
+    fflush(stdout);
 
     char sideInput = 0;
     do
@@ -90,6 +119,7 @@ int main(void)
             {
                 puts("result 1/2-1/2");
             }
+            fflush(stdout);
             free(movelist);
             gameOver = 1;
             break;
@@ -108,6 +138,7 @@ int main(void)
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
 
             printf("makemove %s%s\n", squareNames[(best & move_fromMask) >> 3], squareNames[(best & move_toMask) >> 9]);
+            fflush(stdout);
             prettyPrintMove(best);
             makeMove(best);
             prettyPrintBoard();
@@ -150,6 +181,7 @@ int evaluate()
     int evaluation = 0;
     for (int i = 1; i <= 6; i++)
     {
+        // count up my material
         U64 myBoard = position[toPlay + i];
         while (myBoard)
         {
@@ -157,6 +189,7 @@ int evaluate()
             myBoard &= myBoard - 1;
         }
 
+        // count up opponent's material
         U64 enemyBoard = position[notToPlay + i];
         while (enemyBoard)
         {
@@ -165,6 +198,7 @@ int evaluate()
         }
     }
 
+    // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation;
 }
 
@@ -181,8 +215,8 @@ Move getBestMove(int depth)
     // determine most promising moves
     qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
 
-    int alpha = INT_MIN + 10;
-    int beta = INT_MAX - 10;
+    int alpha = INT_MIN + 1;
+    int beta = INT_MAX - 1;
     Move bestMove = 0;
     for (int i = 0; i < movelist->size; i++)
     {
@@ -200,24 +234,32 @@ Move getBestMove(int depth)
         // can't really see stalemates yet
         if (isCheckmate())
         {
-            eval = (INT32_MAX - 200) + depth;
+            eval = (INT_MAX - 40) + depth;
         }
         else
         {
             eval = -think(depth - 1, -beta, -alpha);
         }
+        unmakeMove(m);
 
-        if (eval >= alpha)
+        // make sure we are still allowed to think.
+        // if not, throw in the best move we've got!
+        // not using break because then it will throw in a weird evaluation.
+        if (!getThinkAllowance())
+        {
+            free(movelist);
+            return bestMove;
+        }
+
+        if (eval > alpha)
         {
             alpha = eval;
             bestMove = m;
         }
-
-        unmakeMove(m);
     }
 
     free(movelist);
-    printf("Evaluating the position as %d\n", alpha);
+    printf("depth %d: evaluating the position as %d\n", depth, alpha);
 
     return bestMove;
 }
@@ -234,11 +276,13 @@ int think(int depth, int alpha, int beta)
     if (movelist->size == 0)
     {
         free(movelist);
-        return 0; // no moves!
+        return 0; // no moves! don't try sorting (just in case)
     }
 
-    // determine most promising moves
+    // order most promising moves first
     qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
+
+    int hasLegalMoves = 0;
 
     for (int i = 0; i < movelist->size; i++)
     {
@@ -247,6 +291,7 @@ int think(int depth, int alpha, int beta)
         {
             continue;
         }
+        hasLegalMoves = 1;
 
         makeMove(m);
 
@@ -254,8 +299,8 @@ int think(int depth, int alpha, int beta)
 
         if (isCheckmate())
         {
-            // will never calculate mate in 200. right?
-            eval = (INT32_MAX - 200) + depth;
+            // will never calculate mate in 40. right?
+            eval = (INT_MAX - 40) + depth;
         }
         else
         {
@@ -263,15 +308,20 @@ int think(int depth, int alpha, int beta)
         }
         unmakeMove(m);
 
+        // make sure we are still allowed to think.
+        if (!getThinkAllowance())
+        {
+            free(movelist);
+            return beta;
+        }
+
         // alpha-beta pruning. if a move I play leads to a position where my opponent can play
         // something that's better than under a different move, there's no reason to consider
         // more moves from the opponent.
         if (eval >= beta)
         {
             free(movelist);
-            // make this move slightly worse from the last one so that it is not chosen as equal
-            // (as a candidate move) to the other moves in the branch above...
-            return beta + 1;
+            return beta;
         }
 
         if (eval > alpha)
@@ -282,6 +332,13 @@ int think(int depth, int alpha, int beta)
 
     free(movelist);
 
+    if (!hasLegalMoves)
+    {
+        // so alpha is too large? That means STALEMATE!
+        // because: no legal moves selected
+        return 0;
+    }
+
     // return best evaluation
     return alpha;
 }
@@ -291,7 +348,7 @@ int thinkCaptures(int depth, int alpha, int beta)
     int eval = evaluate();
     if (eval >= beta)
     {
-        return beta + 1;
+        return beta;
     }
     if (eval > alpha)
     {
@@ -305,6 +362,8 @@ int thinkCaptures(int depth, int alpha, int beta)
         free(movelist);
         return 0; // no moves!
     }
+
+    int hasLegalMoves = 0;
 
     // determine most promising moves
     qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
@@ -320,21 +379,19 @@ int thinkCaptures(int depth, int alpha, int beta)
         {
             continue;
         }
+        hasLegalMoves = 1;
 
         makeMove(m);
 
-        int eval;
+        int eval = -thinkCaptures(depth - 1, -beta, -alpha);
 
-        if (isCheckmate())
-        {
-            // will never calculate mate in 200. right?
-            eval = (INT32_MAX - 200) + depth;
-        }
-        else
-        {
-            eval = -thinkCaptures(depth - 1, -beta, -alpha);
-        }
         unmakeMove(m);
+
+        if (!getThinkAllowance())
+        {
+            free(movelist);
+            return beta;
+        }
 
         // alpha-beta pruning. if a move I play leads to a position where my opponent can play
         // something that's better than under a different move, there's no reason to consider
@@ -344,7 +401,7 @@ int thinkCaptures(int depth, int alpha, int beta)
             free(movelist);
             // make this move slightly worse from the last one so that it is not chosen as equal
             // (as a candidate move) to the other moves in the branch above...
-            return beta + 1;
+            return beta;
         }
 
         if (eval > alpha)
@@ -354,6 +411,13 @@ int thinkCaptures(int depth, int alpha, int beta)
     }
 
     free(movelist);
+
+    if (!hasLegalMoves)
+    {
+        // so alpha is too large? That means STALEMATE!
+        // because: no legal moves selected
+        return 0;
+    }
 
     // return best evaluation
     return alpha;
@@ -369,4 +433,36 @@ int compareMoves(const void *a, const void *b)
     Move m1 = *((Move*)a) & move_captMask + rand() % (move_captMask >> 4);
     Move m2 = *((Move*)b) & move_captMask + rand() % (move_captMask >> 4);
     return m2 - m1;
+}
+
+Move thinkFor(int time)
+{
+    // thinking is back on schedule
+    thinkStart = clock();
+    thinkingTime = time;
+
+    // perform "iterative deepening"
+    // simply. search depth 1. then 2. then 3. until you're out of time.
+    int depth = 0;
+    Move bestMove = 0;
+    while (getThinkAllowance())
+    {
+        Move candidate = getBestMove(++depth);
+        if (getThinkAllowance())
+        {
+            bestMove = candidate;
+        }
+    }
+
+    printf("Had to stop at depth %d\n", depth);
+
+    // set back to always think
+    thinkingTime = -1;
+
+    return bestMove;
+}
+
+int getThinkAllowance()
+{
+    return thinkStart == -1 || (float)(clock() - thinkStart) / (float)((clock_t)1) < thinkingTime;
 }
