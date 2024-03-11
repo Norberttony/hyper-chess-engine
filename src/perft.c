@@ -238,13 +238,13 @@ int isAttackingKing()
 
     U64 targetKing = position[notToPlay + king];
     int targetKingSq = pop_lsb(targetKing);
-    U64 kingBoard = position[toPlay + king] & notImmInfl;
+    U64 kingBoard = position[toPlay + king];
     int realKingSq = pop_lsb(kingBoard);
     int kingSq = pop_lsb(kingBoard);
-    U64 king1Board = (kingBoard > 0) * (kingMoves[kingSq] & ~position[toPlay]);
+    U64 king1Board = ((kingBoard & notImmInfl) > 0) * (kingMoves[kingSq] & ~position[toPlay]);
 
     // of course, the king can take an immobilized king.
-    attacked |= (kingMoves[kingSq] & ~position[toPlay]) * (kingBoard > 0);
+    attacked |= (kingMoves[kingSq] & ~position[toPlay]) * ((kingBoard & notImmInfl) > 0);
 
     // coordinator AND chameleon(king)-coordinator checks!
     U64 coordPieceBoard = position[toPlay + coordinator];

@@ -88,7 +88,7 @@ struct MoveList* generateMoves()
         int sq = pop_lsb(straddlers);
 
         // generate moves
-        U64 moves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] & ~totalBoard;
+        U64 moves = (rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])]) & ~totalBoard;
 
         U64 straddlerCaptures = moves & straddlerCaptureBoard;
 
@@ -452,6 +452,11 @@ void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movel
     }
 }
 
+void printMove(Move move)
+{
+    printf("%s%s ", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111]);
+}
+
 void prettyPrintMove(Move m)
 {
     // get correct piece type
@@ -707,6 +712,11 @@ void makeMove(Move m)
     position[toPlay + type] ^= toggle;
     position[toPlay] ^= toggle;
 
+    // remove piece from zobrist hash
+    zobristHash ^= zobristHashes[64 * (type - 1) + from];
+    // add piece back
+    zobristHash ^= zobristHashes[64 * (type - 1) + to];
+
     // update piece list
     pieceList[to] = pieceList[from];
     pieceList[from] = 0;
@@ -714,6 +724,13 @@ void makeMove(Move m)
     // toggle turn
     toPlay = !toPlay * 8;
     notToPlay = !notToPlay * 8;
+
+    // toggle turn on zobrist hash
+    zobristHash ^= zobristHashes[64 * 14];
+
+    // add to repeat table
+    repeatTable[repeatTableIndex++] = zobristHash;
+    repeatTableIndex -= REPEAT_TABLE_ENTRIES * (repeatTableIndex == REPEAT_TABLE_ENTRIES);
 }
 
 void unmakeMove(Move m)
@@ -730,9 +747,21 @@ void unmakeMove(Move m)
 
     int coordinateSq;
 
+    // remove from repeat table
+    repeatTableIndex += REPEAT_TABLE_ENTRIES * (repeatTableIndex == 0);
+    repeatTable[--repeatTableIndex] = 0ULL;
+
+    // toggle turn on zobrist hash
+    zobristHash ^= zobristHashes[64 * 14];
+
     // toggle turn
     toPlay = !toPlay * 8;
     notToPlay = !notToPlay * 8;
+
+    // remove piece from zobrist hash
+    zobristHash ^= zobristHashes[64 * (type - 1) + to];
+    // add piece back
+    zobristHash ^= zobristHashes[64 * (type - 1) + from];
 
     // unmove piece
     U64 toggle = (1ULL << from) | (1ULL << to);

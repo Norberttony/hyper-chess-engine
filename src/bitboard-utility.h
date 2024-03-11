@@ -2,6 +2,7 @@
 #define BITBOARD_UTILITY_HEADER
 
 #include <stdio.h>
+#include <stdlib.h>
 
 // definition of a bitboard
 typedef unsigned long long U64;
@@ -29,5 +30,7 @@ enum
 };
 
 void printBitboard(U64 bitboard);
+
+U64 randomU64();
 
 #endif

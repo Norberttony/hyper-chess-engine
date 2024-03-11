@@ -1,8 +1,8 @@
 #ifndef DEFINES_HEADER
 #define DEFINES_HEADER
 
-// for tolower and toupper
-#include <ctype.h>
+#include <ctype.h> // for tolower and toupper
+#include <stdlib.h>
 
 #include "bitboard-utility.h"
 
@@ -37,6 +37,16 @@ extern const char StartingFEN[];
 
 extern int pieceList[64];
 
+// 14 pieces, 64 squares, which side to play
+#define ZOBRIST_HASH_COUNT (64 * 14 + 1)
+
+extern U64 zobristHashes[ZOBRIST_HASH_COUNT];
+extern U64 zobristHash;
+
+#define REPEAT_TABLE_ENTRIES 32
+extern U64 repeatTable[REPEAT_TABLE_ENTRIES];
+extern int repeatTableIndex;
+
 // prints all positions onto one board with FEN symbols
 void prettyPrintBoard();
 
@@ -51,5 +61,8 @@ void loadFEN(const char* fen);
 int convertFENToValue(const char v);
 
 void printPieceList();
+
+// generates zobrist hashes
+void generateZobristHashes();
 
 #endif

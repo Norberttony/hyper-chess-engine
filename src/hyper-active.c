@@ -2,7 +2,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include <time.h>
 
 #include "bitboard-utility.h"
@@ -28,6 +28,10 @@ const int pieceValues[] =
 int thinkingTime = -1;
 clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 
+Move calculatingVariation[64]; // for debugging
+Move principalVariation[64];
+int maxDepth = 0;
+
 // greedy evaluation that counts material based on piece values
 int evaluate();
 
@@ -45,16 +49,15 @@ int think(int depth, int alpha, int beta);
 
 // performs minmax search with alpha-beta pruning for capturing moves only.
 // depth only serves as a counter (to value longest/shortest sequences of mate)
-int thinkCaptures(int depth, int alpha, int beta); // depth serves as a counter for finding fastest mate
+int thinkCaptures(int alpha, int beta); // depth serves as a counter for finding fastest mate
 
 // returns a positive value if the second move is greater (in ordering)
 int compareMoves(const void*, const void*);
 
 int main(void)
 {
-    srand(time(NULL));
-
     // Initialization!
+    generateZobristHashes();
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
     populateDeathSquares();
@@ -63,6 +66,8 @@ int main(void)
     populateRetractorCaptures();
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
+
+    srand(time(NULL));
 
     // initial board set up
     loadFEN(StartingFEN);
@@ -132,14 +137,13 @@ int main(void)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = getBestMove(5);
+            Move best = thinkFor(200);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
 
             printf("makemove %s%s\n", squareNames[(best & move_fromMask) >> 3], squareNames[(best & move_toMask) >> 9]);
             fflush(stdout);
-            prettyPrintMove(best);
             makeMove(best);
             prettyPrintBoard();
         }
@@ -204,6 +208,9 @@ int evaluate()
 
 Move getBestMove(int depth)
 {
+    memset(calculatingVariation, 0, sizeof(calculatingVariation));
+    maxDepth = depth;
+
     struct MoveList *movelist = generateMoves();
 
     if (movelist->size == 0)
@@ -227,6 +234,9 @@ Move getBestMove(int depth)
         }
 
         makeMove(m);
+
+        calculatingVariation[0] = m;
+        calculatingVariation[1] = 0;
 
         // try to maximize value
         int eval;
@@ -255,6 +265,11 @@ Move getBestMove(int depth)
         {
             alpha = eval;
             bestMove = m;
+            // calculating variation becomes our principal variation (best play)
+            for (int j = 0; calculatingVariation[j]; j++)
+            {
+                principalVariation[j] = calculatingVariation[j];
+            }
         }
     }
 
@@ -268,7 +283,7 @@ int think(int depth, int alpha, int beta)
 {
     if (depth == 0)
     {
-        return thinkCaptures(depth - 1, alpha, beta);
+        return thinkCaptures(alpha, beta);
     }
 
     struct MoveList *movelist = generateMoves();
@@ -276,7 +291,7 @@ int think(int depth, int alpha, int beta)
     if (movelist->size == 0)
     {
         free(movelist);
-        return 0; // no moves! don't try sorting (just in case)
+        return 0; // no moves! don't try sorting
     }
 
     // order most promising moves first
@@ -295,9 +310,23 @@ int think(int depth, int alpha, int beta)
 
         makeMove(m);
 
+        calculatingVariation[maxDepth - depth] = m;
+        calculatingVariation[maxDepth - depth + 1] = 0;
+
         int eval;
 
-        if (isCheckmate())
+        // check for three fold repetition
+        int repeats = 0;
+        for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
+        {
+            repeats += repeatTable[j] == zobristHash;
+        }
+
+        if (repeats == 3)
+        {
+            eval = 0;
+        }
+        else if (isCheckmate())
         {
             // will never calculate mate in 40. right?
             eval = (INT_MAX - 40) + depth;
@@ -332,10 +361,9 @@ int think(int depth, int alpha, int beta)
 
     free(movelist);
 
+    // if there are no legal moves in this position, it must be a stalemate.
     if (!hasLegalMoves)
     {
-        // so alpha is too large? That means STALEMATE!
-        // because: no legal moves selected
         return 0;
     }
 
@@ -343,9 +371,10 @@ int think(int depth, int alpha, int beta)
     return alpha;
 }
 
-int thinkCaptures(int depth, int alpha, int beta)
+int thinkCaptures(int alpha, int beta)
 {
     int eval = evaluate();
+    // not capturing might be better
     if (eval >= beta)
     {
         return beta;
@@ -363,8 +392,6 @@ int thinkCaptures(int depth, int alpha, int beta)
         return 0; // no moves!
     }
 
-    int hasLegalMoves = 0;
-
     // determine most promising moves
     qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
 
@@ -379,11 +406,10 @@ int thinkCaptures(int depth, int alpha, int beta)
         {
             continue;
         }
-        hasLegalMoves = 1;
 
         makeMove(m);
 
-        int eval = -thinkCaptures(depth - 1, -beta, -alpha);
+        int eval = -thinkCaptures(-beta, -alpha);
 
         unmakeMove(m);
 
@@ -412,13 +438,6 @@ int thinkCaptures(int depth, int alpha, int beta)
 
     free(movelist);
 
-    if (!hasLegalMoves)
-    {
-        // so alpha is too large? That means STALEMATE!
-        // because: no legal moves selected
-        return 0;
-    }
-
     // return best evaluation
     return alpha;
 }
@@ -428,10 +447,8 @@ int compareMoves(const void *a, const void *b)
 {
     // add some slight variety to the moves.
     // to-do: still problematic, as chameleon captures have less weight
-    // but it's just move ordering, so it isn't the end of the world for now.
-    // also! randomness added for some fun. otherwise AI often repeats moves.
-    Move m1 = *((Move*)a) & move_captMask + rand() % (move_captMask >> 4);
-    Move m2 = *((Move*)b) & move_captMask + rand() % (move_captMask >> 4);
+    Move m1 = *((Move*)a) & move_captMask;
+    Move m2 = *((Move*)b) & move_captMask;
     return m2 - m1;
 }
 
@@ -447,7 +464,18 @@ Move thinkFor(int time)
     Move bestMove = 0;
     while (getThinkAllowance())
     {
+        memset(principalVariation, 0, sizeof(principalVariation));
+        printf("Searching at depth %d\n", depth + 1);
         Move candidate = getBestMove(++depth);
+
+        // print out the principal variation for this depth.
+        printf("Principal variation: ");
+        for (int i = 0; principalVariation[i]; i++)
+        {
+            printMove(principalVariation[i]);
+        }
+        printf("\n");
+
         if (getThinkAllowance())
         {
             bestMove = candidate;

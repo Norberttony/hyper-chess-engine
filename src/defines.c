@@ -11,6 +11,12 @@ int notToPlay = black;
 int fullmove = 0;
 int pieceList[64];
 
+U64 zobristHashes[ZOBRIST_HASH_COUNT];
+U64 zobristHash = 0;
+
+U64 repeatTable[REPEAT_TABLE_ENTRIES];
+int repeatTableIndex = 0;
+
 
 void prettyPrintBoard()
 {
@@ -73,6 +79,9 @@ void loadFEN(const char* fen)
         pieceList[s] = 0;
     }
 
+    // clear zobrist hash
+    zobristHash = 0ULL;
+
     // interpret board string
     int i;
     int r = 0;
@@ -109,6 +118,9 @@ void loadFEN(const char* fen)
             // set piece list
             pieceList[f + r * 8] = val;
 
+            // update zobrist hash
+            zobristHash ^= zobristHashes[64 * (val - 1) + f + r * 8 + 6 * 64 * !!toPlay];
+
             // next square!
             f++;
         }
@@ -128,6 +140,7 @@ void loadFEN(const char* fen)
     {
         toPlay = white;
         notToPlay = black;
+        zobristHash ^= zobristHashes[64 * 14];
     }
     else if (fen[i] == 'b')
     {
@@ -197,4 +210,13 @@ void printPieceList()
 
     // file names
     puts("    a b c d e f g h");
+}
+
+void generateZobristHashes()
+{
+    srand(490235675);
+    for (int i = 0; i < ZOBRIST_HASH_COUNT; i++)
+    {
+        zobristHashes[i] = randomU64();
+    }
 }

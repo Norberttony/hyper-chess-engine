@@ -81,6 +81,7 @@ void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U6
 void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist);
 void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
 
+void printMove(Move);
 void prettyPrintMove(Move);
 
 void makeMove(Move);
