@@ -12,10 +12,11 @@ let positions = fs.readFileSync("./positions.txt").toString().split("\n");
 // remove duplicates
 let duplicatesRemoved = 0;
 for (let i = 0; i < positions.length; i++){
-    const index = positions.indexOf(positions[i], i + 1);
-    if (index > -1){
+    let index = positions.indexOf(positions[i], i + 1);
+    while (index > -1){
         positions.splice(index, 1);
         duplicatesRemoved++;
+        index = positions.indexOf(positions[i], index);
     }
 }
 console.log(`Removed ${duplicatesRemoved} duplicates`);
@@ -197,7 +198,7 @@ function playGame(white, black, index, fen){
     let draws = 0;
     let whiteWins = 0;
     let blackWins = 0;
-    for (let i = 928 / 2; i < 1000 / 2; i++){
+    for (let i = 0 / 2; i < 1000 / 2; i++){
         if (positions.length == 0){
             console.log("out of positions!");
             break;

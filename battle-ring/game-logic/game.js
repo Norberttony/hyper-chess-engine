@@ -651,7 +651,7 @@ class Board {
 
         return !attacksKing;
     }
-    // checks if a certain square is attacked
+    // checks if a certain square is attacked by the side to play
     isAttacked(sq){
 
         // go through every move

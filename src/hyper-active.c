@@ -34,9 +34,9 @@ const int immobilizedPieceValues[] =
     200,        // retractor
     300,        // springer
     700,        // coordinator (bonus if corner)
-    800,        // immobilizer
+    400,        // immobilizer
     500,        // chameleon
-    -200,       // king (bonus if corner) which technically has a value of 0
+    -100,       // king (bonus if corner) which technically has a value of 0
 };
 
 int thinkingTime = -1;
@@ -207,42 +207,48 @@ int evaluate()
     int enemyImmSq = pop_lsb(enemyImmobilizer);
     U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
 
+    // if enemy immobilizer is immobilized, then it shouldn't be evaluated highly
+    int enemyImmImm = 0;//(enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
+
     U64 myImmobilizer = position[toPlay + immobilizer];
     int myImmSq = pop_lsb(myImmobilizer);
     U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
+
+    // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
+    int myImmImm = 0;//(myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
 
     int evaluation = 0;
     for (int i = 1; i <= 7; i++)
     {
         // count up my material
-        U64 myBoard = position[toPlay + i] & ~enemyInfl;
+        U64 myBoard = position[toPlay + i] & ~(enemyInfl * !enemyImmImm);
         while (myBoard)
         {
             evaluation += pieceValues[i];
             myBoard &= myBoard - 1;
         }
 
-        // count up my immobilized material
+        // count up my immobilized material (only if enemy immobilizer is not immobilized)
         myBoard = position[toPlay + i] & enemyInfl;
         while (myBoard)
         {
-            evaluation += immobilizedPieceValues[i];
+            evaluation += immobilizedPieceValues[i] * !enemyImmImm;
             myBoard &= myBoard - 1;
         }
 
         // count up opponent's material
-        U64 enemyBoard = position[notToPlay + i] & ~myInfl;
+        U64 enemyBoard = position[notToPlay + i] & ~(myInfl * !myImmImm);
         while (enemyBoard)
         {
             evaluation -= pieceValues[i];
             enemyBoard &= enemyBoard - 1;
         }
 
-        // count up opponent's immobilized material
+        // count up opponent's immobilized material (only if my immobilizer is not immobilized)
         enemyBoard = position[notToPlay + i] & myInfl;
         while (enemyBoard)
         {
-            evaluation -= immobilizedPieceValues[i];
+            evaluation -= immobilizedPieceValues[i] * !myImmImm;
             enemyBoard &= enemyBoard - 1;
         }
     }
@@ -254,8 +260,8 @@ int evaluate()
     int myCoordCornered = (enemyInfl & position[toPlay + coordinator]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + coordinator];
 
     // bonus if king OR coordinator are in an immobilizer's corner
-    evaluation += 200 * (enemKingCornered || enemCoordCornered);
-    evaluation -= 200 * (myKingCornered || myCoordCornered);
+    evaluation += 100 * (enemKingCornered || enemCoordCornered);
+    evaluation -= 100 * (myKingCornered || myCoordCornered);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation;
