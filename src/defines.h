@@ -55,7 +55,8 @@ void prettyPrintBoard();
 // - whose side it is to play
 // - the fullmove counter, '-' if none
 // this function does not check for legal FENs nor does it try to correct unnecessary spaces.
-void loadFEN(const char* fen);
+// returns 1 on success and 0 on failure
+int loadFEN(const char* fen);
 
 // converts the given piece FEN to its corresponding value
 int convertFENToValue(const char v);

@@ -65,7 +65,7 @@ void prettyPrintBoard()
     puts("    a b c d e f g h");
 }
 
-void loadFEN(const char* fen)
+int loadFEN(const char* fen)
 {
     // clear all boards
     for (int i = 0; i < 17; i++)
@@ -93,7 +93,7 @@ void loadFEN(const char* fen)
         {
             // woops! not enough spaces to delimit string! error!
             printf("Could not load invalid FEN string %s\n", fen);
-            return;
+            return 0;
         }
         else if (fen[i] == '/')
         {
@@ -128,7 +128,7 @@ void loadFEN(const char* fen)
         {
             // this must be an invalid character.
             printf("Invalid character in FEN string %s when parsing board; could not recognize '%c'\n", fen, fen[i]);
-            return;
+            return 0;
         }
     }
 
@@ -151,7 +151,7 @@ void loadFEN(const char* fen)
     {
         // this must be an invalid character.
         printf("Invalid character in FEN string %s when parsing side-to-play; could not recognize '%c'\n", fen, fen[i]);
-        return;
+        return 0;
     }
 
     // skip over side-to-play and space
@@ -170,8 +170,10 @@ void loadFEN(const char* fen)
     {
         // this must be an invalid character.
         printf("Invalid character in FEN string %s when parsing full move counter; could not recognize '%c'\n", fen, fen[i]);
-        return;
+        return 0;
     }
+
+    return 1;
 }
 
 int convertFENToValue(const char v)

@@ -22,15 +22,25 @@ const int pieceValues[] =
     800,        // coordinator
     800,        // immobilizer
     500,        // chameleon
-    999999900   // king
+    0           // king (priceless)
+};
+
+// if a piece is immobilized, it drops in value.
+// note: pieces that immobilize the immobilizer back do not change in value.
+const int immobilizedPieceValues[] =
+{
+    0,          // empty
+    70,         // straddler
+    200,        // retractor
+    300,        // springer
+    700,        // coordinator (bonus if corner)
+    800,        // immobilizer
+    500,        // chameleon
+    -200,       // king (bonus if corner) which technically has a value of 0
 };
 
 int thinkingTime = -1;
 clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
-
-Move calculatingVariation[64]; // for debugging
-Move principalVariation[64];
-int maxDepth = 0;
 
 // greedy evaluation that counts material based on piece values
 int evaluate();
@@ -69,8 +79,19 @@ int main(void)
 
     srand(time(NULL));
 
-    // initial board set up
-    loadFEN(StartingFEN);
+    // prompt user for FEN
+    puts("Paste in the FEN:");
+    fflush(stdout);
+    
+    char chosenFEN[1000];
+    fgets(chosenFEN, 1000, stdin);
+
+    // load user's choice, or if that fails, the starting FEN
+    if (!loadFEN(chosenFEN))
+    {
+        puts("Loading starting FEN instead...");
+        loadFEN(StartingFEN);
+    }
 
     puts("Ready to play!");
 
@@ -182,25 +203,59 @@ int main(void)
 
 int evaluate()
 {
+    U64 enemyImmobilizer = position[notToPlay + immobilizer];
+    int enemyImmSq = pop_lsb(enemyImmobilizer);
+    U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
+
+    U64 myImmobilizer = position[toPlay + immobilizer];
+    int myImmSq = pop_lsb(myImmobilizer);
+    U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
+
     int evaluation = 0;
-    for (int i = 1; i <= 6; i++)
+    for (int i = 1; i <= 7; i++)
     {
         // count up my material
-        U64 myBoard = position[toPlay + i];
+        U64 myBoard = position[toPlay + i] & ~enemyInfl;
         while (myBoard)
         {
             evaluation += pieceValues[i];
             myBoard &= myBoard - 1;
         }
 
+        // count up my immobilized material
+        myBoard = position[toPlay + i] & enemyInfl;
+        while (myBoard)
+        {
+            evaluation += immobilizedPieceValues[i];
+            myBoard &= myBoard - 1;
+        }
+
         // count up opponent's material
-        U64 enemyBoard = position[notToPlay + i];
+        U64 enemyBoard = position[notToPlay + i] & ~myInfl;
         while (enemyBoard)
         {
             evaluation -= pieceValues[i];
             enemyBoard &= enemyBoard - 1;
         }
+
+        // count up opponent's immobilized material
+        enemyBoard = position[notToPlay + i] & myInfl;
+        while (enemyBoard)
+        {
+            evaluation -= immobilizedPieceValues[i];
+            enemyBoard &= enemyBoard - 1;
+        }
     }
+
+    int enemKingCornered = (myInfl & position[notToPlay + king]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + king];
+    int enemCoordCornered = (myInfl & position[notToPlay + coordinator]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + coordinator];
+
+    int myKingCornered = (enemyInfl & position[toPlay + king]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + king];
+    int myCoordCornered = (enemyInfl & position[toPlay + coordinator]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + coordinator];
+
+    // bonus if king OR coordinator are in an immobilizer's corner
+    evaluation += 200 * (enemKingCornered || enemCoordCornered);
+    evaluation -= 200 * (myKingCornered || myCoordCornered);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation;
@@ -208,9 +263,6 @@ int evaluate()
 
 Move getBestMove(int depth)
 {
-    memset(calculatingVariation, 0, sizeof(calculatingVariation));
-    maxDepth = depth;
-
     struct MoveList *movelist = generateMoves();
 
     if (movelist->size == 0)
@@ -234,9 +286,6 @@ Move getBestMove(int depth)
         }
 
         makeMove(m);
-
-        calculatingVariation[0] = m;
-        calculatingVariation[1] = 0;
 
         // try to maximize value
         int eval;
@@ -265,11 +314,6 @@ Move getBestMove(int depth)
         {
             alpha = eval;
             bestMove = m;
-            // calculating variation becomes our principal variation (best play)
-            for (int j = 0; calculatingVariation[j]; j++)
-            {
-                principalVariation[j] = calculatingVariation[j];
-            }
         }
     }
 
@@ -309,9 +353,6 @@ int think(int depth, int alpha, int beta)
         hasLegalMoves = 1;
 
         makeMove(m);
-
-        calculatingVariation[maxDepth - depth] = m;
-        calculatingVariation[maxDepth - depth + 1] = 0;
 
         int eval;
 
@@ -464,17 +505,8 @@ Move thinkFor(int time)
     Move bestMove = 0;
     while (getThinkAllowance())
     {
-        memset(principalVariation, 0, sizeof(principalVariation));
         printf("Searching at depth %d\n", depth + 1);
         Move candidate = getBestMove(++depth);
-
-        // print out the principal variation for this depth.
-        printf("Principal variation: ");
-        for (int i = 0; principalVariation[i]; i++)
-        {
-            printMove(principalVariation[i]);
-        }
-        printf("\n");
 
         if (getThinkAllowance())
         {
