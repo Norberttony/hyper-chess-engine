@@ -33,10 +33,10 @@ const int immobilizedPieceValues[] =
     70,         // straddler
     200,        // retractor
     300,        // springer
-    700,        // coordinator (bonus if corner)
-    400,        // immobilizer
+    800,        // coordinator (bonus if corner)
+    600,        // immobilizer
     500,        // chameleon
-    -100,       // king (bonus if corner) which technically has a value of 0
+    -300,       // king (bonus if corner) which technically has a value of 0
 };
 
 int thinkingTime = -1;
@@ -158,7 +158,7 @@ int main(void)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = thinkFor(200);
+            Move best = getBestMove(5);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -208,20 +208,20 @@ int evaluate()
     U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
 
     // if enemy immobilizer is immobilized, then it shouldn't be evaluated highly
-    int enemyImmImm = 0;//(enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
+    int enemyImmImm = (enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
 
     U64 myImmobilizer = position[toPlay + immobilizer];
     int myImmSq = pop_lsb(myImmobilizer);
     U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
 
     // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
-    int myImmImm = 0;//(myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
+    int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
 
     int evaluation = 0;
     for (int i = 1; i <= 7; i++)
     {
         // count up my material
-        U64 myBoard = position[toPlay + i] & ~(enemyInfl * !enemyImmImm);
+        U64 myBoard = position[toPlay + i] & ~(enemyInfl);// | (-1 * (i == immobilizer && myImmImm)));// * !enemyImmImm);
         while (myBoard)
         {
             evaluation += pieceValues[i];
@@ -232,12 +232,12 @@ int evaluate()
         myBoard = position[toPlay + i] & enemyInfl;
         while (myBoard)
         {
-            evaluation += immobilizedPieceValues[i] * !enemyImmImm;
+            evaluation += immobilizedPieceValues[i];// * !enemyImmImm;
             myBoard &= myBoard - 1;
         }
 
         // count up opponent's material
-        U64 enemyBoard = position[notToPlay + i] & ~(myInfl * !myImmImm);
+        U64 enemyBoard = position[notToPlay + i] & ~(myInfl);// | (-1 * (i == immobilizer && enemyImmImm)));// * !myImmImm);
         while (enemyBoard)
         {
             evaluation -= pieceValues[i];
@@ -248,7 +248,7 @@ int evaluate()
         enemyBoard = position[notToPlay + i] & myInfl;
         while (enemyBoard)
         {
-            evaluation -= immobilizedPieceValues[i] * !myImmImm;
+            evaluation -= immobilizedPieceValues[i];// * !myImmImm;
             enemyBoard &= enemyBoard - 1;
         }
     }

@@ -7,6 +7,8 @@
 #include "defines.h"
 #include "perft.h"
 
+#define NUM_TEST_SUITE_POSITIONS 31
+
 struct TestSuitePosition
 {
     const char* name;
