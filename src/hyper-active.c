@@ -52,7 +52,7 @@ int main(void)
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
 
-    runTestSuite();
+    //runTestSuite();
 
     srand(time(NULL));
 
@@ -135,7 +135,7 @@ int main(void)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = getBestMove(5);
+            Move best = thinkFor(200);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
