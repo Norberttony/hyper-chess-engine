@@ -31,4 +31,5 @@ function getRankFromSq(sq){
     return Math.floor(sq / 8);
 }
 
-module.exports = { algebraicToSquare, squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank, getFileFromSq, getRankFromSq };
+if (typeof module !== "undefined")
+    module.exports = { algebraicToSquare, squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank, getFileFromSq, getRankFromSq };

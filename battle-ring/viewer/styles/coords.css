@@ -1,0 +1,56 @@
+#files, #ranks {
+    font-weight: bold;
+    font-family: "Noto Sans", Sans-Serif;
+    padding-left: 2px;
+}
+
+#files div, #ranks div {
+    flex: 1;
+}
+
+#files div:nth-child(2n + 1), #ranks div:nth-child(2n) {
+    color: var(--secondary-color);
+}
+
+#files div:nth-child(2n), #ranks div:nth-child(2n + 1) {
+    color: var(--primary-color);
+}
+
+.game_container_container.flipped #files div:nth-child(2n + 1),
+.game_container_container.flipped #ranks div:nth-child(2n) {
+    color: var(--primary-color);
+}
+
+.game_container_container.flipped #files div:nth-child(2n),
+.game_container_container.flipped #ranks div:nth-child(2n + 1) {
+    color: var(--secondary-color);
+}
+
+#files {
+    display: flex;
+    flex-direction: row;
+
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    width: 100%;
+}
+
+.game_container_container.flipped #files {
+    flex-direction: row-reverse;
+}
+
+.game_container_container.flipped #ranks {
+    flex-direction: column;
+}
+
+#ranks {
+    display: flex;
+    flex-direction: column-reverse;
+    position: absolute;
+    right: 0.15vw;
+    top: 0px;
+    height: 100%;
+}
+
+

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+        <meta name = "description" content = "Invite a friend to play a game of Hyper Chess!">
+
+        <title>Hyper Chess</title>
+
+        <script src = "/socket.io/socket.io.js"></script>
+        
+        <link href = "styles/warn-bar.css"      rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/annotations.css"   rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/invite.css"        rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/panel.css"         rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/pgn.css"           rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/peer-info.css"     rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/coords.css"        rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/game.css"          rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/game-elems.css"    rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/highlights.css"    rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/style.css"         rel = "stylesheet" type = "text/css"/>
+
+        <!-- Style styles. yup. styles that style styles. stylish. -->
+        <link href = "styles/board-styles.css"  rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/piece-styles.css"  rel = "stylesheet" type = "text/css"/>
+        
+        <!-- game scripts -->
+        <script src = "scripts/game/coords.js"></script>
+        <script src = "scripts/game/move.js"></script>
+        <script src = "scripts/game/pre-game.js"></script>
+        <script src = "scripts/game/piece.js"></script>
+        <script src = "scripts/game/game.js"></script>
+        <script src = "scripts/game/test-suite.js"></script>
+
+        <!-- graphics scripts -->
+        <script defer src = "scripts/pgn-view/pgn-data.js"></script>
+        <script defer src = "scripts/graphics/san.js"></script>
+        <script defer src = "scripts/graphics/graphicState.js"></script>
+        <script defer src = "scripts/graphics/input.js"></script>
+        <script defer src = "scripts/graphics/pool.js"></script>
+        <script defer src = "scripts/graphics/promotion.js"></script>
+        <script defer src = "scripts/graphics/graphics.js"></script>
+        <script defer src = "scripts/graphics/board.js"></script>
+        <script defer src = "scripts/graphics/dialog.js"></script>
+        <script defer src = "scripts/graphics/resize.js"></script>
+        
+        <!-- graphical observers -->
+        <script defer src = "scripts/observers/audio.js"></script>
+        <script defer src = "scripts/observers/animations.js"></script>
+        <script defer src = "scripts/observers/annotator.js"></script>
+        <script defer src = "scripts/pgn-view/pgnviewer.js"></script>
+
+        <script defer src = "scripts/network/network.js"></script>
+
+    </head>
+    <body>
+
+        <div id = "container" class = "game_container_container blue cburnett">
+            <div id = "black_player" class = "player">
+                <span class = "connection"></span>
+                <span class = "name">Anonymous</span>
+            </div>
+            <div id = "white_player" class = "player">
+                <span class = "connection"></span>
+                <span class = "name">Anonymous</span>
+            </div>
+            <div id = "game_container" class = "game_container">
+                <div id = "game" class = "game">
+
+                </div>
+                <div id = "ranks"></div>
+                <div id = "files"></div>
+                <div class = "promoting"></div>
+                <!-- user annotations are drawn on canvas -->
+                <canvas class = "annotations" width = 1200 height = 1200></canvas>
+            </div>
+            <div id = "panel">
+                <span id = "output"></span>
+                <div id = "pgn_control">
+                    <button onclick = "PGNMoveFirst();">&lt;&lt;</button>
+                    <button onclick = "PGNMoveBack();">&lt;</button>
+                    <button onclick = "PGNMoveForward();">&gt;</button>
+                    <button onclick = "PGNMoveLast();">&gt;&gt;</button>
+                </div>
+                <div id = "pgn"></div>
+                <div id = "play-game-controls">
+                    <button class = "font-icon" data-icon = "" onclick = "flipBoard();"></button>
+                    <button id = "panel_draw" onclick = "offerDraw();" style = "display: none"><span>½</span></button>
+                </div>
+            </div>
+            <div id = "extra">
+                <textarea id = "pgnText" onfocus = "this.select();" spellcheck = "false"></textarea>
+                <button id = "panel_set-pgn" onclick = "setPGN();">Set PGN</button>
+                <input id = "fenText" onfocus = "this.select();">
+                <button id = "panel_set-fen" onclick = "setFEN();" spellcheck = "false">Set FEN</button>
+            </div>
+
+            <div id = "dragging"></div>
+        </div>
+
+    </body>
+</html>

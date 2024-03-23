@@ -1,0 +1,22 @@
+/* didn't know where to put this. this file styles the canvas is for drawing user annotations */
+
+.annotations {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    opacity: 0.5;
+    color: rgb(0, 78, 0);
+
+    /*
+        so that annotations doesn't block mouse button 1 events; the mouse button 2 listener is
+        attached to the game element. 
+    */
+    pointer-events: none;
+}
+
+.game_container_container.flipped .annotations {
+    transform: rotate(180deg);
+}

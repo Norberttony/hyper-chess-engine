@@ -1,7 +1,43 @@
+// create a web server so people can join and watch the games!
+const express = require("express");
+const http = require("http");
+
+const app = express();
+const server = http.createServer(app);
+
+const io = require("socket.io")(server);
+
+app.use(express.static(__dirname + "/viewer"));
+
+app.use(express.json());
+
+app.get("/", (req, res) => {
+    res.sendFile("index.html");
+});
+
+const sockets = [];
+
+const moves = [];
+
+io.on("connection", (socket) => {
+
+    sockets.push(socket);
+
+    for (const m of moves){
+        socket.emit("move", m);
+    }
+
+    //socket.on("makemove", socketMakeMove);
+
+});
+
+server.listen(8000);
+console.log("Listening to port 8000");
+
 
 const fs = require("fs");
 
-const { Board } = require("./game-logic/game");
+const { Board } = require("./viewer/scripts/game/game");
 const { Engine } = require("./engine");
 
 const botsDir = "./bots/";
@@ -53,6 +89,11 @@ function playGame(white, black, index, fen){
     const game = new Board();
     const positions = {};
     let lastCapture = 0;
+
+    // let clients know
+    for (const socket of sockets){
+        socket.emit("newgame", fen);
+    }
 
     game.loadFEN(fen);
 
@@ -108,6 +149,10 @@ function playGame(white, black, index, fen){
                     console.log(cmds[1]);
                     if (!m){
                         console.error("Could not find move");
+                    }else{
+                        for (const socket of sockets){
+                            socket.emit("move", cmds[1]);
+                        }
                     }
 
                     // fifty move rule stuff
@@ -188,17 +233,68 @@ function playGame(white, black, index, fen){
     });
 }
 
-// play many games
-(async () => {
-    // clear log file
-    //fs.writeFileSync(`${debugDir}_log.txt`, "");
+// user plays against engine
+/*
+console.log("Now playing against", engines[0]);
+const engineProc = engines[0].createProcess(playerVsEngineHandler);
 
+engineProc.start();
+engineProc.write("");   // fen
+engineProc.write("w");  // side to play
+
+function socketMakeMove(move){
+    console.log("Received move", move);
+    engineProc.write(move);
+    moves.push(move);
+}
+
+function playerVsEngineHandler(engine, data){
+    console.log(data);
+
+    const lines = data.split("\n");
+
+    for (const l of lines){
+        const cmds = l.trim().split(" ");
+
+        switch(cmds[0]){
+            case "makemove":
+                moves.push(cmds[1]);
+                for (const socket of sockets)
+                    socket.emit("move", cmds[1]);
+                console.log(cmds[1]);
+                break;
+        }
+    }
+}
+*/
+
+// play many games
+
+(async () => {
     let e1Wins = 0;
     let e2Wins = 0;
     let draws = 0;
     let whiteWins = 0;
     let blackWins = 0;
-    for (let i = 0 / 2; i < 1000 / 2; i++){
+
+    // read from log file to determine starting point and wins
+    const logFileContent = fs.readFileSync(`${debugDir}_log.txt`).toString();
+    const logFileLines = logFileContent.split("\n");
+
+    logFileLines.splice(logFileLines.length - 1, 1);
+
+    if (logFileLines.length >= 2){
+        const logFileH2H = logFileLines[logFileLines.length - 2].split(" ");
+        const logFileWB = logFileLines[logFileLines.length - 1].split(" ");
+
+        e1Wins = parseInt(logFileH2H[1]);
+        e2Wins = parseInt(logFileH2H[5]);
+        draws = parseInt(logFileH2H[3]);
+        whiteWins = parseInt(logFileWB[1]);
+        blackWins = parseInt(logFileWB[5]);
+    }
+    
+    for (let i = (e1Wins + draws + e2Wins) / 2; i < 1000 / 2; i++){
         if (positions.length == 0){
             console.log("out of positions!");
             break;

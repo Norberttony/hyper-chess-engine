@@ -1,8 +1,8 @@
 
-const fs = require("fs");
+import fs from "fs";
 
-const { Piece } = require("./game-logic/piece");
-const { Board, StartingFEN } = require("./game-logic/game");
+import { Piece } from "./game-logic/piece.js";
+import { Board, StartingFEN } from "./game-logic/game.js";
 
 const contents = fs.readFileSync("./pgn.txt").toString();
 

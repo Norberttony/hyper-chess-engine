@@ -1,0 +1,105 @@
+.game > * {
+    position: absolute;
+    width: 12.5%;
+    height: 12.5%;
+}
+
+.grMove {
+    z-index: 3 !important;
+}
+
+#element-pool {
+    display: none;
+}
+
+.dragged {
+    opacity: 0.5;
+}
+
+#dragging {
+    display: none;
+    background-size: 700% 200%;
+
+    position: absolute;
+    width: var(--piece-width);
+    height: var(--piece-height);
+
+    pointer-events: none;
+
+    z-index: 3;
+}
+
+.piece {
+    background-size: 700% 200%;
+    image-rendering: auto;
+
+    position: absolute;
+
+    will-change: transform;
+
+    transform: translate(0px, 0px);
+    transition: transform 0.1s ease-in-out;
+
+    left: 0px;
+    top: 0px;
+
+    z-index: 2;
+}
+
+/* === Promoting === */
+
+.promoting {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
+
+.promoting.flipped {
+    flex-direction: column-reverse;
+}
+
+.promoting > * {
+    background-size: 600% 200%;
+
+    width: var(--piece-width);
+    height: var(--piece-height);
+}
+
+.promoting.black > * {
+    background-position-y: 100%;
+}
+
+.promoting {
+    z-index: 2;
+    pointer-events: none;
+}
+
+.promoting > * {
+    background-color: gray;
+    border-radius: 100%;
+    
+    width: var(--piece-width);
+    height: var(--piece-height);
+    z-index: 3;
+    pointer-events: all;
+}
+
+/* === Glyphs === */
+
+.game .glyph {
+    background-color: black;
+    position: absolute;
+    border-radius: 100%;
+    aspect-ratio: 1 / 1;
+    height: 45%;
+    text-align: center;
+    right: 0px;
+    transform: translate(35%, -35%);
+    line-height: 0.9;
+}
+
+.game .font-icon.glyph::before {
+    font-size: calc(0.4 * var(--piece-height));
+}

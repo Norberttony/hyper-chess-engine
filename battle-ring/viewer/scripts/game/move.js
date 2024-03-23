@@ -4,7 +4,8 @@
 //  - "captures"    is an array of {square, captured} where "square" is the location of the
 //                      captured piece and "captured" is the piece itself.
 
-const { squareToAlgebraic } = require("./coords");
+if (typeof(exports) !== "undefined")
+    var { squareToAlgebraic } = require("./coords");
 
 class Move {
     constructor(to, from, captures = []){
@@ -20,4 +21,5 @@ class Move {
     }
 }
 
-module.exports = { Move };
+if (typeof(exports) !== "undefined")
+    module.exports = { Move };

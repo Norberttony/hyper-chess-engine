@@ -1,0 +1,38 @@
+.game_container_container {
+    --piece-width: calc(var(--game-width) / 8);
+    --piece-height: calc(var(--game-height) / 8);
+
+    display: grid;
+
+    margin: auto;
+}
+
+.game_container {
+    --primary-color: rgb(47 88 139);
+    --secondary-color: rgb(234 233 210);
+    --move-highlight-color: #262421;
+    --last-move-highlight-color: rgb(0, 165, 255);
+
+    --piece-width: calc(var(--game-width) / 8);
+    --piece-height: calc(var(--game-height) / 8);
+
+    position: relative;
+    grid-area: game;
+
+    margin: auto;
+
+    width: var(--game-width);
+    height: var(--game-height);
+
+    user-select: none;
+}
+
+.game {
+    background-size: 100%;
+    image-rendering: pixelated;
+
+    position: relative;
+
+    width: var(--game-width);
+    height: var(--game-height);
+}

@@ -2,11 +2,13 @@
 
 // this code REPEATEDLY violates the DRY principle. read at your own risk.
 
-const { algebraicToSquare, squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank, getFileFromSq, getRankFromSq } = require("./coords");
-const { Piece, PieceTypeToFEN, FENToPiece, PieceASCII } = require("./piece");
-const { Move } = require("./move");
-const { numSquaresToEdge, dirOffsets } = require("./pre-game");
-const { getMoveSAN } = require("./san");
+if (typeof module !== "undefined"){
+    var { algebraicToSquare, squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank, getFileFromSq, getRankFromSq } = require("./coords");
+    var { Piece, PieceTypeToFEN, FENToPiece, PieceASCII } = require("./piece");
+    ({ Move } = require("./move"));
+    var { numSquaresToEdge, dirOffsets } = require("./pre-game");
+    var { getMoveSAN } = require("./san");
+}
 
 // removes all glyphs from SAN
 function removeGlyphs(san){
@@ -962,6 +964,17 @@ class Board {
             }
         }
     }
+
+    getLANMove(LAN){
+        const moves = this.generateMoves(true);
+
+        for (const m of moves){
+            if (m.uci == LAN){
+                return m;
+            }
+        }
+    }
 }
 
-module.exports = { Board, StartingFEN };
+if (typeof(exports) !== "undefined")
+    module.exports = { Board, StartingFEN };

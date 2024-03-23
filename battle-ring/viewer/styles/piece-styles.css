@@ -1,0 +1,58 @@
+/* handles displaying proper images for pieces based on the indicated styles */
+
+/* unfortunately, this app uses tiling, but some of the images are not aligned that way. */
+
+/* CBURNETT */
+.game_container_container.cburnett .piece,
+.game_container_container.cburnett #dragging,
+.game_container_container.cburnett .promoting > * {
+    background-image: url(../images/pieces/cburnett.png);
+}
+
+.game_container_container.cburnett .k {
+    background-position-x: 0%;
+}
+.game_container_container.cburnett .q {
+    background-position-x: 16.666666666666666%;
+}
+.game_container_container.cburnett .b {
+    background-position-x: 33.333333333333336%;
+}
+.game_container_container.cburnett .n {
+    background-position-x: 50%;
+}
+.game_container_container.cburnett .r {
+    background-position-x: 66.66666666666667%;
+}
+.game_container_container.cburnett .p {
+    background-position-x: 83.33333333333333%;
+}
+.game_container_container.cburnett .u {
+    background-position-x: 100%;
+}
+
+/* MERIDA */
+.game_container_container.merida .piece,
+.game_container_container.merida #dragging,
+.game_container_container.merida .promoting > * {
+    background-image: url(../images/pieces/merida.png);
+}
+
+.game_container_container.merida .r {
+    background-position-x: 0%;
+}
+.game_container_container.merida .n {
+    background-position-x: 20%;
+}
+.game_container_container.merida .b {
+    background-position-x: 40%;
+}
+.game_container_container.merida .q {
+    background-position-x: 60%;
+}
+.game_container_container.merida .k {
+    background-position-x: 80%;
+}
+.game_container_container.merida .p {
+    background-position-x: 100%;
+}

@@ -1,0 +1,24 @@
+.moveHighlight {
+    opacity: 0.25;
+    border-radius: 100%;
+    z-index: 3;
+}
+
+.moveHighlight:not(.capture){
+    background-color: var(--move-highlight-color);
+    background-clip: content-box;
+    box-sizing: border-box;
+    padding: 4.2%;
+}
+
+.moveHighlight.capture {
+    border: 8px solid var(--move-highlight-color);
+    box-sizing: border-box;
+}
+
+.lastMoveHighlight {
+    background-color: var(--last-move-highlight-color);
+    opacity: 0.5;
+    z-index: 0;
+    will-change: transform;
+}

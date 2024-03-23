@@ -1,0 +1,42 @@
+.player {
+    background-color: #181818;
+
+    display: none;
+    align-items: center;
+
+    font-size: 18px;
+    width: calc(100%);
+    padding: 2px 4px;
+    box-sizing: border-box;
+}
+.game_container_container #white_player,
+.game_container_container.flipped #black_player {
+    grid-area: plyr_dn;
+    border-radius: 0px 0px 5px 5px;
+}
+.game_container_container #black_player,
+.game_container_container.flipped #white_player {
+    grid-area: plyr_up;
+    border-radius: 5px 5px 0px 0px;
+}
+.name {
+    margin-left: 5px;
+}
+
+.connection {
+    display: inline-block;
+    border: 2px solid #555;
+    border-radius: 100%;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+}
+.connection.disconnected {
+    background: red;
+}
+.connection.connecting {
+    background: yellow;
+}
+.connection.connected {
+    background: #00e700;
+}

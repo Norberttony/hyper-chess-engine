@@ -1,0 +1,66 @@
+#panel {
+    margin: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    grid-area: panel;
+    max-height: var(--game-height);
+}
+
+#extra {
+    margin-top: 15px;
+    grid-area: extra;
+}
+
+input:not([type="checkbox"]), textarea {
+    background-color: black;
+    color: #EEE;
+    border: 1px solid gray;
+    width: 100%;
+}
+
+select {
+    background-color: black;
+    color: #EEE;
+    /* width: 30%; */
+    padding: 3px;
+    border-radius: 50px;
+    border: 2px solid #EEE;
+}
+
+.font-icon::before {
+    font-family: 'Chess';
+    font-size: x-large;
+    content: attr(data-icon);
+}
+
+#play-game-controls {
+    display: flex;
+}
+
+#play-game-controls > button {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+/* this is some bad CSS but... oh well... */
+#panel_draw {
+    font-size: x-large;
+}
+#panel_draw::before {
+    content: none;
+}
+
+#panel_send-invite::before, #pre-game-controls button {
+    font-size: large;
+    width: 100%;
+}
+
+#pre-game-controls button {
+    margin-bottom: 9px;
+    border-radius: 11px;
+}
+
+#panel_rematch {
+    display: none;
+}

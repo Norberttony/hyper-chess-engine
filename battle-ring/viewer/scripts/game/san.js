@@ -1,6 +1,8 @@
 
-const { squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank } = require("./coords");
-const { Piece, PieceASCII } = require("./piece");
+if (typeof(exports) !== "undefined"){
+    var { squareToAlgebraic, squareToAlgebraicFile, squareToAlgebraicRank } = require("./coords");
+    var { Piece, PieceASCII } = require("./piece");
+}
 
 function getMoveSAN(board, move, moveList = board.generateMoves()){
     let SAN;
@@ -72,4 +74,5 @@ function getMoveSAN(board, move, moveList = board.generateMoves()){
     return SAN;
 }
 
-module.exports = { getMoveSAN };
+if (typeof(exports) !== "undefined")
+    module.exports = { getMoveSAN };
