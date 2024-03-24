@@ -250,8 +250,8 @@ int isAttackingKing()
     U64 coordPieceBoard = position[toPlay + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
     U64 coordBoard = ((coordPieceBoard & notImmInfl) > 0) * (
-        rookAttacks[coordSq][((rookMasks[coordSq] & totalBoard) * rookMagics[coordSq]) >> (64 - rookMaskBitCount[coordSq])] |
-        bishopAttacks[coordSq][((bishopMasks[coordSq] & totalBoard) * bishopMagics[coordSq]) >> (64 - bishopMaskBitCount[coordSq])]
+        get_rook_attacks(coordSq, totalBoard) |
+        get_bishop_attacks(coordSq, totalBoard)
     ) & ~totalBoard;
 
     U64 chamBoard = position[toPlay + chameleon];
@@ -286,15 +286,15 @@ int isAttackingKing()
     // springer 1
     int springer1Sq = pop_lsb(springerBoard);
     U64 springer1Board = (springerBoard > 0) * (
-        rookAttacks[springer1Sq][((rookMasks[springer1Sq] & totalBoard) * rookMagics[springer1Sq]) >> (64 - rookMaskBitCount[springer1Sq])] |
-        bishopAttacks[springer1Sq][((bishopMasks[springer1Sq] & totalBoard) * bishopMagics[springer1Sq]) >> (64 - bishopMaskBitCount[springer1Sq])]
+        get_rook_attacks(springer1Sq, totalBoard) |
+        get_bishop_attacks(springer1Sq, totalBoard)
     ) & targetKing;
 
     // springer 2
     int springer2Sq = pop_lsb(springerBoard - 1 & springerBoard);
     U64 springer2Board = ((springerBoard - 1 & springerBoard) > 0) * (
-        rookAttacks[springer2Sq][((rookMasks[springer2Sq] & totalBoard) * rookMagics[springer2Sq]) >> (64 - rookMaskBitCount[springer2Sq])] |
-        bishopAttacks[springer2Sq][((bishopMasks[springer2Sq] & totalBoard) * bishopMagics[springer2Sq]) >> (64 - bishopMaskBitCount[springer2Sq])]
+        get_rook_attacks(springer2Sq, totalBoard) |
+        get_bishop_attacks(springer2Sq, totalBoard)
     ) & targetKing;
 
     int isSpringerCheck =
@@ -328,13 +328,13 @@ int isAttackingKing()
 
     int isStraddlerCheck =
         // check if straddler is ready to take the king because of a straddler above
-        isAbove && (belowSq < 64) && !((targetKing << 8) & totalBoard) && (rookAttacks[belowSq][((rookMasks[belowSq] & totalBoard) * rookMagics[belowSq]) >> (64 - rookMaskBitCount[belowSq])] & straddlerBoard) ||
+        isAbove && (belowSq < 64) && !((targetKing << 8) & totalBoard) && (get_rook_attacks(belowSq, totalBoard) & straddlerBoard) ||
         // check if straddler is ready to take the king because of a straddler below
-        isBelow && (aboveSq >= 0) && !((targetKing >> 8) & totalBoard) && (rookAttacks[aboveSq][((rookMasks[aboveSq] & totalBoard) * rookMagics[aboveSq]) >> (64 - rookMaskBitCount[aboveSq])] & straddlerBoard) ||
+        isBelow && (aboveSq >= 0) && !((targetKing >> 8) & totalBoard) && (get_rook_attacks(aboveSq, totalBoard) & straddlerBoard) ||
         // check if straddler is ready to take the king because of a straddler to the left
-        isLeft && targetKing & ~files[7] && !((targetKing << 1) & totalBoard) && (rookAttacks[rightSq][((rookMasks[rightSq] & totalBoard) * rookMagics[rightSq]) >> (64 - rookMaskBitCount[rightSq])] & straddlerBoard) ||
+        isLeft && targetKing & ~files[7] && !((targetKing << 1) & totalBoard) && (get_rook_attacks(rightSq, totalBoard) & straddlerBoard) ||
         // check if straddler is ready to take the king because of a straddler to the left
-        isRight && targetKing & ~files[0] && !((targetKing >> 1) & totalBoard) && (rookAttacks[leftSq][((rookMasks[leftSq] & totalBoard) * rookMagics[leftSq]) >> (64 - rookMaskBitCount[leftSq])] & straddlerBoard);
+        isRight && targetKing & ~files[0] && !((targetKing >> 1) & totalBoard) && (get_rook_attacks(leftSq, totalBoard) & straddlerBoard);
 
     return position[notToPlay + king] & attacked || isCheck || isSpringerCheck || isRetractorCheck || isStraddlerCheck;
 }

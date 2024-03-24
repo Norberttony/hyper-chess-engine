@@ -7,7 +7,7 @@
 #include "defines.h"
 #include "perft.h"
 
-#define NUM_TEST_SUITE_POSITIONS 51
+#define NUM_TEST_SUITE_POSITIONS 52
 
 struct TestSuitePosition
 {
@@ -20,6 +20,11 @@ struct TestSuitePosition
     int pieceCaptures[20];
     int checkmates[20];
 };
+
+// shorthand
+typedef struct TestSuitePosition pos;
+
+//pos straddlerPinTests[];
 
 // runs all of the positions in the test suite.
 // returns 0 on failure and 1 on success

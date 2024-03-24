@@ -1,9 +1,6 @@
 
 #include "test-suite.h"
 
-// shorthand
-typedef struct TestSuitePosition pos;
-
 pos positions[NUM_TEST_SUITE_POSITIONS] = {
     {
         "Starting position",
@@ -390,18 +387,18 @@ pos positions[NUM_TEST_SUITE_POSITIONS] = {
     {
 		"Retractor-coordinator double pin",
 		"6R1/8/4b3/4Q3/4k1p1/8/8/4K3 b -",
-		{1, 4, 151, 3281, 121670},
-		{0, 1, 4, 99, 2056},
-		{0, 1, 4, 100, 2057},
-		{0, 0, 0, 2, 2}
-	},
-    {
-		"Coordinator deals with retractor pin",
-		"8/8/4r3/4Q3/4k3/7K/8/8 b -",
 		{1, 6, 212, 3682, 135249},
 		{0, 0, 7, 107, 4620},
 		{0, 0, 7, 108, 4666},
 		{0, 0, 1, 3, 153}
+	},
+    {
+		"Coordinator deals with retractor pin",
+		"8/8/4r3/4Q3/4k3/7K/8/8 b -",
+		{1, 8, 36, 897, 9658},
+		{0, 5, 8, 28, 171},
+		{0, 5, 8, 28, 171},
+		{0, 0, 0, 0, 0}
 	},
     {
 		"Straddler retractor pin",
@@ -418,6 +415,16 @@ pos positions[NUM_TEST_SUITE_POSITIONS] = {
 		{0, 2, 2, 171, 221},
 		{0, 2, 2, 171, 221},
 		{0, 0, 0, 0, 0}
+	},
+
+    // Enemy blockers
+    {
+		"No capture blocker",
+		"R1N5/4Q3/3Pp2P/4q1B1/4K3/8/7k/5B2 w -",
+		{1, 91, 1502, 101365, 2024983},
+		{0, 3, 78, 6241, 50174},
+		{0, 3, 78, 6253, 50186},
+		{0, 2, 2, 1989, 1989}
 	}
 };
 

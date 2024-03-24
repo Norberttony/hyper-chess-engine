@@ -54,6 +54,8 @@ int main(void)
 
     //runTestSuite();
 
+    //return 0;
+
     srand(time(NULL));
 
     // prompt user for FEN

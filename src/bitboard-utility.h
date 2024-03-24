@@ -10,6 +10,7 @@ typedef unsigned long long U64;
 // macros
 #define set_bit(board, sq) (board) | (1ULL << sq)
 #define pop_lsb(board) DebruijnIndexes64[(((board) & -(board)) * DebruinSequence64) >> 58]
+#define remove_lsb(board) ((board - 1) & board)
 
 
 extern const U64 DebruinSequence64;

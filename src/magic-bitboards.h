@@ -13,6 +13,9 @@ extern U64 bishopMasks[64];
 extern int bishopMaskBitCount[64];
 extern U64 bishopAttacks[64][512];
 
+#define get_rook_attacks(sq, blockers) (rookAttacks[sq][((rookMasks[sq] & blockers) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])])
+#define get_bishop_attacks(sq, blockers) bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+
 
 void initMagicBitboards(int isBishop);
 

@@ -39,7 +39,6 @@ const int move_cham_n_mask  = 0b0000010000000000000000000000;
 
 const int move_captMask     = 0b1111111111111000000000000000; // all capture bits
 
-int rookOffsets[] = {-8, -1, 1, 8};
 U64 straddlerBounds[] = {
     18446744073709486080ULL,// up
     18229723555195321596ULL,// left
@@ -88,7 +87,7 @@ struct MoveList* generateMoves()
         int sq = pop_lsb(straddlers);
 
         // generate moves
-        U64 moves = (rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])]) & ~totalBoard;
+        U64 moves = get_rook_attacks(sq, totalBoard) & ~totalBoard;
 
         U64 straddlerCaptures = moves & straddlerCaptureBoard;
 
@@ -132,8 +131,8 @@ struct MoveList* generateMoves()
         U64 immBoard = position[toPlay + immobilizer] & (notImmInfl & ~(kingMoves[cham1] * (chamBoard > 0)) & ~(kingMoves[cham2] * (chamBoard2 > 0)));
         int sq = pop_lsb(immBoard);
         U64 moves = (immBoard > 0) * (
-            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
-            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+            get_rook_attacks(sq, totalBoard) |
+            get_bishop_attacks(sq, totalBoard)
         ) & ~totalBoard;
         generateImmobilizerMoves(sq, moves, list);
     }
@@ -143,8 +142,8 @@ struct MoveList* generateMoves()
         U64 coordBoard = position[toPlay + coordinator] & notImmInfl;
         int sq = pop_lsb(coordBoard);
         U64 moves = (coordBoard > 0) * (
-            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
-            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+            get_rook_attacks(sq, totalBoard) |
+            get_bishop_attacks(sq, totalBoard)
         ) & ~totalBoard;
         generateCoordinatorMoves(sq, moves, list);
     }
@@ -165,8 +164,8 @@ struct MoveList* generateMoves()
 
         // generate moves
         U64 moves =
-            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
-            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
+            get_rook_attacks(sq, totalBoard) |
+            get_bishop_attacks(sq, totalBoard);
 
         generateSpringerMoves(sq, moves & ~totalBoard, list);
         generateSpringerCaptures(sq, moves & position[notToPlay], list);
@@ -179,8 +178,8 @@ struct MoveList* generateMoves()
         U64 retractorBoard = position[toPlay + retractor] & notImmInfl;
         int sq = pop_lsb(retractorBoard);
         U64 moves = (retractorBoard > 0) * (
-            rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])] |
-            bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])]
+            get_rook_attacks(sq, totalBoard) |
+            get_bishop_attacks(sq, totalBoard)
         );
 
         // consider moves separately from (potential) captures.
@@ -190,6 +189,8 @@ struct MoveList* generateMoves()
 
     // chameleon moves
     U64 chameleons = position[toPlay + chameleon] & notImmInfl;
+
+    // handle chameleon teaming up with the straddler (or other chameleons)
     U64 chamUpBoard = ((position[notToPlay + straddler] << 8) & ((position[toPlay + chameleon] | position[toPlay + straddler]) << 16));
     U64 chamLeftBoard = (
         ((position[notToPlay + straddler] << 1) & ((position[toPlay + chameleon] | position[toPlay + straddler]) << 2))
@@ -202,8 +203,8 @@ struct MoveList* generateMoves()
     {
         int sq = pop_lsb(chameleons);
 
-        U64 rookMoves = rookAttacks[sq][((rookMasks[sq] & totalBoard) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])];
-        U64 bishopMoves = bishopAttacks[sq][((bishopMasks[sq] & totalBoard) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])];
+        U64 rookMoves = get_rook_attacks(sq, totalBoard);
+        U64 bishopMoves = get_bishop_attacks(sq, totalBoard);
 
         generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list, chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard);
         generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, list);

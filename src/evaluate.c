@@ -6,10 +6,10 @@ const int pieceValues[] =
     0,          // empty
     100,        // straddler
     300,        // retractor
-    400,        // springer
-    800,        // coordinator
-    800,        // immobilizer
-    500,        // chameleon
+    600,        // springer
+    1100,       // coordinator
+    1300,       // immobilizer
+    900,        // chameleon
     0           // king (priceless)
 };
 
@@ -19,12 +19,12 @@ const int immobilizedPieceValues[] =
 {
     0,          // empty
     90,         // straddler
-    200,        // retractor
-    300,        // springer
-    800,        // coordinator (bonus if corner)
-    600,        // immobilizer
-    500,        // chameleon
-    -250,       // king (bonus if corner) which technically has a value of 0
+    250,        // retractor
+    550,        // springer
+    1000,       // coordinator (bonus if corner)
+    1250,       // immobilizer
+    890,        // chameleon
+    -200,       // king (bonus if corner) which technically has a value of 0
 };
 
 const int pieceSquareTables[7][64] =
@@ -34,10 +34,10 @@ const int pieceSquareTables[7][64] =
           0,   0,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0, // consider changing :)
          10,  10,   5,   5,   5,   5,  10,  10,
          -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5,
-          8,   8,  10,  10,  10,  10,   8,   8,
+          5,   5,   5,   5,   5,   5,   5,   5,
           0,   0,   0,   0,   0,   0,   0,   0
     },
     // for retractor
@@ -46,7 +46,7 @@ const int pieceSquareTables[7][64] =
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0, 10, 10, 10, 10,  0,  0,
+         0,  0, 10, 10, 10, 10,  0,  0, // -5 for edges and -10 for corners
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0
@@ -86,14 +86,14 @@ const int pieceSquareTables[7][64] =
     },
     // for chameleon
     {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -30, -30, -30, -30, -30, -30, -30, -30,
+        -20, -20, -20, -20, -20, -20, -20, -20,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0
     },
     // for king
     {
@@ -168,9 +168,47 @@ int evaluate()
     int myCoordCornered = (enemyInfl & position[toPlay + coordinator]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + coordinator];
 
     // bonus if king OR coordinator are in an immobilizer's corner
-    evaluation += 100 * (enemKingCornered || enemCoordCornered);
-    evaluation -= 100 * (myKingCornered || myCoordCornered);
+    evaluation += 150 * (enemKingCornered || enemCoordCornered);
+    evaluation -= 150 * (myKingCornered || myCoordCornered);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation;
+}
+
+int moveCaptureValue(Move m)
+{
+    switch (m & move_typeMask)
+    {
+        case straddler:
+            return
+                pieceValues[(m & move_c1Mask) >> 15] +
+                pieceValues[(m & move_c2Mask) >> 18] +
+                pieceValues[(m & move_c3Mask) >> 21] +
+                pieceValues[(m & move_c4Mask) >> 24];
+        case retractor:
+        case springer:
+            return pieceValues[(m & move_c1Mask) >> 15];
+        case coordinator:
+            return
+                pieceValues[(m & move_c1Mask) >> 15] +
+                pieceValues[(m & move_c2Mask) >> 18];
+        case immobilizer:
+            return 0;
+        case chameleon:
+            return
+                pieceValues[(m & move_cham_u_mask) > 0] +
+                pieceValues[(m & move_cham_l_mask) > 0] +
+                pieceValues[(m & move_cham_r_mask) > 0] +
+                pieceValues[(m & move_cham_d_mask) > 0] +
+
+                ((m & (move_cham_d1_mask | move_cham_d2_mask)) > 0) * pieceValues[coordinator] +
+                ((m & move_cham_q_mask) > 0) * pieceValues[retractor] +
+                ((m & move_cham_n_mask) > 0) * pieceValues[springer];
+        case king:
+            return
+                pieceValues[(m & move_c1Mask) >> 15] +
+                pieceValues[(m & move_c2Mask) >> 18] +
+                pieceValues[(m & move_c3Mask) >> 21] +
+                ((m & move_kingcmask) > 0) * pieceValues[coordinator];
+    }
 }
