@@ -8,8 +8,9 @@ const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
 
 int toPlay = white;
 int notToPlay = black;
-int fullmove = 0;
-int pieceList[64];
+int halfmove = 0;
+int pieceListStore[80];
+int* pieceList = pieceListStore + 8;
 
 U64 zobristHashes[ZOBRIST_HASH_COUNT];
 U64 zobristHash = 0;
@@ -63,6 +64,8 @@ void prettyPrintBoard()
 
     // file names
     puts("    a b c d e f g h");
+
+    printf("%llu\n", zobristHash);
 }
 
 int loadFEN(const char* fen)
@@ -119,7 +122,8 @@ int loadFEN(const char* fen)
             pieceList[f + r * 8] = val;
 
             // update zobrist hash
-            zobristHash ^= zobristHashes[64 * (val - 1) + f + r * 8 + 6 * 64 * !!toPlay];
+            zobristHash ^= get_zobrist_hash(f + r * 8, val, isupper(fen[i]));
+            //printf("Added %llu\n", get_zobrist_hash(f + r * 8, val, isupper(fen[i])));
 
             // next square!
             f++;
@@ -140,7 +144,7 @@ int loadFEN(const char* fen)
     {
         toPlay = white;
         notToPlay = black;
-        zobristHash ^= zobristHashes[64 * 14];
+        zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
     }
     else if (fen[i] == 'b')
     {
@@ -157,14 +161,14 @@ int loadFEN(const char* fen)
     // skip over side-to-play and space
     i += 2;
 
-    // determine fullmove counter
+    // determine halfmove counter
     if (fen[i] == '-')
     {
-        fullmove = -1;
+        halfmove = 0;
     }
     else if (isdigit(fen[i]))
     {
-        fullmove = (int)(fen[i] - '0');
+        halfmove = 2 * (int)(fen[i] - '0');
     }
     else
     {
@@ -174,6 +178,66 @@ int loadFEN(const char* fen)
     }
 
     return 1;
+}
+
+char* getFEN()
+{
+    char* fen = (char*)malloc(sizeof(char) * 2000);
+    int index = 0;
+
+    for (int r = 0; r < 8; r++)
+    {
+        int empty = 0;
+        for (int f = 0; f < 8; f++)
+        {
+            int sq = f + r * 8;
+
+            // add piece onto the board
+            if (pieceList[sq])
+            {
+                if (empty > 0)
+                {
+                    fen[index++] = '0' + empty;
+                    empty = 0;
+                }
+
+                char pieceChar = pieceFEN[pieceList[sq]];
+                if (position[black] & (1ULL << sq))
+                {
+                    pieceChar = tolower(pieceChar);
+                }
+                fen[index++] = pieceChar;
+            }
+            else
+            {
+                empty++;
+            }
+        }
+        if (empty > 0)
+        {
+            fen[index++] = '0' + empty;
+        }
+        if (r < 7)
+            fen[index++] = '/';
+    }
+
+    fen[index++] = ' ';
+
+    if (toPlay == white)
+    {
+        fen[index++] = 'w';
+    }
+    else
+    {
+        fen[index++] = 'b';
+    }
+
+    fen[index++] = ' ';
+
+    fen[index++] = '-';
+    fen[index++] = '\0';
+
+    return fen;
 }
 
 int convertFENToValue(const char v)
@@ -216,7 +280,7 @@ void printPieceList()
 
 void generateZobristHashes()
 {
-    srand(490235675);
+    srand(5465875);
     for (int i = 0; i < ZOBRIST_HASH_COUNT; i++)
     {
         zobristHashes[i] = randomU64();

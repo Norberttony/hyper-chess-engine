@@ -2,11 +2,11 @@
 .PHONY: de-bruijn-gen
 
 all:
-	gcc -O2 src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c -o bin/hyper-active
+	gcc -O2 src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c src/transposition-table.c -o bin/hyper-active
 	./bin/hyper-active
 
 debug:
-	gcc -O2 src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c -g -o bin/hyper-active
+	gcc src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c src/transposition-table.c -g -o bin/hyper-active
 	./bin/hyper-active
 
 magic-gen:
