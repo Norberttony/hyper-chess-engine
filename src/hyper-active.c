@@ -60,14 +60,9 @@ int main(void)
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
 
-    runTestSuite();
+    //runTestSuite();
 
-    return 0;
-
-    loadFEN(StartingFEN);
-    getBestMove(8);
-
-    return 0;
+    //return 0;
 
     srand(time(NULL));
 
@@ -139,11 +134,9 @@ int main(void)
                 puts("result 1/2-1/2");
             }
             fflush(stdout);
-            free(movelist);
             gameOver = 1;
             break;
         }
-        free(movelist);
 
         // time to consider which moves are played
         if (mySide == toPlay)
@@ -455,7 +448,6 @@ int thinkCaptures(int alpha, int beta)
 
     if (size == 0)
     {
-        free(movelist);
         return 0; // no moves!
     }
 
