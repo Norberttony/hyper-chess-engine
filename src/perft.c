@@ -9,21 +9,21 @@ struct MoveCounter divide(int depth)
         return counter;
     }
 
-    struct MoveList* moves = generateMoves();
+    Move moves[MAX_MOVES];
+    int size = generateMoves((Move*)moves);
 
-    if (moves->size == 0)
+    if (size == 0)
     {
         struct MoveCounter counter = { 1, 0, 0, 0 };
-        free(moves);
         return counter;
     }
 
     struct MoveCounter counter = { 0, 0, 0, 0 };
     struct MoveCounter temp;
 
-    for (int i = 0; i < moves->size; i++)
+    for (int i = 0; i < size; i++)
     {
-        Move move = moves->list[i];
+        Move move = moves[i];
 
         if (!isMoveLegal(move))
         {
@@ -66,8 +66,6 @@ struct MoveCounter divide(int depth)
         unmakeMove(move);
     }
 
-    free(moves);
-    
     return counter;
 }
 
@@ -79,12 +77,12 @@ struct MoveCounter countMoves(int depth)
         return counter;
     }
 
-    struct MoveList* moves = generateMoves();
+    Move moves[MAX_MOVES];
+    int size = generateMoves((Move*)moves);
 
-    if (moves->size == 0)
+    if (size == 0)
     {
         struct MoveCounter counter = { 1, 0, 0, 0 };
-        free(moves);
         return counter;
     }
 
@@ -92,9 +90,9 @@ struct MoveCounter countMoves(int depth)
     struct MoveCounter counter = { 0, 0, 0, 0 };
     struct MoveCounter temp;
 
-    for (int i = 0; i < moves->size; i++)
+    for (int i = 0; i < size; i++)
     {
-        Move move = moves->list[i];
+        Move move = moves[i];
 
         if (!isMoveLegal(move))
         {
@@ -133,8 +131,6 @@ struct MoveCounter countMoves(int depth)
         unmakeMove(move);
     }
 
-    free(moves);
-    
     return counter;
 }
 
@@ -192,11 +188,12 @@ int countCaptures(Move move)
 
 int chooseMove(int startSq, int endSq)
 {
-    struct MoveList *movelist = generateMoves();
+    Move moves[MAX_MOVES];
+    int size = generateMoves(moves);
 
-    for (int i = 0; i < movelist->size; i++)
+    for (int i = 0; i < size; i++)
     {
-        Move m = movelist->list[i];
+        Move m = moves[i];
 
         if (!isMoveLegal(m))
         {
@@ -206,13 +203,11 @@ int chooseMove(int startSq, int endSq)
         if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
         {
             makeMove(m);
-            free(movelist);
             return m;
         }
     }
 
     puts("Could not find move!");
-    free(movelist);
     return 0;
 }
 
@@ -342,14 +337,14 @@ int isAttackingKing()
 int isCheckmate()
 {
     // generate responses to the attack
-    struct MoveList *movelist = generateMoves();
+    Move moves[MAX_MOVES];
+    int size = generateMoves(moves);
     
-    for (int i = 0; i < movelist->size; i++)
+    for (int i = 0; i < size; i++)
     {
         // check if this is a legal response
-        if (isMoveLegal(movelist->list[i]))
+        if (isMoveLegal(moves[i]))
         {
-            free(movelist);
             return 0;
         }
     }
@@ -367,6 +362,5 @@ int isCheckmate()
     notToPlay = !notToPlay * 8;
 
     // checkmate!!!
-    free(movelist);
     return isAttacked;
 }

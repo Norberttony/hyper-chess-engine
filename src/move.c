@@ -46,10 +46,9 @@ U64 straddlerBounds[] = {
     281474976710655ULL      // down
 };
 
-struct MoveList* generateMoves()
+int generateMoves(Move *movelist)
 {
-    struct MoveList *list = (struct MoveList*)malloc(sizeof(struct MoveList));
-    list->size = 0;
+    int size = 0;
 
     // get squares that enemy immobilizer is not influencing
     U64 enemImm = position[notToPlay + immobilizer];
@@ -91,7 +90,7 @@ struct MoveList* generateMoves()
 
         U64 straddlerCaptures = moves & straddlerCaptureBoard;
 
-        generateStraddlerMoves(sq, moves & ~straddlerCaptures, list);
+        size += generateStraddlerMoves(sq, moves & ~straddlerCaptures, &movelist[size]);
 
         // also add the captures right here. right now. just to be able to use the up/left/right/down straddler board from before.
         while (straddlerCaptures)
@@ -111,7 +110,7 @@ struct MoveList* generateMoves()
             // down
             move |= (pieceList[to + 8] * ((straddlerDownBoard & toBoard) > 0)) << 24;
 
-            list->list[list->size++] = move;
+            movelist[size++] = move;
             straddlerCaptures &= straddlerCaptures - 1;
         }
 
@@ -134,7 +133,7 @@ struct MoveList* generateMoves()
             get_rook_attacks(sq, totalBoard) |
             get_bishop_attacks(sq, totalBoard)
         ) & ~totalBoard;
-        generateImmobilizerMoves(sq, moves, list);
+        size += generateImmobilizerMoves(sq, moves, &movelist[size]);
     }
 
     // coordinator moves (there's only one)
@@ -145,7 +144,7 @@ struct MoveList* generateMoves()
             get_rook_attacks(sq, totalBoard) |
             get_bishop_attacks(sq, totalBoard)
         ) & ~totalBoard;
-        generateCoordinatorMoves(sq, moves, list);
+        size += generateCoordinatorMoves(sq, moves, &movelist[size]);
     }
 
     // king moves (there's only one)
@@ -153,7 +152,7 @@ struct MoveList* generateMoves()
         U64 kingBoard = position[toPlay + king] & notImmInfl;
         int sq = pop_lsb(kingBoard);
         U64 moves = (kingBoard > 0) * kingMoves[sq] & ~position[toPlay];
-        generateKingMoves(sq, moves, list);
+        size += generateKingMoves(sq, moves, &movelist[size]);
     }
 
     // all springer moves
@@ -167,8 +166,8 @@ struct MoveList* generateMoves()
             get_rook_attacks(sq, totalBoard) |
             get_bishop_attacks(sq, totalBoard);
 
-        generateSpringerMoves(sq, moves & ~totalBoard, list);
-        generateSpringerCaptures(sq, moves & position[notToPlay], list);
+        size += generateSpringerMoves(sq, moves & ~totalBoard, &movelist[size]);
+        size += generateSpringerCaptures(sq, moves & position[notToPlay], &movelist[size]);
 
         springers &= springers - 1;
     }
@@ -183,8 +182,8 @@ struct MoveList* generateMoves()
         );
 
         // consider moves separately from (potential) captures.
-        generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, list);
-        generateRetractorCaptures(sq, moves & kingMoves[sq] & ~totalBoard, list);        
+        size += generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, &movelist[size]);
+        size += generateRetractorCaptures(sq, moves & kingMoves[sq] & ~totalBoard, &movelist[size]);
     }
 
     // chameleon moves
@@ -206,31 +205,37 @@ struct MoveList* generateMoves()
         U64 rookMoves = get_rook_attacks(sq, totalBoard);
         U64 bishopMoves = get_bishop_attacks(sq, totalBoard);
 
-        generateChameleonRookMoves(sq, rookMoves & ~totalBoard, list, chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard);
-        generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, list);
-        generateChameleonSpringerCaptures(sq, (rookMoves | bishopMoves) & position[notToPlay + springer], list);
+        size += generateChameleonRookMoves(sq, rookMoves & ~totalBoard, &movelist[size], chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard);
+        size += generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, &movelist[size]);
+        size += generateChameleonSpringerCaptures(sq, (rookMoves | bishopMoves) & position[notToPlay + springer], &movelist[size]);
 
         chameleons &= chameleons - 1;
     }
 
-    return list;
+    return size;
 }
 
-void generateStraddlerMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateStraddlerMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+    
     // extract and consider each move
     while (moves)
     {
         int to = pop_lsb(moves);
         Move move = (to << 9) | (sq << 3) | straddler;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateImmobilizerMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     // surely there's a faster way, right?
     // immobilizers can never capture pieces.
     while (moves)
@@ -238,13 +243,17 @@ void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist)
         int to = pop_lsb(moves);
         Move move = (to << 9) | (sq << 3) | immobilizer;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateCoordinatorMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     // if a coordinator is on the board, there should always be a king as well.
     int kingSq = pop_lsb(position[toPlay + king]);
     while (moves)
@@ -261,13 +270,17 @@ void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist)
         U64 death2 = deathSquares[kingSq][to][1];
         move |= (pieceList[pop_lsb(death2)] * ((position[notToPlay] & death2) > 0)) << 18;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateKingMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateKingMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     // king can coordinate with the coordinator
     U64 coordBoard = position[toPlay + coordinator];
     int coordSq = pop_lsb(coordBoard);
@@ -306,25 +319,33 @@ void generateKingMoves(int sq, U64 moves, struct MoveList* movelist)
         death = deathSquares[cham2][to][1] * ((chamBoard - 1 & chamBoard) > 0);
         move |= (((position[notToPlay + coordinator] & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateSpringerMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateSpringerMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     while (moves)
     {
         int to = pop_lsb(moves);
         Move move = (to << 9) | (sq << 3) | springer;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
+int generateSpringerCaptures(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     while (moves)
     {
         int capturing = pop_lsb(moves);
@@ -334,28 +355,36 @@ void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
 
         Move move = (pieceList[capturing] << 15) | (to << 9) | (sq << 3) | springer;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
 
         // actually, don't count the move if it did not result in a capture
-        movelist->size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
+        size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
     }
+
+    return size;
 }
 
-void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateRetractorMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     while (moves)
     {
         int to = pop_lsb(moves);
         Move move = (to << 9) | (sq << 3) | retractor;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist)
+int generateRetractorCaptures(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     while (moves)
     {
         int to = pop_lsb(moves);
@@ -365,13 +394,17 @@ void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist)
 
         Move move = ((pieceList[capturing] << 15) * ((position[notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U64 straddlerUpBoard, U64 straddlerLeftBoard, U64 straddlerRightBoard, U64 straddlerDownBoard)
+int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerUpBoard, U64 straddlerLeftBoard, U64 straddlerRightBoard, U64 straddlerDownBoard)
 {
+    int size = 0;
+
     U64 enemyCoordBoard = position[notToPlay + coordinator];
 
     int kingSq = pop_lsb(position[toPlay + king]);
@@ -403,13 +436,17 @@ void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U6
         move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist)
+int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     U64 enemyCoordBoard = position[notToPlay + coordinator];
 
     int kingSq = pop_lsb(position[toPlay + king]);
@@ -428,13 +465,17 @@ void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist)
         move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
     }
+
+    return size;
 }
 
-void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist)
+int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist)
 {
+    int size = 0;
+
     // extract and consider each move
     while (moves)
     {
@@ -445,12 +486,14 @@ void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movel
 
         Move move = move_cham_n_mask | (to << 9) | (sq << 3) | chameleon;
 
-        movelist->list[movelist->size++] = move;
+        movelist[size++] = move;
         moves &= moves - 1;
 
         // actually, don't count the move if it did not result in a capture
-        movelist->size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
+        size -= (springerLeaps[sq][capturing] & (position[white] | position[black])) > 0 || springerLeaps[sq][capturing] == 0;
     }
+
+    return size;
 }
 
 void printMove(Move move)

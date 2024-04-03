@@ -60,9 +60,14 @@ int main(void)
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
 
-    //runTestSuite();
+    runTestSuite();
 
-    //return 0;
+    return 0;
+
+    loadFEN(StartingFEN);
+    getBestMove(8);
+
+    return 0;
 
     srand(time(NULL));
 
@@ -108,12 +113,13 @@ int main(void)
     {
         puts("");
         // yeah, a bit of a bad way to check for game-ending situations. oh well...
-        struct MoveList *movelist = generateMoves();
+        Move movelist[MAX_MOVES];
+        int size = generateMoves((Move*)movelist);
         // consider only legal moves
         int legalMoves = 0;
-        for (int i = 0; i < movelist->size; i++)
+        for (int i = 0; i < size; i++)
         {
-            legalMoves += isMoveLegal(movelist->list[i]);
+            legalMoves += isMoveLegal(movelist[i]);
         }
         if (legalMoves == 0)
         {
@@ -192,23 +198,23 @@ Move getBestMove(int depth)
 {
     nodesVisited++;
 
-    struct MoveList *movelist = generateMoves();
+    Move movelist[MAX_MOVES];
+    int size = generateMoves((Move*)movelist);
 
-    if (movelist->size == 0)
+    if (size == 0)
     {
-        free(movelist);
         return 0; // no moves!
     }
 
     // determine most promising moves
-    qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
+    qsort(movelist, size, sizeof(Move), compareMoves);
 
     int alpha = INT_MIN + 1;
     int beta = INT_MAX - 1;
     Move bestMove = orderFirst;
-    for (int i = 0; i < movelist->size; i++)
+    for (int i = 0; i < size; i++)
     {
-        Move m = movelist->list[i];
+        Move m = movelist[i];
         if (!isMoveLegal(m))
         {
             continue;
@@ -235,7 +241,6 @@ Move getBestMove(int depth)
         // not using break because then it will throw in a weird evaluation.
         if (!getThinkAllowance())
         {
-            free(movelist);
             return bestMove;
         }
 
@@ -246,7 +251,6 @@ Move getBestMove(int depth)
         }
     }
 
-    free(movelist);
     printf("depth %d: evaluating the position as %d\n", depth, alpha);
 
     writeToTranspositionTable(zobristHash, depth, alpha, bestMove, TT_EXACT);
@@ -309,25 +313,25 @@ int think(int depth, int alpha, int beta)
         return eval;
     }
 
-    struct MoveList *movelist = generateMoves();
+    Move movelist[MAX_MOVES];
+    int size = generateMoves((Move*)movelist);
 
-    if (movelist->size == 0)
+    if (size == 0)
     {
-        free(movelist);
         TT_nowrites++;
         return 0; // no moves! don't try sorting
     }
 
     // order most promising moves first
-    qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
+    qsort(movelist, size, sizeof(Move), compareMoves);
 
     int hasLegalMoves = 0;
 
     int isCutOffNode = 0;
-    Move bestMove = movelist->list[0];
-    for (int i = 0; i < movelist->size; i++)
+    Move bestMove = movelist[0];
+    for (int i = 0; i < size; i++)
     {
-        Move m = movelist->list[i];
+        Move m = movelist[i];
         makeMove(m);
 
         if (isAttackingKing())
@@ -385,8 +389,6 @@ int think(int depth, int alpha, int beta)
             bestMove = m;
         }
     }
-
-    free(movelist);
 
     // if there are no legal moves in this position, it must be a stalemate.
     if (!hasLegalMoves)
@@ -448,20 +450,21 @@ int thinkCaptures(int alpha, int beta)
         alpha = eval;
     }
 
-    struct MoveList *movelist = generateMoves();
+    Move movelist[MAX_MOVES];
+    int size = generateMoves((Move*) movelist);
 
-    if (movelist->size == 0)
+    if (size == 0)
     {
         free(movelist);
         return 0; // no moves!
     }
 
     // determine most promising moves
-    qsort(movelist->list, movelist->size, sizeof(Move), compareMoves);
+    qsort(movelist, size, sizeof(Move), compareMoves);
 
-    for (int i = 0; i < movelist->size; i++)
+    for (int i = 0; i < size; i++)
     {
-        Move m = movelist->list[i];
+        Move m = movelist[i];
         if (!(m & move_captMask))
         {
             break; // done deciding on captures (which should all be first)
@@ -480,7 +483,6 @@ int thinkCaptures(int alpha, int beta)
 
         if (!getThinkAllowance())
         {
-            free(movelist);
             return beta;
         }
 
@@ -489,7 +491,6 @@ int thinkCaptures(int alpha, int beta)
         // more moves from the opponent.
         if (eval >= beta)
         {
-            free(movelist);
             // make this move slightly worse from the last one so that it is not chosen as equal
             // (as a candidate move) to the other moves in the branch above...
             return beta;
@@ -500,8 +501,6 @@ int thinkCaptures(int alpha, int beta)
             alpha = eval;
         }
     }
-
-    free(movelist);
 
     // return best evaluation
     return alpha;

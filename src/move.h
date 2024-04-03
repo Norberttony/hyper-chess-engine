@@ -8,6 +8,9 @@
 #include "look-up-tables.h"
 #include "defines.h"
 
+// defines the maximum possible number of moves in any attainable position
+#define MAX_MOVES 256
+
 // 32-bit moves
 // LSB
 // - first 3 bits for what piece is moving
@@ -49,37 +52,33 @@ extern const int move_cham_n_mask;  // springer
 
 extern const int move_captMask; // all capture bits
 
-struct MoveList
-{
-    Move list[300];
-    int size;
-};
-
 extern const char* squareNames[];
 
-struct MoveList* generateMoves();
+// pass in pointer to array, which is then populated with the pseudo-legal moves.
+// returns the number of moves
+int generateMoves(Move*);
 
-void generateStraddlerMoves(int sq, U64 moves, struct MoveList*);
+int generateStraddlerMoves(int sq, U64 moves, Move* movelist);
 
-void generateImmobilizerMoves(int sq, U64 moves, struct MoveList* movelist);
+int generateImmobilizerMoves(int sq, U64 moves, Move* movelist);
 
-void generateCoordinatorMoves(int sq, U64 moves, struct MoveList* movelist);
+int generateCoordinatorMoves(int sq, U64 moves, Move* movelist);
 
-void generateKingMoves(int sq, U64 moves, struct MoveList* movelist);
-
-// assumes that the given moves do not capture any pieces
-void generateSpringerMoves(int sq, U64 moves, struct MoveList* movelist);
-
-void generateSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
+int generateKingMoves(int sq, U64 moves, Move* movelist);
 
 // assumes that the given moves do not capture any pieces
-void generateRetractorMoves(int sq, U64 moves, struct MoveList* movelist);
+int generateSpringerMoves(int sq, U64 moves, Move* movelist);
 
-void generateRetractorCaptures(int sq, U64 moves, struct MoveList* movelist);
+int generateSpringerCaptures(int sq, U64 moves, Move* movelist);
 
-void generateChameleonRookMoves(int sq, U64 moves, struct MoveList* movelist, U64, U64, U64, U64);
-void generateChameleonBishopMoves(int sq, U64 moves, struct MoveList* movelist);
-void generateChameleonSpringerCaptures(int sq, U64 moves, struct MoveList* movelist);
+// assumes that the given moves do not capture any pieces
+int generateRetractorMoves(int sq, U64 moves, Move* movelist);
+
+int generateRetractorCaptures(int sq, U64 moves, Move* movelist);
+
+int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64, U64, U64, U64);
+int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist);
+int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist);
 
 void printMove(Move);
 void prettyPrintMove(Move);
