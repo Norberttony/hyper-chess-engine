@@ -7,11 +7,14 @@
 #include <string.h>
 
 // must be a power of 2 minus 1
-#define TRANSPOSITION_TABLE_ENTRIES 16777215
+#define TRANSPOSITION_TABLE_ENTRIES 17999987
 
 #define TT_EXACT 1
 #define TT_LOWER 2
 #define TT_UPPER 3
+
+// smallest depth allowed to use the transposition table
+#define TT_MIN_DEPTH 0
 
 struct TranspositionEntry
 {
@@ -22,18 +25,19 @@ struct TranspositionEntry
     int nodeType;
 };
 
-extern struct TranspositionEntry transpositionTable[TRANSPOSITION_TABLE_ENTRIES + 1];
-
-extern int depthHits[100];
-
-extern int TT_hits;
+// statistics related to the transposition table.
 extern int TT_misses;
-extern int TT_misses_type1;
+extern int TT_hits;
+extern int TT_overwrites;
+extern int TT_writes;
 
-extern int TT_entries_filled;
-extern int TT_entries_overwritten;
-extern int TT_nowrites;
+extern struct TranspositionEntry transpositionTable_depth[TRANSPOSITION_TABLE_ENTRIES];
+extern struct TranspositionEntry transpositionTable_always[TRANSPOSITION_TABLE_ENTRIES];
 
-void writeToTranspositionTable(U64 zobristHash, int depth, int eval, Move bestMove, int nodeType);
+struct TranspositionEntry* getTranspositionTableEntry(int myDepth);
+void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
+
+// returns the evaluation of the position based on the transposition table
+int getEval();
 
 #endif

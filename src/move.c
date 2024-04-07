@@ -555,7 +555,6 @@ void prettyPrintMove(Move m)
     printf("\n");
 }
 
-U64 lastTested = 0ULL;
 void makeMove(Move m)
 {
     // decode move

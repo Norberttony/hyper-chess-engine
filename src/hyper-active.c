@@ -144,7 +144,7 @@ int main(void)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = getBestMove(5);
+            Move best = thinkFor(200);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -246,7 +246,9 @@ Move getBestMove(int depth)
 
     printf("depth %d: evaluating the position as %d\n", depth, alpha);
 
-    writeToTranspositionTable(zobristHash, depth, alpha, bestMove, TT_EXACT);
+#ifdef USE_TRANSPOSITION_TABLE
+    writeToTranspositionTable(depth, alpha, bestMove, TT_EXACT);
+#endif
 
     return bestMove;
 }
@@ -255,54 +257,41 @@ int think(int depth, int alpha, int beta)
 {
     nodesVisited++;
 
-    // used to test whether or not this node's evaluation broke out of the window (increased alpha)
-    int originalAlpha = alpha;
+    int nodeType = TT_UPPER;
 
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
-    struct TranspositionEntry savedEval = transpositionTable[zobristHash & TRANSPOSITION_TABLE_ENTRIES];
-    int isSavedEntryValid = savedEval.zobristHash == zobristHash && savedEval.depth >= depth;
-    if (isSavedEntryValid)
+#ifdef USE_TRANSPOSITION_TABLE
+    if (depth >= TT_MIN_DEPTH)
     {
-        depthHits[depth]++;
-        TT_hits++;
-        if (savedEval.nodeType == TT_EXACT)
+        struct TranspositionEntry* savedEval = getTranspositionTableEntry(depth);
+        if (savedEval)
         {
-            return savedEval.eval;
-        }
-        else if (savedEval.nodeType == TT_LOWER && alpha < savedEval.eval)
-        {
-            alpha = savedEval.eval;
-        }
-        else if (savedEval.nodeType == TT_UPPER && beta > savedEval.eval)
-        {
-            beta = savedEval.eval;
-        }
+            // order based on saved entry
+            orderFirst = savedEval->bestMove;
 
-        if (alpha >= beta)
-        {
-            return savedEval.eval;
+            if (savedEval->nodeType == TT_EXACT)
+            {
+                return savedEval->eval;
+            }
+            else if (savedEval->nodeType == TT_UPPER && alpha >= savedEval->eval)
+            {
+                return alpha;
+            }
+            else if (savedEval->nodeType == TT_LOWER && beta <= savedEval->eval)
+            {
+                return beta;
+            }
         }
     }
-    else
-    {
-        TT_misses++;
-        TT_misses_type1 += savedEval.zobristHash != 0 && savedEval.zobristHash != zobristHash;
-    }
-    // order based on saved entry
-    orderFirst = savedEval.bestMove;
+#endif
 
     if (depth == 0)
     {
         int eval = thinkCaptures(alpha, beta);
-        if (transpositionTable[zobristHash & TRANSPOSITION_TABLE_ENTRIES].depth == 0)
-        {
-            writeToTranspositionTable(zobristHash, 0, eval, 0, TT_EXACT);
-        }
-        else
-        {
-            TT_nowrites++;
-        }
+#ifdef USE_TRANSPOSITION_TABLE
+        writeToTranspositionTable(0, eval, 0, TT_EXACT);
+#endif
         return eval;
     }
 
@@ -311,7 +300,6 @@ int think(int depth, int alpha, int beta)
 
     if (size == 0)
     {
-        TT_nowrites++;
         return 0; // no moves! don't try sorting
     }
 
@@ -369,15 +357,17 @@ int think(int depth, int alpha, int beta)
         // more moves from the opponent.
         if (eval >= beta)
         {
-            isCutOffNode = 1;
-            alpha = beta;
             // store the move that caused the cut off (to possibly use it as a killer heuristic)
             bestMove = m;
-            break;
+#ifdef USE_TRANSPOSITION_TABLE
+            writeToTranspositionTable(depth, beta, bestMove, TT_LOWER);
+#endif
+            return beta;
         }
 
         if (eval > alpha)
         {
+            nodeType = TT_EXACT;
             alpha = eval;
             bestMove = m;
         }
@@ -386,45 +376,13 @@ int think(int depth, int alpha, int beta)
     // if there are no legal moves in this position, it must be a stalemate.
     if (!hasLegalMoves)
     {
-        TT_nowrites++;
         return 0;
     }
 
-    // save this entry in the transposition table (replace by depth)
-    struct TranspositionEntry tt_entry = transpositionTable[zobristHash & TRANSPOSITION_TABLE_ENTRIES];
-    if (tt_entry.depth < depth)
-    {
-        if (isCutOffNode)
-        {
-            if (tt_entry.nodeType != TT_EXACT)
-            {
-                writeToTranspositionTable(zobristHash, depth, beta, bestMove, TT_LOWER);
-            }
-            else
-            {
-                TT_nowrites++;
-            }
-        }
-        // this node broke out of alpha, shattering the original window. its children were
-        // all calculated correctly, resulting in the exact score for this node.
-        else if (alpha > originalAlpha)
-        {
-            writeToTranspositionTable(zobristHash, depth, alpha, bestMove, TT_EXACT);
-        }
-        // or maybe it didn't. in that case, this node never exceeded alpha.
-        else if (alpha <= originalAlpha && tt_entry.nodeType != TT_EXACT)
-        {
-            writeToTranspositionTable(zobristHash, depth, alpha, bestMove, TT_UPPER);
-        }
-        else
-        {
-            TT_nowrites++;
-        }
-    }
-    else
-    {
-        TT_nowrites++;
-    }
+    // save this entry in the transposition table
+#ifdef USE_TRANSPOSITION_TABLE
+    writeToTranspositionTable(depth, alpha, bestMove, nodeType);
+#endif
 
     // return best evaluation
     return alpha;
@@ -522,25 +480,19 @@ Move thinkFor(int time)
 
     U64 myHash = zobristHash;
 
+    int totalNodesVisited = 0;
+
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
     Move bestMove = 0;
     while (getThinkAllowance())
     {
-        TT_hits = 0;
-        TT_misses = 0;
-        TT_misses_type1 = 0;
-        TT_entries_filled = 0;
-        TT_entries_overwritten = 0;
-        TT_nowrites = 0;
-
         nodesVisited = 0;
 
-        for (int i = 0; i < depth + 1; i++)
-        {
-            depthHits[i] = 0;
-        }
+        TT_misses = 0;
+        TT_hits = 0;
+        TT_overwrites = 0;
 
         printf("Searching at depth %d\n", depth + 1);
         printf("Order first: ");
@@ -549,32 +501,27 @@ Move thinkFor(int time)
         maxDepth = depth + 1;
         Move candidate = getBestMove(++depth);
 
-        puts("DEPTH HITS");
-        for (int i = 0; i < maxDepth; i++)
-        {
-            printf("depth %d hits: %d\n", i, depthHits[i]);
-        }
-        puts("");
+        puts("Transposition Table Results");
+        printf("Hits: %d\n", TT_hits);
+        printf("Misses: %d\n", TT_misses);
+        printf("Writes: %d / %d\n", TT_writes, TRANSPOSITION_TABLE_ENTRIES + 1);
+        printf("Overwrites: %d / %d\n", TT_overwrites, TT_writes + TT_overwrites);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
         orderFirst = candidate;
 
         bestMove = candidate;
-        printf("(%+d) ", transpositionTable[zobristHash & TRANSPOSITION_TABLE_ENTRIES].eval);
+        printf("(%+d) ", getEval());
         printPrincipalVariation(depth);
         printf("\n");
         printf("Visited %d nodes\n", nodesVisited);
         printf("\n");
 
-        puts("TT RESULTS");
-        printf("%d hits\n", TT_hits);
-        printf("%d misses\n", TT_misses);
-        printf("%d type 1 errors\n", TT_misses_type1);
-        printf("%d entries filled\n", TT_entries_filled);
-        printf("%d entries overwritten\n", TT_entries_overwritten);
-        printf("%d no writes\n\n", TT_nowrites);
+        totalNodesVisited += nodesVisited;
     }
+
+    printf("Total number of nodes visited: %d\n", totalNodesVisited);
 
     if (myHash != zobristHash)
     {
@@ -597,23 +544,22 @@ int getThinkAllowance()
 void printPrincipalVariation(int depth)
 {
     // base case
+    // a leaf node does not have a "best move" tied to it.
     if (depth == 0)
     {
         return;
     }
 
     // get entry from transposition table
-    struct TranspositionEntry entry = transpositionTable[zobristHash & TRANSPOSITION_TABLE_ENTRIES];
+    struct TranspositionEntry* entry = getTranspositionTableEntry(depth);
 
-    // make sure it matches
-    // for some reason, certain table entries are filled with a null move
-    if (entry.zobristHash == zobristHash && entry.bestMove)
+    if (entry && TT_hits-- && entry->bestMove)
     {
-        printMove(entry.bestMove);
+        printMove(entry->bestMove);
 
         // update the zobrist hash, and keep printing the principal variation.
-        makeMove(entry.bestMove);
+        makeMove(entry->bestMove);
         printPrincipalVariation(depth - 1);
-        unmakeMove(entry.bestMove);
+        unmakeMove(entry->bestMove);
     }
 }
