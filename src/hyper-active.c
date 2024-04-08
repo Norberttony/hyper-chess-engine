@@ -18,6 +18,8 @@
 #include "evaluate.h"
 #include "transposition-table.h"
 
+#define USE_TRANSPOSITION_TABLE
+
 int thinkingTime = -1;
 clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 Move orderFirst = 0; // the move to order first
@@ -38,8 +40,7 @@ Move getBestMove(int depth);
 int think(int depth, int alpha, int beta);
 
 // performs minmax search with alpha-beta pruning for capturing moves only.
-// depth only serves as a counter (to value longest/shortest sequences of mate)
-int thinkCaptures(int alpha, int beta); // depth serves as a counter for finding fastest mate
+int thinkCaptures(int alpha, int beta, int accessTT);
 
 // returns a positive value if the second move is greater (in ordering)
 int compareMoves(const void*, const void*);
@@ -208,17 +209,17 @@ Move getBestMove(int depth)
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
-        if (!isMoveLegal(m))
+        makeMove(m);
+
+        if (isAttackingKing())
         {
+            unmakeMove(m);
             continue;
         }
-
-        makeMove(m);
 
         // try to maximize value
         int eval;
 
-        // can't really see stalemates yet
         if (isCheckmate())
         {
             eval = (INT_MAX - 40) + depth;
@@ -257,7 +258,9 @@ int think(int depth, int alpha, int beta)
 {
     nodesVisited++;
 
-    int nodeType = TT_UPPER;
+    int nodeType = TT_LOWER;
+
+    int TOMATCH = -100;
 
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
@@ -268,17 +271,22 @@ int think(int depth, int alpha, int beta)
         if (savedEval)
         {
             // order based on saved entry
-            orderFirst = savedEval->bestMove;
+            //orderFirst = savedEval->bestMove;
 
             if (savedEval->nodeType == TT_EXACT)
             {
-                return savedEval->eval;
+                if (depth == 0)
+                {
+                    TOMATCH = savedEval->eval;
+                }
+                else
+                    return savedEval->eval;
             }
-            else if (savedEval->nodeType == TT_UPPER && alpha >= savedEval->eval)
+            else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
             {
                 return alpha;
             }
-            else if (savedEval->nodeType == TT_LOWER && beta <= savedEval->eval)
+            else if (savedEval->nodeType == TT_UPPER && beta <= savedEval->eval)
             {
                 return beta;
             }
@@ -288,10 +296,7 @@ int think(int depth, int alpha, int beta)
 
     if (depth == 0)
     {
-        int eval = thinkCaptures(alpha, beta);
-#ifdef USE_TRANSPOSITION_TABLE
-        writeToTranspositionTable(0, eval, 0, TT_EXACT);
-#endif
+        int eval = thinkCaptures(alpha, beta, 1);
         return eval;
     }
 
@@ -357,10 +362,9 @@ int think(int depth, int alpha, int beta)
         // more moves from the opponent.
         if (eval >= beta)
         {
-            // store the move that caused the cut off (to possibly use it as a killer heuristic)
-            bestMove = m;
+            // store the move that caused the cut off
 #ifdef USE_TRANSPOSITION_TABLE
-            writeToTranspositionTable(depth, beta, bestMove, TT_LOWER);
+            writeToTranspositionTable(depth, beta, m, TT_UPPER);
 #endif
             return beta;
         }
@@ -388,12 +392,18 @@ int think(int depth, int alpha, int beta)
     return alpha;
 }
 
-int thinkCaptures(int alpha, int beta)
+int thinkCaptures(int alpha, int beta, int accessTT)
 {
-    int eval = evaluate();
     // not capturing might be better
+    int eval = evaluate();
     if (eval >= beta)
     {
+#ifdef USE_TRANSPOSITION_TABLE
+        if (accessTT)
+        {
+            writeToTranspositionTable(0, beta, 0, TT_UPPER);
+        }
+#endif
         return beta;
     }
     if (eval > alpha)
@@ -402,7 +412,7 @@ int thinkCaptures(int alpha, int beta)
     }
 
     Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*) movelist);
+    int size = generateMoves((Move*)movelist);
 
     if (size == 0)
     {
@@ -411,6 +421,8 @@ int thinkCaptures(int alpha, int beta)
 
     // determine most promising moves
     qsort(movelist, size, sizeof(Move), compareMoves);
+
+    int nodeType = TT_LOWER;
 
     for (int i = 0; i < size; i++)
     {
@@ -427,7 +439,7 @@ int thinkCaptures(int alpha, int beta)
             continue;
         }
 
-        int eval = -thinkCaptures(-beta, -alpha);
+        int eval = -thinkCaptures(-beta, -alpha, 0);
 
         unmakeMove(m);
 
@@ -441,16 +453,28 @@ int thinkCaptures(int alpha, int beta)
         // more moves from the opponent.
         if (eval >= beta)
         {
-            // make this move slightly worse from the last one so that it is not chosen as equal
-            // (as a candidate move) to the other moves in the branch above...
+#ifdef USE_TRANSPOSITION_TABLE
+            if (accessTT)
+            {
+                writeToTranspositionTable(0, beta, 0, TT_UPPER);
+            }
+#endif
             return beta;
         }
 
         if (eval > alpha)
         {
+            nodeType = TT_EXACT;
             alpha = eval;
         }
     }
+
+#ifdef USE_TRANSPOSITION_TABLE
+    if (accessTT)
+    {
+        writeToTranspositionTable(0, alpha, 0, nodeType);
+    }
+#endif
 
     // return best evaluation
     return alpha;
@@ -490,9 +514,11 @@ Move thinkFor(int time)
     {
         nodesVisited = 0;
 
+        /*
         TT_misses = 0;
         TT_hits = 0;
         TT_overwrites = 0;
+        */
 
         printf("Searching at depth %d\n", depth + 1);
         printf("Order first: ");
@@ -501,11 +527,13 @@ Move thinkFor(int time)
         maxDepth = depth + 1;
         Move candidate = getBestMove(++depth);
 
+        /*
         puts("Transposition Table Results");
         printf("Hits: %d\n", TT_hits);
         printf("Misses: %d\n", TT_misses);
         printf("Writes: %d / %d\n", TT_writes, TRANSPOSITION_TABLE_ENTRIES + 1);
         printf("Overwrites: %d / %d\n", TT_overwrites, TT_writes + TT_overwrites);
+        */
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)

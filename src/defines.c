@@ -65,6 +65,8 @@ void prettyPrintBoard()
     // file names
     puts("    a b c d e f g h");
 
+    printf("It is %s to play\n", toPlay == white ? "white": "black");
+
     printf("%llu\n", zobristHash);
 }
 

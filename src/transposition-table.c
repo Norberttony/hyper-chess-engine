@@ -16,7 +16,7 @@ struct TranspositionEntry* getTranspositionTableEntry(int myDepth)
     struct TranspositionEntry* alwaysEntry = transpositionTable_always + index;
 
     // get the first hit and use that as the evaluation.
-    // note: there is no preference to prevent search instability.
+    // note: this does not prevent search instability.
     if (depthEntry->depth >= myDepth && depthEntry->zobristHash == zobristHash)
     {
         TT_hits++;
@@ -42,12 +42,12 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
 
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
 
-    TT_overwrites += transpositionTable_always[index].zobristHash != 0;
-    TT_writes += transpositionTable_always[index].zobristHash == 0;
+    //TT_overwrites += transpositionTable_always[index].zobristHash != 0;
+    //TT_writes += transpositionTable_always[index].zobristHash == 0;
 
     // always replace any entry here
     transpositionTable_always[index] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
-    
+
     // only replace if the depth is better
     if (transpositionTable_depth[index].depth < depth)
     {
