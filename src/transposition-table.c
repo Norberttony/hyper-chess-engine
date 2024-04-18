@@ -9,6 +9,27 @@ int TT_hits = 0;
 int TT_overwrites = 0;
 int TT_writes = 0;
 
+struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
+{
+    int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    struct TranspositionEntry* depthEntry = transpositionTable_depth + index;
+    struct TranspositionEntry* alwaysEntry = transpositionTable_always + index;
+
+    // get the first hit and use that as the evaluation.
+    // note: this does not prevent search instability.
+    if (depthEntry->depth >= myDepth && depthEntry->zobristHash == zobristHash && depthEntry->nodeType == TT_EXACT)
+    {
+        return depthEntry;
+    }
+    else if (alwaysEntry->depth >= myDepth && alwaysEntry->zobristHash == zobristHash && alwaysEntry->nodeType == TT_EXACT)
+    {
+        return alwaysEntry;
+    }
+
+    return NULL;
+}
+
+
 struct TranspositionEntry* getTranspositionTableEntry(int myDepth)
 {
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
@@ -55,12 +76,23 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     }
 }
 
-int getEval()
+void printEval()
 {
-    struct TranspositionEntry* entry = getTranspositionTableEntry(0);
+    struct TranspositionEntry* entry = getTranspositionTableEntryPV(0);
     if (entry)
     {
-        return entry->eval;
+        int eval = entry->eval;
+        if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
+        {
+            printf("(M%+d) ", extract_mate_score(abs(eval)));
+        }
+        else
+        {
+            printf("(%+d) ", eval);
+        }
     }
-    return 0;
+    else
+    {
+        printf("(--) ");
+    }
 }

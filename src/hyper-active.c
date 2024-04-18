@@ -25,7 +25,9 @@ clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 Move orderFirst = 0; // the move to order first
 int maxDepth = 0;
 
+// search nodes and quiescent search nodes visited
 int nodesVisited = 0;
+int qNodesVisited = 0;
 
 // thinks in the allocated time and returns the best move it could find
 Move thinkFor(int time);
@@ -48,6 +50,11 @@ int compareMoves(const void*, const void*);
 // prints out the principal variation from the current position
 void printPrincipalVariation(int depth);
 
+// returns 1 if a threefold has occurred, and 0 otherwise.
+// of course, the flag can also be set when the position has occurred twice. This prevents the
+// engine from playing on the verge of draw when it might be completely winning.
+int getThreefoldFlag();
+
 int main(void)
 {
     // Initialization!
@@ -63,7 +70,19 @@ int main(void)
 
     //runTestSuite();
 
-    //return 0;
+    /*
+    loadFEN("1nb1kbnr/1pp2pp1/u7/1p6/PqBppP1p/PP6/4P1PP/RN1QKBNU w 10");
+
+    // iterative deepening
+    getBestMove(1);
+    getBestMove(2);
+    getBestMove(3);
+    getBestMove(4);
+    getBestMove(5);
+    getBestMove(6);
+
+    return 0;
+    */
 
     srand(time(NULL));
 
@@ -190,6 +209,7 @@ int main(void)
 
 Move getBestMove(int depth)
 {
+    maxDepth = depth;
     nodesVisited++;
 
     Move movelist[MAX_MOVES];
@@ -205,7 +225,7 @@ Move getBestMove(int depth)
 
     int alpha = INT_MIN + 1;
     int beta = INT_MAX - 1;
-    Move bestMove = orderFirst;
+    Move bestMove = movelist[0];
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -220,9 +240,16 @@ Move getBestMove(int depth)
         // try to maximize value
         int eval;
 
+        // check for three fold repetition
+        int threefold = getThreefoldFlag();
+
         if (isCheckmate())
         {
-            eval = (INT_MAX - 40) + depth;
+            eval = INT32_MAX - 1 - (maxDepth - depth);
+        }
+        else if (threefold)
+        {
+            eval = 0;
         }
         else
         {
@@ -232,7 +259,6 @@ Move getBestMove(int depth)
 
         // make sure we are still allowed to think.
         // if not, throw in the best move we've got!
-        // not using break because then it will throw in a weird evaluation.
         if (!getThinkAllowance())
         {
             return bestMove;
@@ -260,8 +286,6 @@ int think(int depth, int alpha, int beta)
 
     int nodeType = TT_LOWER;
 
-    int TOMATCH = -100;
-
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
@@ -270,17 +294,10 @@ int think(int depth, int alpha, int beta)
         struct TranspositionEntry* savedEval = getTranspositionTableEntry(depth);
         if (savedEval)
         {
-            // order based on saved entry
-            //orderFirst = savedEval->bestMove;
-
             if (savedEval->nodeType == TT_EXACT)
             {
-                if (depth == 0)
-                {
-                    TOMATCH = savedEval->eval;
-                }
-                else
-                    return savedEval->eval;
+                // determine upper bound for mate score
+                return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (maxDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (maxDepth - depth);
             }
             else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
             {
@@ -290,14 +307,17 @@ int think(int depth, int alpha, int beta)
             {
                 return beta;
             }
+
+            // order based on saved entry
+            orderFirst = savedEval->bestMove;
         }
     }
 #endif
 
+    // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        int eval = thinkCaptures(alpha, beta, 1);
-        return eval;
+        return thinkCaptures(alpha, beta, 1);
     }
 
     Move movelist[MAX_MOVES];
@@ -313,8 +333,7 @@ int think(int depth, int alpha, int beta)
 
     int hasLegalMoves = 0;
 
-    int isCutOffNode = 0;
-    Move bestMove = movelist[0];
+    Move bestMove = 0;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -330,18 +349,13 @@ int think(int depth, int alpha, int beta)
         int eval;
 
         // check for three fold repetition
-        int repeats = 0;
-        for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
-        {
-            repeats += repeatTable[j] == zobristHash;
-        }
+        int threefold = getThreefoldFlag();
 
         if (isCheckmate())
         {
-            // will never calculate mate in 40. right?
-            eval = (INT_MAX - 40) + depth;
+            eval = INT_MAX - 1 - (maxDepth - depth);
         }
-        else if (repeats == 3)
+        else if (threefold)
         {
             eval = 0;
         }
@@ -354,7 +368,7 @@ int think(int depth, int alpha, int beta)
         // make sure we are still allowed to think.
         if (!getThinkAllowance())
         {
-            break;
+            return beta;
         }
 
         // alpha-beta pruning. if a move I play leads to a position where my opponent can play
@@ -394,6 +408,8 @@ int think(int depth, int alpha, int beta)
 
 int thinkCaptures(int alpha, int beta, int accessTT)
 {
+    qNodesVisited++;
+
     // not capturing might be better
     int eval = evaluate();
     if (eval >= beta)
@@ -505,6 +521,7 @@ Move thinkFor(int time)
     U64 myHash = zobristHash;
 
     int totalNodesVisited = 0;
+    int totalQNodesVisited = 0;
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
@@ -513,6 +530,7 @@ Move thinkFor(int time)
     while (getThinkAllowance())
     {
         nodesVisited = 0;
+        qNodesVisited = 0;
 
         /*
         TT_misses = 0;
@@ -524,7 +542,6 @@ Move thinkFor(int time)
         printf("Order first: ");
         prettyPrintMove(orderFirst);
 
-        maxDepth = depth + 1;
         Move candidate = getBestMove(++depth);
 
         /*
@@ -540,16 +557,18 @@ Move thinkFor(int time)
         orderFirst = candidate;
 
         bestMove = candidate;
-        printf("(%+d) ", getEval());
+        printEval();
         printPrincipalVariation(depth);
         printf("\n");
         printf("Visited %d nodes\n", nodesVisited);
+        printf("Visited %d quiescent nodes\n", qNodesVisited);
         printf("\n");
 
         totalNodesVisited += nodesVisited;
     }
 
     printf("Total number of nodes visited: %d\n", totalNodesVisited);
+    printf("Total number of quiescent nodes visited: %d\n", totalQNodesVisited);
 
     if (myHash != zobristHash)
     {
@@ -579,9 +598,9 @@ void printPrincipalVariation(int depth)
     }
 
     // get entry from transposition table
-    struct TranspositionEntry* entry = getTranspositionTableEntry(depth);
+    struct TranspositionEntry* entry = getTranspositionTableEntryPV(depth);
 
-    if (entry && TT_hits-- && entry->bestMove)
+    if (entry && entry->bestMove)
     {
         printMove(entry->bestMove);
 
@@ -590,4 +609,15 @@ void printPrincipalVariation(int depth)
         printPrincipalVariation(depth - 1);
         unmakeMove(entry->bestMove);
     }
+}
+
+int getThreefoldFlag()
+{
+    int repeats = 0;
+    for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
+    {
+        repeats += repeatTable[j] == zobristHash;
+    }
+
+    return repeats >= 2;
 }

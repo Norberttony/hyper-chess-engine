@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "move.h"
 
+#include <limits.h>
 #include <string.h>
 
 // must be a power of 2 minus 1
@@ -34,10 +35,11 @@ extern int TT_writes;
 extern struct TranspositionEntry transpositionTable_depth[TRANSPOSITION_TABLE_ENTRIES];
 extern struct TranspositionEntry transpositionTable_always[TRANSPOSITION_TABLE_ENTRIES];
 
+struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
 struct TranspositionEntry* getTranspositionTableEntry(int myDepth);
 void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
 
 // returns the evaluation of the position based on the transposition table
-int getEval();
+void printEval();
 
 #endif

@@ -53,6 +53,11 @@ extern U64 zobristHash;
 extern U64 repeatTable[REPEAT_TABLE_ENTRIES];
 extern int repeatTableIndex;
 
+// used for storing mate in x evaluations. extract_mate_scores will return the depth until mate.
+#define MATE_SCORE (INT_MAX - 10000)
+#define extract_mate_score(score) (10000 - (score - MATE_SCORE))
+
+
 // prints all positions onto one board with FEN symbols
 void prettyPrintBoard();
 

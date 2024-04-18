@@ -308,8 +308,3 @@ void genBishopMasks()
         bishopMasks[s] = mask;
     }
 }
-
-U64 randomU64()
-{
-    return ((U64)(rand() & 0xFFFF) << 48) | ((U64)(rand() & 0xFFFF) << 32) | ((U64)(rand() & 0xFFFF) << 16) | (U64)(rand() & 0xFFFF);
-}
