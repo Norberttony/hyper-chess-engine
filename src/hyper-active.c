@@ -25,6 +25,8 @@ clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 Move orderFirst = 0; // the move to order first
 int maxDepth = 0;
 
+#define MAX_DEPTH 128
+
 // search nodes and quiescent search nodes visited
 int nodesVisited = 0;
 int qNodesVisited = 0;
@@ -69,20 +71,11 @@ int main(void)
     initMagicBitboards(1); // bishop magic bitboards
 
     //runTestSuite();
+    //runTestSuite();
+    //runTestSuite();
+    //runTestSuite();
 
-    /*
-    loadFEN("1nb1kbnr/1pp2pp1/u7/1p6/PqBppP1p/PP6/4P1PP/RN1QKBNU w 10");
-
-    // iterative deepening
-    getBestMove(1);
-    getBestMove(2);
-    getBestMove(3);
-    getBestMove(4);
-    getBestMove(5);
-    getBestMove(6);
-
-    return 0;
-    */
+    //return 0;
 
     srand(time(NULL));
 
@@ -159,12 +152,12 @@ int main(void)
         }
 
         // time to consider which moves are played
-        if (mySide == toPlay)
+        if (1 || mySide == toPlay)
         {
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = thinkFor(200);
+            Move best = thinkFor(10000);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -176,6 +169,7 @@ int main(void)
         }
         else
         {
+            thinkFor(10000);
             //puts("Your turn! Type in a move:");
             char move[10]; // yes, risks buffer overflow, I know...
             scanf("%s", &move);
@@ -226,6 +220,10 @@ Move getBestMove(int depth)
     int alpha = INT_MIN + 1;
     int beta = INT_MAX - 1;
     Move bestMove = movelist[0];
+
+    printf("Ordered first ");
+    prettyPrintMove(bestMove);
+
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -261,11 +259,15 @@ Move getBestMove(int depth)
         // if not, throw in the best move we've got!
         if (!getThinkAllowance())
         {
+            printf("depth %d: evaluating the position as %d\n", depth, alpha);
             return bestMove;
         }
 
         if (eval > alpha)
         {
+            printf("Overthrew last best move with eval %d, new best move with eval %d is ", alpha, eval);
+            prettyPrintMove(m);
+            puts("");
             alpha = eval;
             bestMove = m;
         }
@@ -408,7 +410,8 @@ int think(int depth, int alpha, int beta)
 
 int thinkCaptures(int alpha, int beta, int accessTT)
 {
-    qNodesVisited++;
+    // leaf node is ignored in count of qNodes visited
+    qNodesVisited += !accessTT;
 
     // not capturing might be better
     int eval = evaluate();
@@ -499,8 +502,6 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 // orders captures first, and also orders the last best move first.
 int compareMoves(const void *a, const void *b)
 {
-    // add some slight variety to the moves.
-    // to-do: still problematic, as chameleon captures have less weight
     Move m1 = *((Move*)a);
     Move m2 = *((Move*)b);
 
@@ -527,7 +528,7 @@ Move thinkFor(int time)
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
     Move bestMove = 0;
-    while (getThinkAllowance())
+    while (getThinkAllowance() && depth < MAX_DEPTH)
     {
         nodesVisited = 0;
         qNodesVisited = 0;
@@ -565,6 +566,7 @@ Move thinkFor(int time)
         printf("\n");
 
         totalNodesVisited += nodesVisited;
+        totalQNodesVisited += qNodesVisited;
     }
 
     printf("Total number of nodes visited: %d\n", totalNodesVisited);

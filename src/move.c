@@ -1121,3 +1121,13 @@ void unmakeMove(Move m)
 
     zobristHash ^= zobristHashUpdate;
 }
+
+void makeNullMove()
+{
+    // toggle turn on zobrist hash
+    zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
+
+    // toggle turn
+    toPlay = !toPlay * 8;
+    notToPlay = !notToPlay * 8;
+}
