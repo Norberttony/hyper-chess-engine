@@ -49,7 +49,7 @@ class MatchHandler {
         interval = setInterval(() => {
             if (performance.now() - this.last >= 10000){
                 console.log("Something happened.");
-                this.finish(this);
+                this.endOfMatch();
             }
 
             if (!this.gameOver)
@@ -120,7 +120,7 @@ class MatchHandler {
                         this.wproc.stop();
                         this.bproc.stop();
 
-                        this.finish(this);
+                        this.endOfMatch();
                     }
 
                     break;
@@ -131,15 +131,25 @@ class MatchHandler {
                         this.result = newResult;
                     }else if (this.result == newResult){
                         this.debug += "Checkmate/stalemate\n";
-                        this.finish(this);
+                        this.endOfMatch();
                     }else{
                         console.log("ERROR! Bots could not agree on result");
                         this.debug += "Could not agree\n";
-                        this.finish(this);
+                        this.endOfMatch();
                     }
                     break;
             }
         }
+    }
+
+    endOfMatch(){
+        this.wproc.stop();
+        this.bproc.stop();
+
+        this.gameOver = true;
+
+        // calls finish handler
+        this.finish(this);
     }
 }
 

@@ -59,29 +59,9 @@ fs.readdirSync(botsDir).forEach(file => {
     }
 });
 
-function playGame(white, black, index, fen){
-    return new Promise((res, rej) => {
-
-        // create a new match between white and black
-        new MatchHandler(white, black, index, fen, (handler) => {
-            handler.debug += handler.result;
-
-            // write game file
-            fs.writeFileSync(`${debugDir}game-${handler.index}.txt`, handler.debug);
-            
-            // write debug files
-            fs.writeFileSync(`${debugDir}game-${handler.index}-${white.name}.txt`, handler.wdebug);
-            fs.writeFileSync(`${debugDir}game-${handler.index}-${black.name}.txt`, handler.bdebug);
-
-            handler.gameOver = true;
-
-            // propagate result
-            if (handler.result == -2)
-                rej(handler.result);
-            else
-                res(handler.result);
-        });
-    });
+function playGame(white, black, index, fen, handler){
+    // create a new match between white and black
+    return new MatchHandler(white, black, index, fen, handler);
 }
 
 // user plays against engine
@@ -144,44 +124,64 @@ function playerVsEngineHandler(engine, data){
         whiteWins = parseInt(logFileWB[1]);
         blackWins = parseInt(logFileWB[5]);
     }
-    
-    for (let i = (e1Wins + draws + e2Wins) / 2; i < 1000 / 2; i++){
+
+    let gameIndex = (e1Wins + draws + e2Wins) / 2;
+    const threads = 2;
+
+    // records the result of a finished match
+    function recordResult(matchHandler){
+        if (matchHandler.result == 1){
+            e1Wins++;
+            whiteWins++;
+        }else if (matchHandler.result == -1){
+            e2Wins++;
+            blackWins++;
+        }else{
+            draws++;
+        }
+    }
+
+    let startDouble = () => {
         if (positions.length == 0){
             console.log("out of positions!");
-            break;
+            return;
         }
 
-        console.log("Starting double");
+        let myIndex = gameIndex++;
+
+        if (myIndex > 1000)
+            return;
+
+        console.log("Starting double", myIndex);
         const chosen = positions[Math.floor(Math.random() * positions.length)];
         console.log("Chose position", chosen);
 
         // remove position from samples
         positions.splice(positions.indexOf(chosen), 1);
 
-        const res1 = await playGame(engines[0], engines[1], i * 2, chosen.trim());
-        const res2 = await playGame(engines[1], engines[0], i * 2 + 1, chosen.trim());
 
-        if (res1 == 1){
-            e1Wins++;
-            whiteWins++;
-        }else if (res1 == -1){
-            e2Wins++;
-            blackWins++;
-        }else{
-            draws++;
-        }
+        playGame(engines[0], engines[1], myIndex * 2, chosen.trim(), (matchHandler) => {
+            recordResult(matchHandler);
 
-        if (res2 == 1){
-            e2Wins++;
-            whiteWins++;
-        }else if (res2 == -1){
-            e1Wins++;
-            blackWins++;
-        }else{
-            draws++;
-        }
+            if (matchHandler.result == -2)
+                return;
 
-        fs.appendFileSync("./debug/_log.txt", `H2H: ${e1Wins} - ${draws} - ${e2Wins}\n`);
-        fs.appendFileSync("./debug/_log.txt", `White/Black: ${whiteWins} - ${draws} - ${blackWins}\n`);
+            playGame(engines[1], engines[0], myIndex * 2 + 1, chosen.trim(), (matchHandler) => {
+                recordResult(matchHandler);
+
+                if (matchHandler.result == -2)
+                    return;
+
+                fs.appendFileSync("./debug/_log.txt", `H2H: ${e1Wins} - ${draws} - ${e2Wins}\n`);
+                fs.appendFileSync("./debug/_log.txt", `White/Black: ${whiteWins} - ${draws} - ${blackWins}\n`);
+
+                // starts a new double
+                startDouble();
+            });
+        });
+    }
+
+    for (let t = 0; t < threads; t++){
+        startDouble();
     }
 })();
