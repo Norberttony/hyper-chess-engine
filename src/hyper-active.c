@@ -152,12 +152,12 @@ int main(void)
         }
 
         // time to consider which moves are played
-        if (1 || mySide == toPlay)
+        if (mySide == toPlay)
         {
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = thinkFor(10000);
+            Move best = thinkFor(200);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -169,8 +169,7 @@ int main(void)
         }
         else
         {
-            thinkFor(10000);
-            //puts("Your turn! Type in a move:");
+            puts("Your turn! Type in a move:");
             char move[10]; // yes, risks buffer overflow, I know...
             scanf("%s", &move);
 
