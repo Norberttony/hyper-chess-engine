@@ -148,6 +148,12 @@ class MatchHandler {
 
         this.gameOver = true;
 
+        // write debug info
+        fs.writeFileSync(`${debugDir}game-${this.index}.txt`, this.debug);
+
+        fs.writeFileSync(`${debugDir}game-${this.index}-${this.white.name}.txt`, this.wdebug);
+        fs.writeFileSync(`${debugDir}game-${this.index}-${this.black.name}.txt`, this.bdebug);
+
         // calls finish handler
         this.finish(this);
     }

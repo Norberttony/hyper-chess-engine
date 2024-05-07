@@ -8,6 +8,7 @@ const server = http.createServer(app);
 const io = require("socket.io")(server);
 
 app.use(express.static(__dirname + "/viewer"));
+app.use(express.static(__dirname + "/debug"));
 
 app.use(express.json());
 
@@ -129,11 +130,15 @@ function playerVsEngineHandler(engine, data){
     const threads = 2;
 
     // records the result of a finished match
-    function recordResult(matchHandler){
-        if (matchHandler.result == 1){
+    function recordResult(matchHandler, reverse = false){
+        let result = matchHandler.result;
+        if (reverse)
+            result *= -1;
+
+        if (result == 1){
             e1Wins++;
             whiteWins++;
-        }else if (matchHandler.result == -1){
+        }else if (result == -1){
             e2Wins++;
             blackWins++;
         }else{
@@ -152,7 +157,7 @@ function playerVsEngineHandler(engine, data){
         if (myIndex > 1000)
             return;
 
-        console.log("Starting double", myIndex);
+        console.log("Starting double", myIndex * 2);
         const chosen = positions[Math.floor(Math.random() * positions.length)];
         console.log("Chose position", chosen);
 
@@ -161,13 +166,13 @@ function playerVsEngineHandler(engine, data){
 
 
         playGame(engines[0], engines[1], myIndex * 2, chosen.trim(), (matchHandler) => {
-            recordResult(matchHandler);
+            recordResult(matchHandler, false);
 
             if (matchHandler.result == -2)
                 return;
 
             playGame(engines[1], engines[0], myIndex * 2 + 1, chosen.trim(), (matchHandler) => {
-                recordResult(matchHandler);
+                recordResult(matchHandler, true);
 
                 if (matchHandler.result == -2)
                     return;
@@ -184,4 +189,4 @@ function playerVsEngineHandler(engine, data){
     for (let t = 0; t < threads; t++){
         startDouble();
     }
-})();
+})//();

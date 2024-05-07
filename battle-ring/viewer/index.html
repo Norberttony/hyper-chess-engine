@@ -8,7 +8,7 @@
 
         <script src = "/socket.io/socket.io.js"></script>
         
-        <link href = "styles/warn-bar.css"      rel = "stylesheet" type = "text/css"/>
+        <link href = "styles/game-loading.css"  rel = "stylesheet" type = "text/css"/>
         <link href = "styles/annotations.css"   rel = "stylesheet" type = "text/css"/>
         <link href = "styles/invite.css"        rel = "stylesheet" type = "text/css"/>
         <link href = "styles/panel.css"         rel = "stylesheet" type = "text/css"/>
@@ -51,6 +51,7 @@
         <script defer src = "scripts/pgn-view/pgnviewer.js"></script>
 
         <script defer src = "scripts/network/network.js"></script>
+        <script defer src = "scripts/network/game-loading.js"></script>
 
     </head>
     <body>
@@ -74,6 +75,13 @@
                 <!-- user annotations are drawn on canvas -->
                 <canvas class = "annotations" width = 1200 height = 1200></canvas>
             </div>
+
+            <div id = "game-loading">
+                <button id = "game-loading_prev" onclick = "prevGame();">&lt;</button>
+                <input id = "game-loading_index" type = "number">
+                <button id = "game-loading_next" onclick = "nextGame();">&gt;</button>
+            </div>
+
             <div id = "panel">
                 <span id = "output"></span>
                 <div id = "pgn_control">
