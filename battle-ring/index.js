@@ -42,6 +42,7 @@ const { MatchHandler } = require("./match-handler");
 const { Engine } = require("./engine");
 
 const { getAllPositions } = require("./fetch-pos");
+const { SPRT } = require("./analyze");
 
 const botsDir = "./bots/";
 const debugDir = "./debug/";
@@ -102,6 +103,8 @@ function playerVsEngineHandler(engine, data){
 
 // play many games
 
+const elo1 = 20;
+
 (async () => {
     let e1Wins = 0;
     let e2Wins = 0;
@@ -128,6 +131,8 @@ function playerVsEngineHandler(engine, data){
 
     let gameIndex = (e1Wins + draws + e2Wins) / 2;
     const threads = 2;
+
+    let sprtResult = SPRT(e2Wins, draws, e1Wins, 0, elo1, 0.01, 0.01);
 
     // records the result of a finished match
     function recordResult(matchHandler, reverse = false){
@@ -158,6 +163,9 @@ function playerVsEngineHandler(engine, data){
             return;
         }
 
+        if (sprtResult)
+            return;
+
         let myIndex = gameIndex++;
 
         if (myIndex > 1000)
@@ -171,18 +179,21 @@ function playerVsEngineHandler(engine, data){
         positions.splice(positions.indexOf(chosen), 1);
 
 
-        playGame(engines[0], engines[1], myIndex * 2, chosen.trim(), (matchHandler) => {
-            recordResult(matchHandler, false);
-
-            if (matchHandler.result == -2)
+        playGame(engines[0], engines[1], myIndex * 2, chosen.trim(), (matchHandler1) => {
+            if (sprtResult || matchHandler1.result == -2)
                 return;
 
-            playGame(engines[1], engines[0], myIndex * 2 + 1, chosen.trim(), (matchHandler) => {
-                recordResult(matchHandler, true);
-
-                if (matchHandler.result == -2)
+            playGame(engines[1], engines[0], myIndex * 2 + 1, chosen.trim(), (matchHandler2) => {
+                if (sprtResult || matchHandler2.result == -2)
                     return;
 
+                recordResult(matchHandler1, false);
+                recordResult(matchHandler2, true);
+
+                sprtResult = SPRT(e2Wins, draws, e1Wins, 0, elo1, 0.01, 0.01);
+                if (sprtResult)
+                    console.log("Accept", sprtResult);
+                
                 fs.appendFileSync("./debug/_log.txt", `H2H: ${e1Wins} - ${draws} - ${e2Wins}\n`);
                 fs.appendFileSync("./debug/_log.txt", `White/Black: ${whiteWins} - ${draws} - ${blackWins}\n`);
 

@@ -88,8 +88,8 @@ function prettyLoadLANGame(notation){
 
     // determine white and black scores
     let resultElem = notationElems[notationElems.length - 2];
-    let whiteScore = "1";
-    let blackScore = "0";
+    let whiteScore = "-";
+    let blackScore = "-";
 
     if (resultElem == "0"){
         whiteScore = "1/2";
@@ -97,6 +97,9 @@ function prettyLoadLANGame(notation){
     }else if (resultElem == "-1"){
         whiteScore = "0";
         blackScore = "1";
+    }else if (resultElem == "1"){
+        whiteScore = "1";
+        blackScore = "0";
     }
     
     // display player names and result
