@@ -132,17 +132,23 @@ function playerVsEngineHandler(engine, data){
     // records the result of a finished match
     function recordResult(matchHandler, reverse = false){
         let result = matchHandler.result;
+
+        // determine wins for white, black, or draws
+        if (result == 1)
+            whiteWins++;
+        else if (result == -1)
+            blackWins++;
+        else if (result == 0)
+            draws++;
+
+        // determine wins for engines
         if (reverse)
             result *= -1;
 
         if (result == 1){
             e1Wins++;
-            whiteWins++;
         }else if (result == -1){
             e2Wins++;
-            blackWins++;
-        }else{
-            draws++;
         }
     }
 
@@ -189,4 +195,4 @@ function playerVsEngineHandler(engine, data){
     for (let t = 0; t < threads; t++){
         startDouble();
     }
-})//();
+})();

@@ -29,6 +29,7 @@ function loadGame(){
     xhr.send();
 }
 
+loadGame();
 
 //evaluateGame(0);
 
@@ -62,10 +63,12 @@ function loadLANGame(notation){
 }
 
 function prettyLoadLANGame(notation){
-    const fen = notation.split("\n")[0];
+    const notationElems = notation.split("\n");
+    
+    const fen = notationElems[0];
     gameState.loadFEN(fen.replace("FEN: ", ""));
     
-    for (const uci of notation.split("\n")){
+    for (const uci of notationElems){
 
         const sq = algebraicToSquare(uci);
         // go through all possible moves
@@ -78,6 +81,27 @@ function prettyLoadLANGame(notation){
             }
         }
     }
+
+    // load player names
+    const white = notationElems[1].replace("White: ", "");
+    const black = notationElems[2].replace("Black: ", "");
+
+    // determine white and black scores
+    let resultElem = notationElems[notationElems.length - 2];
+    let whiteScore = "1";
+    let blackScore = "0";
+
+    if (resultElem == "0"){
+        whiteScore = "1/2";
+        blackScore = "1/2";
+    }else if (resultElem == "-1"){
+        whiteScore = "0";
+        blackScore = "1";
+    }
+    
+    // display player names and result
+    document.getElementById("white_player").innerText = `${white} | ${whiteScore}`;
+    document.getElementById("black_player").innerText = `${black} | ${blackScore}`;
 }
 
 function evaluateGame(index){

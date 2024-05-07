@@ -49,6 +49,7 @@ class MatchHandler {
         interval = setInterval(() => {
             if (performance.now() - this.last >= 10000){
                 console.log("Something happened.");
+                this.debug += "Something happened.";
                 this.endOfMatch();
             }
 
@@ -85,17 +86,12 @@ class MatchHandler {
                     }else if (engine == this.black){
                         this.wproc.write(`${cmds[1]}\n`);
                     }
-                    console.log(cmds[1]);
                     this.debug += `${cmds[1]}\n`;
                     const m = this.game.playLANMove(cmds[1]);
 
                     if (!m){
                         console.error("Could not find move");
-                    }/*else{
-                        for (const socket of sockets){
-                            socket.emit("move", cmds[1]);
-                        }
-                    }*/
+                    }
 
                     // fifty move rule stuff
                     this.lastCapture++;
@@ -147,6 +143,8 @@ class MatchHandler {
         this.bproc.stop();
 
         this.gameOver = true;
+
+        this.debug += `${this.result}\n`;
 
         // write debug info
         fs.writeFileSync(`${debugDir}game-${this.index}.txt`, this.debug);
