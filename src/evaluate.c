@@ -124,6 +124,46 @@ int evaluate()
     // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
     int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
 
+    // counts the number of pseudo-legal moves one can perform
+    int myMobilityScore = 0;
+    int enemyMobilityScore = 0;
+
+    // count mobility
+    U64 totalBoard = position[toPlay] | position[notToPlay];
+    for (int i = 2; i <= 7; i++)
+    {
+        U64 myBoard = position[toPlay + i] & ~enemyInfl;
+        while (myBoard)
+        {
+            int sq = pop_lsb(myBoard);
+            U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
+
+            while (moveBoard)
+            {
+                myMobilityScore++;
+                moveBoard &= moveBoard - 1;
+            }
+
+            myBoard &= myBoard - 1;
+        }
+
+        U64 enemyBoard = position[notToPlay + i] & ~myInfl;
+        while (enemyBoard)
+        {
+            int sq = pop_lsb(enemyBoard);
+            U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
+
+            while (moveBoard)
+            {
+                enemyMobilityScore++;
+                moveBoard &= moveBoard - 1;
+            }
+
+            enemyBoard &= enemyBoard - 1;
+        }
+    }
+    
+    
     int evaluation = 0;
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
     for (int i = 1; i <= 7; i++)
@@ -172,7 +212,7 @@ int evaluate()
     evaluation -= 150 * (myKingCornered || myCoordCornered);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
-    return evaluation;
+    return evaluation + myMobilityScore - enemyMobilityScore;
 }
 
 int moveCaptureValue(Move m)

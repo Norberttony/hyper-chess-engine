@@ -39,7 +39,7 @@ const int move_cham_n_mask  = 0b0000010000000000000000000000;
 
 const int move_captMask     = 0b1111111111111000000000000000; // all capture bits
 
-U64 straddlerBounds[] = {
+const U64 straddlerBounds[] = {
     18446744073709486080ULL,// up
     18229723555195321596ULL,// left
     4557430888798830399ULL, // right

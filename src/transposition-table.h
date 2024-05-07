@@ -7,7 +7,6 @@
 #include <limits.h>
 #include <string.h>
 
-// must be a power of 2 minus 1
 #define TRANSPOSITION_TABLE_ENTRIES 17999987
 
 #define TT_EXACT 1

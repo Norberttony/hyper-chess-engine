@@ -54,6 +54,8 @@ extern const int move_captMask; // all capture bits
 
 extern const char* squareNames[];
 
+extern const U64 straddlerBounds[];
+
 // pass in pointer to array, which is then populated with the pseudo-legal moves.
 // returns the number of moves
 int generateMoves(Move*);
