@@ -6,50 +6,117 @@ const int pieceValues[] =
     0,          // empty
     100,        // straddler
     300,        // retractor
-    600,        // springer
+    400,        // springer
     1100,       // coordinator
     1300,       // immobilizer
     900,        // chameleon
     0           // king (priceless)
 };
 
-// if a piece is immobilized, it drops in value.
-// note: pieces that immobilize the immobilizer back do not change in value.
-const int immobilizedPieceValues[] =
+const int immobilizedPieceSquareTables[7][64] =
 {
-    0,          // empty
-    90,         // straddler
-    250,        // retractor
-    550,        // springer
-    1000,       // coordinator (bonus if corner)
-    1250,       // immobilizer
-    890,        // chameleon
-    -200,       // king (bonus if corner) which technically has a value of 0
+    // for straddlers
+    {
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10,
+        -10, -10, -10, -10, -10, -10, -10, -10
+    },
+    // for retractor
+    {
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40
+    },
+    // for springer
+    {
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40
+    },
+    // for coordinator
+    {
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
+         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
+         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90
+    },
+    // for immobilizer
+    {
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+        -100, -100, -100, -100, -100, -100, -100, -100,
+         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
+         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
+         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
+         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
+         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90
+    },
+    // for chameleon
+    {
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -50, -50, -50, -50, -50, -50, -50, -50,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40,
+        -40, -40, -40, -40, -40, -40, -40, -40
+    },
+    // for king
+    {
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -200, -200, -200, -200, -200, -200, -200, -200,
+        -190, -190, -190, -190, -190, -190, -190, -190,
+        -190, -190, -190, -190, -190, -190, -190, -190
+    }
 };
 
 const int pieceSquareTables[7][64] =
 {
     // for straddlers
     {
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0, // consider changing :)
-         10,  10,   5,   5,   5,   5,  10,  10,
-         -5,  -5,  -5,  -5,  -5,  -5,  -5,  -5,
-          5,   5,   5,   5,   5,   5,   5,   5,
-          0,   0,   0,   0,   0,   0,   0,   0
-    },
-    // for retractor
-    {
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0, 10, 10, 10, 10,  0,  0, // -5 for edges and -10 for corners
+         0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0,
          0,  0,  0,  0,  0,  0,  0,  0
+    },
+    // for retractor
+    {
+        -10, -5, -5, -5, -5, -5, -5,-10,
+         -5,  0,  0,  0,  0,  0,  0, -5,
+         -5,  0,  0,  0,  0,  0,  0, -5,
+         -5,  0,  0,  0,  0,  0,  0, -5,
+         -5,  0, 10, 10, 10, 10,  0, -5, // -5 for edges and -10 for corners
+         -5,  0,  0,  0,  0,  0,  0, -5,
+         -5,  0,  0,  0,  0,  0,  0, -5,
+        -10, -5, -5, -5, -5, -5, -5,-10
     },
     // for springers
     {
@@ -75,21 +142,21 @@ const int pieceSquareTables[7][64] =
     },
     // for immobilizer
     {
-        -80, -80, -80, -80, -80, -80, -80, -80,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -30, -30, -30, -30, -30, -30, -30, -30,
-        -20, -20, -20, -20, -20, -20, -20, -20,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0,
-          0,   0,   0,   0,   0,   0,   0,   0
+        -20, -10, -10, -10, -10, -10, -10, -20,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -20, -10, -10, -10, -10, -10, -10, -20
     },
     // for chameleon
     {
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -30, -30, -30, -30, -30, -30, -30, -30,
-        -20, -20, -20, -20, -20, -20, -20, -20,
-        -10, -10, -10, -10, -10, -10, -10, -10,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,
           0,   0,   0,   0,   0,   0,   0,   0,
@@ -128,9 +195,12 @@ int evaluate()
     int myMobilityScore = 0;
     int enemyMobilityScore = 0;
 
+    // counts number of pieces EXCLUDING straddlers
+    int numPieces = 0;
+
     // count mobility
     U64 totalBoard = position[toPlay] | position[notToPlay];
-    for (int i = 2; i <= 7; i++)
+    for (int i = 2; i <= 6; i++)
     {
         U64 myBoard = position[toPlay + i] & ~enemyInfl;
         while (myBoard)
@@ -144,6 +214,7 @@ int evaluate()
                 moveBoard &= moveBoard - 1;
             }
 
+            numPieces++;
             myBoard &= myBoard - 1;
         }
 
@@ -159,44 +230,48 @@ int evaluate()
                 moveBoard &= moveBoard - 1;
             }
 
+            numPieces++;
             enemyBoard &= enemyBoard - 1;
         }
     }
     
+    // for when the immobilizer is immobilized by a chameleon
+    U64 enemyChamInfl = myImmobilizer * ((myInfl & position[notToPlay + chameleon]) > 0);
+    U64 myChamInfl = enemyImmobilizer * ((enemyInfl & position[toPlay + chameleon]) > 0);
     
     int evaluation = 0;
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
     for (int i = 1; i <= 7; i++)
     {
         // count up my material
-        U64 myBoard = position[toPlay + i] & ~(enemyInfl);// | (-1 * (i == immobilizer && myImmImm)));// * !enemyImmImm);
+        U64 myBoard = position[toPlay + i] & ~(enemyInfl | enemyChamInfl);
         while (myBoard)
         {
             evaluation += pieceValues[i] + pieceSquareTables[i - 1][(toPlay == black) * 63 + perspective * pop_lsb(myBoard)];
             myBoard &= myBoard - 1;
         }
 
-        // count up my immobilized material (only if enemy immobilizer is not immobilized)
-        myBoard = position[toPlay + i] & enemyInfl;
+        // count up my immobilized material
+        myBoard = position[toPlay + i] & (enemyInfl | enemyChamInfl);
         while (myBoard)
         {
-            evaluation += immobilizedPieceValues[i] + pieceSquareTables[i - 1][(toPlay == black) * 63 + perspective * pop_lsb(myBoard)];// * !enemyImmImm;
+            evaluation += pieceValues[i] + immobilizedPieceSquareTables[i - 1][(toPlay == black) * 63 + perspective * pop_lsb(myBoard)];
             myBoard &= myBoard - 1;
         }
 
         // count up opponent's material
-        U64 enemyBoard = position[notToPlay + i] & ~(myInfl);// | (-1 * (i == immobilizer && enemyImmImm)));// * !myImmImm);
+        U64 enemyBoard = position[notToPlay + i] & ~(myInfl | myChamInfl);
         while (enemyBoard)
         {
             evaluation -= pieceValues[i] + pieceSquareTables[i - 1][(notToPlay == black) * 63 + -perspective * pop_lsb(enemyBoard)];
             enemyBoard &= enemyBoard - 1;
         }
 
-        // count up opponent's immobilized material (only if my immobilizer is not immobilized)
-        enemyBoard = position[notToPlay + i] & myInfl;
+        // count up opponent's immobilized material
+        enemyBoard = position[notToPlay + i] & (myInfl | myChamInfl);
         while (enemyBoard)
         {
-            evaluation -= immobilizedPieceValues[i] + pieceSquareTables[i - 1][(notToPlay == black) * 63 + -perspective * pop_lsb(enemyBoard)];// * !myImmImm;
+            evaluation -= pieceValues[i] + immobilizedPieceSquareTables[i - 1][(notToPlay == black) * 63 + -perspective * pop_lsb(enemyBoard)];
             enemyBoard &= enemyBoard - 1;
         }
     }
