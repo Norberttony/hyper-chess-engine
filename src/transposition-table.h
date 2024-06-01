@@ -41,4 +41,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
 // returns the evaluation of the position based on the transposition table
 void printEval();
 
+// prints the sequence of moves that is considered best play.
+void printPrincipalVariation(int depth);
+
 #endif

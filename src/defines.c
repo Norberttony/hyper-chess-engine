@@ -288,3 +288,14 @@ void generateZobristHashes()
         zobristHashes[i] = randomU64();
     }
 }
+
+int getThreefoldFlag()
+{
+    int repeats = 0;
+    for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
+    {
+        repeats += repeatTable[j] == zobristHash;
+    }
+
+    return repeats >= 2;
+}

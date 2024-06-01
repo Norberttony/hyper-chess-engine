@@ -96,3 +96,26 @@ void printEval()
         printf("(--) ");
     }
 }
+
+void printPrincipalVariation(int depth)
+{
+    // base case
+    // a leaf node does not have a "best move" tied to it.
+    if (depth == 0)
+    {
+        return;
+    }
+
+    // get entry from transposition table
+    struct TranspositionEntry* entry = getTranspositionTableEntryPV(depth);
+
+    if (entry && entry->bestMove)
+    {
+        printMove(entry->bestMove);
+
+        // update the zobrist hash, and keep printing the principal variation.
+        makeMove(entry->bestMove);
+        printPrincipalVariation(depth - 1);
+        unmakeMove(entry->bestMove);
+    }
+}

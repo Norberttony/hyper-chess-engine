@@ -80,4 +80,7 @@ void printPieceList();
 // generates zobrist hashes
 void generateZobristHashes();
 
+// returns 1 if the threefold flag is activated and 0 otherwise
+int getThreefoldFlag();
+
 #endif
