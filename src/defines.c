@@ -84,6 +84,15 @@ int loadFEN(const char* fen)
         pieceList[s] = 0;
     }
 
+    // clear straddler control boards
+    for (int s = 0; s < 2; s++)
+    {
+        for (int b = 0; b < 4; b++)
+        {
+            pControl[s][b] = 0ULL;
+        }
+    }
+
     // clear zobrist hash
     zobristHash = 0ULL;
 
@@ -113,19 +122,23 @@ int loadFEN(const char* fen)
         }
         else if (val)
         {
+            int sq = f + r * 8;
+
             // add the piece to the board
             int offset = isupper(fen[i]) ? white : black;
-            position[val + offset] |= 1ULL << (f + r * 8);
+            position[val + offset] |= 1ULL << sq;
 
             // do this on the occupancy board as well
-            position[offset] |= 1ULL << (f + r * 8);
+            position[offset] |= 1ULL << sq;
 
             // set piece list
-            pieceList[f + r * 8] = val;
+            pieceList[sq] = val;
+
+            // update straddler control board
+            placePiece(sq, offset | val);
 
             // update zobrist hash
-            zobristHash ^= get_zobrist_hash(f + r * 8, val, isupper(fen[i]));
-            //printf("Added %llu\n", get_zobrist_hash(f + r * 8, val, isupper(fen[i])));
+            zobristHash ^= get_zobrist_hash(sq, val, isupper(fen[i]));
 
             // next square!
             f++;

@@ -18,6 +18,8 @@ struct MoveCounter
 struct MoveCounter countMoves(int depth);
 struct MoveCounter divide(int depth);
 
+void printMoveCounter(struct MoveCounter);
+
 // this is insanely temporary. for testing/debugging purposes.
 int isMoveLegal(Move);
 

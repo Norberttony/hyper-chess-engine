@@ -7,6 +7,7 @@
 #include "magic-bitboards.h"
 #include "look-up-tables.h"
 #include "defines.h"
+#include "p-board.h"
 
 // defines the maximum possible number of moves in any attainable position
 #define MAX_MOVES 256

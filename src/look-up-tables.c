@@ -5,6 +5,11 @@
 U64 ranks[8];
 U64 files[8];
 
+U64 aboveBoards[64];
+U64 belowBoards[64];
+U64 leftBoards[64];
+U64 rightBoards[64];
+
 // [0] accesses 8th rank, [1] accesses 7th, etc.
 U64 sqRanks[64];
 U64 sqFiles[64];
@@ -25,6 +30,28 @@ U64 retractorCaptures[64][64];
 static const U64 not_a_file = 18374403900871474942ULL;
 static const U64 not_h_file =  9187201950435737471ULL;
 
+
+void populateDirectionBoards()
+{
+    U64 rankBoard = 0ULL;
+    for (int i = 0; i < 8; i++)
+    {
+        U64 fileBoard = 0ULL;
+        for (int s = 0; s < 8; s++)
+        {
+            // above and below boards
+            aboveBoards[i * 8 + s] = rankBoard;
+            belowBoards[i * 8 + s] = ~rankBoard & ~ranks[i];
+
+            // left and right boards
+            leftBoards[i * 8 + s] = fileBoard;
+            rightBoards[i * 8 + s] = ~fileBoard & ~files[s];
+
+            fileBoard |= files[s];
+        }
+        rankBoard |= ranks[i];
+    }
+}
 
 void populateRanksAndFiles()
 {

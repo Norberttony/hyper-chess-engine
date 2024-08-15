@@ -11,6 +11,11 @@ extern U64 files[8];
 extern U64 sqRanks[64];
 extern U64 sqFiles[64];
 
+extern U64 aboveBoards[64];
+extern U64 belowBoards[64];
+extern U64 leftBoards[64];
+extern U64 rightBoards[64];
+
 extern U64 kingMoves[64];
 extern U64 deathSquares[64][64][2];
 
@@ -28,6 +33,10 @@ extern U64 retractorCaptures[64][64];
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
 void populateRanksAndFiles();
+
+// populates boards that highlight all squares above/below/left/right of the given square.
+// ranks[8] and files[8] must be populated with populateRanksAndFiles() first.
+void populateDirectionBoards();
 
 // sq1 and sq2 are locations of king/coordinator, doesn't matter which is which.
 U64 genDeathSquares1(int sq1, int sq2);

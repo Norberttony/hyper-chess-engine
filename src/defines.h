@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "bitboard-utility.h"
+#include "p-board.h"
 
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 

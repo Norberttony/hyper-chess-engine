@@ -276,6 +276,60 @@ int evaluate()
         }
     }
 
+    // === STRADDLER SQUARE CONTROL === //
+
+    U64 myStraddlers = position[toPlay + straddler];
+    U64 enemStraddlers = position[notToPlay + straddler];
+
+    U64 myStraddlerControl =
+        // up
+        (myStraddlers << 8) & ~totalBoard & (pControl[toPlay == black][1] >> 8) |
+        (myStraddlers << 8) & position[notToPlay] & (pControl[toPlay == black][0] >> 8) |
+
+        // left
+        ((myStraddlers & ~files[7]) << 1) & ~totalBoard & ((pControl[toPlay == black][1] & ~files[0]) >> 1) |
+        ((myStraddlers & ~files[7]) << 1) & position[notToPlay] & ((pControl[toPlay == black][0] & ~files[0]) >> 1) |
+
+        // right
+        ((myStraddlers & ~files[0]) >> 1) & ~totalBoard & ((pControl[toPlay == black][1] & ~files[7]) << 1) |
+        ((myStraddlers & ~files[0]) >> 1) & position[notToPlay] & ((pControl[toPlay == black][0] & ~files[7]) << 1) |
+
+        // down
+        (myStraddlers >> 8) & ~totalBoard & (pControl[toPlay == black][1] << 8) |
+        (myStraddlers >> 8) & position[notToPlay] & (pControl[toPlay == black][0] << 8);
+
+    U64 enemStraddlerControl =
+        // up
+        (enemStraddlers << 8) & ~totalBoard & (pControl[toPlay == black][1] >> 8) |
+        (enemStraddlers << 8) & position[toPlay] & (pControl[toPlay == black][0] >> 8) |
+
+        // left
+        ((enemStraddlers & ~files[7]) << 1) & ~totalBoard & ((pControl[toPlay == black][1] & ~files[0]) >> 1) |
+        ((enemStraddlers & ~files[7]) << 1) & position[toPlay] & ((pControl[toPlay == black][0] & ~files[0]) >> 1) |
+
+        // right
+        ((enemStraddlers & ~files[0]) >> 1) & ~totalBoard & ((pControl[toPlay == black][1] & ~files[7]) << 1) |
+        ((enemStraddlers & ~files[0]) >> 1) & position[toPlay] & ((pControl[toPlay == black][0] & ~files[7]) << 1) |
+
+        // down
+        (enemStraddlers >> 8) & ~totalBoard & (pControl[toPlay == black][1] << 8) |
+        (enemStraddlers >> 8) & position[toPlay] & (pControl[toPlay == black][0] << 8);
+
+    // now count how many squares each side is controlling via straddlers
+    int straddlerScore = 0;
+
+    while (myStraddlerControl)
+    {
+        straddlerScore += 8;
+        myStraddlerControl &= myStraddlerControl - 1;
+    }
+    
+    while (enemStraddlerControl)
+    {
+        straddlerScore -= 8;
+        enemStraddlerControl &= enemStraddlerControl - 1;
+    }
+
     int enemKingCornered = (myInfl & position[notToPlay + king]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + king];
     int enemCoordCornered = (myInfl & position[notToPlay + coordinator]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + coordinator];
 

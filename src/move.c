@@ -570,7 +570,6 @@ void makeMove(Move m)
     int coordinateSq;
 
     U64 zobristHashUpdate = 0ULL;
-    U64 straddlerHashUpdate = 0ULL;
 
     // interpret capture bits
     switch(type)
@@ -588,11 +587,12 @@ void makeMove(Move m)
                 ((c2 != 0) * get_zobrist_hash(ltSq, c2, toPlay)) ^
                 ((c3 != 0) * get_zobrist_hash(rtSq, c3, toPlay)) ^
                 ((c4 != 0) * get_zobrist_hash(dnSq, c4, toPlay));
-            straddlerHashUpdate ^=
-                ((c1 != 0) * get_zobrist_hash(upSq, c1, toPlay)) ^
-                ((c2 != 0) * get_zobrist_hash(ltSq, c2, toPlay)) ^
-                ((c3 != 0) * get_zobrist_hash(rtSq, c3, toPlay)) ^
-                ((c4 != 0) * get_zobrist_hash(dnSq, c4, toPlay));
+
+            // pick up captured pieces.
+            pickupPiece(upSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[upSq]);
+            pickupPiece(ltSq, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[ltSq]);
+            pickupPiece(rtSq, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | pieceList[rtSq]);
+            pickupPiece(dnSq, (P_BOARD_INVALID_BIT * (c4 == 0)) | notToPlay | pieceList[dnSq]);
 
             // up
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << upSq;
@@ -624,12 +624,18 @@ void makeMove(Move m)
             
             // top death square
             int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+
+            pickupPiece(top, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[top]);
+
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << top;
             position[notToPlay]      ^= 1ULL * (c1 > 0) << top;
             pieceList[top] *= c1 == 0;
 
             // bottom death square
             int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+
+            pickupPiece(bottom, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[bottom]);
+
             position[notToPlay + c2] ^= 1ULL * (c2 > 0) << bottom;
             position[notToPlay]      ^= 1ULL * (c2 > 0) << bottom;
             pieceList[bottom] *= c2 == 0;
@@ -648,6 +654,8 @@ void makeMove(Move m)
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << to;
             position[notToPlay]      ^= 1ULL * (c1 > 0) << to;
 
+            pickupPiece(to, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[to]);
+
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(to, c1, toPlay);
 
             // can form death squares with own coordinator
@@ -655,6 +663,9 @@ void makeMove(Move m)
 
             // top death square
             int deathSq = pop_lsb(deathSquares[coordinateSq][to][0]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[deathSq]);
+
             zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSq, c2, toPlay);
             position[notToPlay + c2] ^= 1ULL * (c2 > 0) << deathSq;
             position[notToPlay]      ^= 1ULL * (c2 > 0) << deathSq;
@@ -662,6 +673,9 @@ void makeMove(Move m)
 
             // bottom death square
             deathSq = pop_lsb(deathSquares[coordinateSq][to][1]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | pieceList[deathSq]);
+
             zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSq, c3, toPlay);
             position[notToPlay + c3] ^= 1ULL * (c3 > 0) << deathSq;
             position[notToPlay]      ^= 1ULL * (c3 > 0) << deathSq;
@@ -675,30 +689,45 @@ void makeMove(Move m)
             // to-do: combine all of the boards into one and then apply them.
             int isDeath = (m & move_kingc1mask) > 0;
             deathSq = pop_lsb(deathSquares[cham1][to][0]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
+
             position[notToPlay + coordinator] ^= 1ULL * isDeath << deathSq;
             position[notToPlay]               ^= 1ULL * isDeath << deathSq;
             pieceList[deathSq] *= (isDeath == 0);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
+            // check other chameleon death square (only can capture coordinator)
             isDeath = m & move_kingc2mask;
             deathSq = pop_lsb(deathSquares[cham1][to][1]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
+
             position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] *= (isDeath == 0);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
+            // start checking with the second chameleon (only can capture coordinator)
             isDeath = m & move_kingc3mask;
             deathSq = pop_lsb(deathSquares[cham2][to][0]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
+
             position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] *= (isDeath == 0);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
+            // second chameleon and second death square (only against coordinator)
             isDeath = m & move_kingc4mask;
             deathSq = pop_lsb(deathSquares[cham2][to][1]);
+
+            pickupPiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
+
             position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] *= (isDeath == 0);
@@ -713,6 +742,8 @@ void makeMove(Move m)
             // a piece at
             coordinateSq = pop_lsb(springerCaptures[from][to]);
 
+            pickupPiece(coordinateSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[coordinateSq]);
+
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
             pieceList[coordinateSq] *= (c1 == 0);
@@ -725,6 +756,8 @@ void makeMove(Move m)
 
             // coordinateSq in this case is where the retractor captured a piece at
             coordinateSq = pop_lsb(retractorCaptures[from][to]);
+
+            pickupPiece(coordinateSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[coordinateSq]);
 
             position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
@@ -742,6 +775,8 @@ void makeMove(Move m)
             c4 = (m >> 18) & 1;
 
             // up
+            pickupPiece(to - 8, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | straddler);
+
             position[notToPlay + straddler] ^= 1ULL * c1 << (to - 8);
             position[notToPlay]             ^= 1ULL * c1 << (to - 8);
             pieceList[to - 8] *= !c1;
@@ -749,6 +784,8 @@ void makeMove(Move m)
             zobristHashUpdate ^= c1 * get_zobrist_hash(to - 8, c1, toPlay);
 
             // left
+            pickupPiece(to - 1, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | straddler);
+
             position[notToPlay + straddler] ^= 1ULL * c2 << (to - 1);
             position[notToPlay]             ^= 1ULL * c2 << (to - 1);
             pieceList[to - 1] *= !c2;
@@ -756,6 +793,8 @@ void makeMove(Move m)
             zobristHashUpdate ^= c2 * get_zobrist_hash(to - 1, c2, toPlay);
 
             // right
+            pickupPiece(to + 1, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | straddler);
+
             position[notToPlay + straddler] ^= 1ULL * c3 << (to + 1);
             position[notToPlay]             ^= 1ULL * c3 << (to + 1);
             pieceList[to + 1] *= !c3;
@@ -763,6 +802,8 @@ void makeMove(Move m)
             zobristHashUpdate ^= c3 * get_zobrist_hash(to + 1, c3, toPlay);
 
             // down
+            pickupPiece(to + 8, (P_BOARD_INVALID_BIT * (c4 == 0)) | notToPlay | straddler);
+
             position[notToPlay + straddler] ^= 1ULL * c4 << (to + 8);
             position[notToPlay]             ^= 1ULL * c4 << (to + 8);
             pieceList[to + 8] *= !c4;
@@ -774,6 +815,9 @@ void makeMove(Move m)
             c1 = (m >> 19) & 1;
             U64 death = deathSquares[to][coordinateSq][0];
             int captureSq = pop_lsb(death);
+
+            pickupPiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | coordinator);
+
             position[notToPlay + coordinator]   ^= death * c1;
             position[notToPlay]                 ^= death * c1;
             pieceList[captureSq] *= !c1;
@@ -784,6 +828,9 @@ void makeMove(Move m)
             c1 = (m >> 20) & 1;
             death = deathSquares[to][coordinateSq][1];
             captureSq = pop_lsb(death);
+
+            pickupPiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | coordinator);
+
             position[notToPlay + coordinator]   ^= death * c1;
             position[notToPlay]                 ^= death * c1;
             pieceList[captureSq] *= !c1;
@@ -793,6 +840,9 @@ void makeMove(Move m)
             // consider retractor moves
             c1 = (m >> 21) & 1;
             captureSq = pop_lsb(retractorCaptures[from][to]);
+
+            pickupPiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | retractor);
+
             position[notToPlay + retractor] ^= 1ULL * c1 << captureSq;
             position[notToPlay]             ^= 1ULL * c1 << captureSq;
             pieceList[captureSq] *= !c1;
@@ -802,6 +852,9 @@ void makeMove(Move m)
             // consider springer moves
             c1 = (m >> 22) & 1;
             captureSq = pop_lsb(springerCaptures[from][to]);
+
+            pickupPiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | springer);
+
             position[notToPlay + springer]  ^= 1ULL * c1 << captureSq;
             position[notToPlay]             ^= 1ULL * c1 << captureSq;
             pieceList[captureSq] *= !c1;
@@ -810,6 +863,9 @@ void makeMove(Move m)
 
             break;
     }
+
+    // update straddler control board
+    pickupPiece(from, toPlay | pieceList[from]);
 
     // move piece
     U64 toggle = (1ULL << from) | (1ULL << to);
@@ -824,6 +880,9 @@ void makeMove(Move m)
     // update piece list
     pieceList[to] = pieceList[from];
     pieceList[from] = 0;
+
+    // update straddler control board
+    placePiece(to, toPlay | pieceList[to]);
 
     // toggle turn
     toPlay = !toPlay * 8;
@@ -877,6 +936,9 @@ void unmakeMove(Move m)
     // add piece back
     zobristHashUpdate ^= get_zobrist_hash(from, type, !toPlay);
 
+    // update straddler control board
+    pickupPiece(to, toPlay | pieceList[to]);
+
     // unmove piece
     U64 toggle = (1ULL << from) | (1ULL << to);
     position[toPlay + type] ^= toggle;
@@ -885,6 +947,9 @@ void unmakeMove(Move m)
     // update piece list
     pieceList[from] = pieceList[to];
     pieceList[to] = 0;
+
+    // update straddler control board
+    placePiece(from, toPlay | pieceList[from]);
 
     // interpret capture bits
     switch(type)
@@ -922,6 +987,13 @@ void unmakeMove(Move m)
             position[notToPlay + c4] |= 1ULL * (c4 > 0) << (to + 8);
             position[notToPlay] |= 1ULL * (c4 > 0) << (to + 8);
             pieceList[to + 8] += c4;
+
+            // place back captured pieces.
+            placePiece(upSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[upSq]);
+            placePiece(ltSq, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[ltSq]);
+            placePiece(rtSq, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | pieceList[rtSq]);
+            placePiece(dnSq, (P_BOARD_INVALID_BIT * (c4 == 0)) | notToPlay | pieceList[dnSq]);
+
             break;
 
         case immobilizer:
@@ -935,12 +1007,14 @@ void unmakeMove(Move m)
             position[notToPlay + c1] |= 1ULL * (c1 > 0) << top;
             position[notToPlay]      |= 1ULL * (c1 > 0) << top;
             pieceList[top] += c1;
+            placePiece(top, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[top]);
 
             // bottom death square
             int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
             position[notToPlay + c2] |= 1ULL * (c2 > 0) << bottom;
             position[notToPlay]      |= 1ULL * (c2 > 0) << bottom;
             pieceList[bottom] += c2;
+            placePiece(bottom, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[bottom]);
 
             zobristHashUpdate ^=
                 ((c1 != 0) * get_zobrist_hash(top, c1, toPlay)) ^
@@ -954,6 +1028,7 @@ void unmakeMove(Move m)
             position[notToPlay + c1] |= 1ULL * (c1 > 0) << to;
             position[notToPlay]      |= 1ULL * (c1 > 0) << to;
             pieceList[to] += c1;
+            placePiece(to, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[to]);
 
             // uncapture piece on zobrist hash
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(to, c1, toPlay);
@@ -966,6 +1041,7 @@ void unmakeMove(Move m)
             position[notToPlay + c2] |= 1ULL * (c2 > 0) << deathSq;
             position[notToPlay]      |= 1ULL * (c2 > 0) << deathSq;
             pieceList[deathSq] += c2;
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | pieceList[deathSq]);
             
             zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSq, c2, toPlay);
 
@@ -973,6 +1049,7 @@ void unmakeMove(Move m)
             position[notToPlay + c3] |= 1ULL * (c3 > 0) << deathSq;
             position[notToPlay]      |= 1ULL * (c3 > 0) << deathSq;
             pieceList[deathSq] += c3;
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | pieceList[deathSq]);
 
             zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSq, c3, toPlay);
 
@@ -986,6 +1063,7 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] += coordinator * (isDeath > 0);
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
@@ -994,6 +1072,7 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] += coordinator * (isDeath > 0);
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
@@ -1002,6 +1081,7 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] += coordinator * (isDeath > 0);
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
@@ -1010,13 +1090,13 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
             position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
             pieceList[deathSq] += coordinator * (isDeath > 0);
+            placePiece(deathSq, (P_BOARD_INVALID_BIT * (isDeath == 0)) | notToPlay | pieceList[deathSq]);
 
             zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
 
             break;
 
         case springer:
-
             // just a garbage variable... coordinateSq in this case is where the springer captured
             // a piece at
             coordinateSq = pop_lsb(springerCaptures[from][to]);
@@ -1024,6 +1104,8 @@ void unmakeMove(Move m)
             position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
             pieceList[coordinateSq] += c1;
+
+            placePiece(coordinateSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[coordinateSq]);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -1037,6 +1119,8 @@ void unmakeMove(Move m)
             position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
             position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
             pieceList[coordinateSq] += c1;
+
+            placePiece(coordinateSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | pieceList[coordinateSq]);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -1053,6 +1137,7 @@ void unmakeMove(Move m)
             position[notToPlay + straddler] |= 1ULL * c1 << (to - 8);
             position[notToPlay]             |= 1ULL * c1 << (to - 8);
             pieceList[to - 8] += c1;
+            placePiece(to - 8, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | straddler);
 
             zobristHashUpdate ^= c1 * get_zobrist_hash(to - 8, straddler, toPlay);
 
@@ -1060,6 +1145,7 @@ void unmakeMove(Move m)
             position[notToPlay + straddler] |= 1ULL * c2 << (to - 1);
             position[notToPlay]             |= 1ULL * c2 << (to - 1);
             pieceList[to - 1] += c2;
+            placePiece(to - 1, (P_BOARD_INVALID_BIT * (c2 == 0)) | notToPlay | straddler);
 
             zobristHashUpdate ^= c2 * get_zobrist_hash(to - 1, straddler, toPlay);
 
@@ -1067,6 +1153,7 @@ void unmakeMove(Move m)
             position[notToPlay + straddler] |= 1ULL * c3 << (to + 1);
             position[notToPlay]             |= 1ULL * c3 << (to + 1);
             pieceList[to + 1] += c3;
+            placePiece(to + 1, (P_BOARD_INVALID_BIT * (c3 == 0)) | notToPlay | straddler);
 
             zobristHashUpdate ^= c3 * get_zobrist_hash(to + 1, straddler, toPlay);
 
@@ -1074,6 +1161,7 @@ void unmakeMove(Move m)
             position[notToPlay + straddler] |= 1ULL * c4 << (to + 8);
             position[notToPlay]             |= 1ULL * c4 << (to + 8);
             pieceList[to + 8] += c4;
+            placePiece(to + 8, (P_BOARD_INVALID_BIT * (c4 == 0)) | notToPlay | straddler);
 
             zobristHashUpdate ^= c4 * get_zobrist_hash(to + 8, straddler, toPlay);
 
@@ -1085,6 +1173,7 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator]   |= death * c1;
             position[notToPlay]                 |= death * c1;
             pieceList[captureSq] += coordinator * c1;
+            placePiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | coordinator);
 
             zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
 
@@ -1095,6 +1184,7 @@ void unmakeMove(Move m)
             position[notToPlay + coordinator]   |= death * c1;
             position[notToPlay]                 |= death * c1;
             pieceList[captureSq] += coordinator * c1;
+            placePiece(captureSq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | coordinator);
 
             zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
 
@@ -1104,6 +1194,7 @@ void unmakeMove(Move m)
             position[notToPlay + retractor] |= 1ULL * c1 << sq;
             position[notToPlay]             |= 1ULL * c1 << sq;
             pieceList[sq] += retractor * c1;
+            placePiece(sq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | retractor);
 
             zobristHashUpdate ^= c1 * get_zobrist_hash(sq, retractor, toPlay);
 
@@ -1113,6 +1204,7 @@ void unmakeMove(Move m)
             position[notToPlay + springer]  |= 1ULL * c1 << sq;
             position[notToPlay]             |= 1ULL * c1 << sq;
             pieceList[sq] += springer * c1;
+            placePiece(sq, (P_BOARD_INVALID_BIT * (c1 == 0)) | notToPlay | springer);
 
             zobristHashUpdate ^= c1 * get_zobrist_hash(sq, springer, toPlay);
 

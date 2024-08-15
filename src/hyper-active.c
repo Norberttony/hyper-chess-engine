@@ -19,6 +19,8 @@
 #include "transposition-table.h"
 #include "think.h"
 
+#include "p-board.h"
+
 // initializes the move generator
 void initMoveGen();
 
@@ -41,7 +43,16 @@ int main(void)
     //runTestSuite();
     //runTestSuite();
 
-    //return 0;
+    /*
+    loadFEN("8/2pKQ3/4p3/8/4p3/8/8/7k w -");
+    printMoveCounter(countMoves(1));
+    printMoveCounter(countMoves(2));
+    printMoveCounter(countMoves(3));
+    printMoveCounter(countMoves(4));
+    printMoveCounter(countMoves(5));
+
+    return 0;
+    */
 
     srand(time(NULL));
 
@@ -64,6 +75,7 @@ void initMoveGen()
     generateZobristHashes();
     populateKingMoves();
     populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
+    populateDirectionBoards();
     populateDeathSquares();
     populateSpringerLeaps();
     populateSpringerCaptures();

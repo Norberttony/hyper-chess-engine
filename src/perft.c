@@ -134,6 +134,11 @@ struct MoveCounter countMoves(int depth)
     return counter;
 }
 
+void printMoveCounter(struct MoveCounter mc)
+{
+    printf("%d Moves | %d Capture moves | %d Piece captures | %d Checkmates\n", mc.moves, mc.captureMoves, mc.pieceCaptures, mc.checkmates);
+}
+
 int isMoveLegal(Move m)
 {
     makeMove(m);
