@@ -13,85 +13,26 @@ const int pieceValues[] =
     0           // king (priceless)
 };
 
-const int immobilizedPieceSquareTables[7][64] =
+// immobilizer receives a bonus for the pieces it immobilizes.
+// some pieces don't lose their effectiveness (straddlers still teamwork, chameleon's primary uses
+// are immobilizing enemy immobilizer and/or dealing with coordinator, etc.)
+const int immBonus[] =
 {
-    // for straddlers
-    {
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10,
-        -10, -10, -10, -10, -10, -10, -10, -10
-    },
-    // for retractor
-    {
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40
-    },
-    // for springer
-    {
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40
-    },
-    // for coordinator
-    {
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
-         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
-         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90
-    },
-    // for immobilizer
-    {
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-        -100, -100, -100, -100, -100, -100, -100, -100,
-         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90,
-         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
-         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
-         -80,  -80,  -80,  -80,  -80,  -80,  -80,  -80,
-         -90,  -90,  -90,  -90,  -90,  -90,  -90,  -90
-    },
-    // for chameleon
-    {
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -50, -50, -50, -50, -50, -50, -50, -50,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40,
-        -40, -40, -40, -40, -40, -40, -40, -40
-    },
-    // for king
-    {
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -200, -200, -200, -200, -200, -200, -200, -200,
-        -190, -190, -190, -190, -190, -190, -190, -190,
-        -190, -190, -190, -190, -190, -190, -190, -190
-    }
+    0,          // empty
+    20,         // straddler
+    80,         // retractor
+    100,        // springer
+    200,        // coordinator
+    150,        // immobilizer
+    125,        // chameleon
+    200         // king
+};
+
+// Gives a penalty based on how many lines of sights against an immobilizer are blocked.
+// The highest penalty occurs when no lines of sights are blocked.
+const int immLoSPen[] =
+{
+    150, 100, 50, 25, 0
 };
 
 const int pieceSquareTables[7][64] =
@@ -244,7 +185,7 @@ int evaluate()
     for (int i = 1; i <= 7; i++)
     {
         // count up my material
-        U64 myBoard = position[toPlay + i] & ~(enemyInfl | enemyChamInfl);
+        U64 myBoard = position[toPlay + i];
         while (myBoard)
         {
             evaluation += pieceValues[i] + pieceSquareTables[i - 1][(toPlay == black) * 63 + perspective * pop_lsb(myBoard)];
@@ -255,12 +196,12 @@ int evaluate()
         myBoard = position[toPlay + i] & (enemyInfl | enemyChamInfl);
         while (myBoard)
         {
-            evaluation += pieceValues[i] + immobilizedPieceSquareTables[i - 1][(toPlay == black) * 63 + perspective * pop_lsb(myBoard)];
+            evaluation -= immBonus[i];
             myBoard &= myBoard - 1;
         }
 
         // count up opponent's material
-        U64 enemyBoard = position[notToPlay + i] & ~(myInfl | myChamInfl);
+        U64 enemyBoard = position[notToPlay + i];
         while (enemyBoard)
         {
             evaluation -= pieceValues[i] + pieceSquareTables[i - 1][(notToPlay == black) * 63 + -perspective * pop_lsb(enemyBoard)];
@@ -271,20 +212,46 @@ int evaluate()
         enemyBoard = position[notToPlay + i] & (myInfl | myChamInfl);
         while (enemyBoard)
         {
-            evaluation -= pieceValues[i] + immobilizedPieceSquareTables[i - 1][(notToPlay == black) * 63 + -perspective * pop_lsb(enemyBoard)];
+            evaluation += immBonus[i];
             enemyBoard &= enemyBoard - 1;
         }
     }
 
-    int enemKingCornered = (myInfl & position[notToPlay + king]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + king];
-    int enemCoordCornered = (myInfl & position[notToPlay + coordinator]) > 0 && bishopAttacks[myImmSq][0] & position[notToPlay + coordinator];
+    // determines which boards should be used to count as blockers
+    U64 enemyDiags = totalBoard;
+    U64 enemyLines = totalBoard;
 
-    int myKingCornered = (enemyInfl & position[toPlay + king]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + king];
-    int myCoordCornered = (enemyInfl & position[toPlay + coordinator]) > 0 && bishopAttacks[enemyImmSq][0] & position[toPlay + coordinator];
+    // count lines of sight for the immobilizer
+    int myImmLoS = 
+        // top left to bottom right diagonal
+        (((myImmobilizer << 9 | myImmobilizer >> 9) & enemyDiags) > 0) +
+        // up to down
+        (((myImmobilizer << 8 | myImmobilizer >> 8) & enemyLines) > 0) +
+        // top right to bottom left
+        (((myImmobilizer << 7 | myImmobilizer >> 7) & enemyDiags) > 0) +
+        // left to right
+        (((myImmobilizer << 1 | myImmobilizer >> 1) & enemyLines) > 0);
 
-    // bonus if king OR coordinator are in an immobilizer's corner
-    evaluation += 150 * (enemKingCornered || enemCoordCornered);
-    evaluation -= 150 * (myKingCornered || myCoordCornered);
+    // apply penalty based on the number of available lines of attack
+    evaluation -= (20 * (myImmSq >> 3) + immLoSPen[myImmLoS]) * myImmImm;
+
+    // determines which boards should be used to count as blockers
+    U64 myDiags = totalBoard;
+    U64 myLines = totalBoard;
+
+    // count lines of sight for the immobilizer
+    int enemyImmLoS = 
+        // top left to bottom right diagonal
+        (((enemyImmobilizer << 9 | enemyImmobilizer >> 9) & myDiags) > 0) +
+        // up to down
+        (((enemyImmobilizer << 8 | enemyImmobilizer >> 8) & myLines) > 0) +
+        // top right to bottom left
+        (((enemyImmobilizer << 7 | enemyImmobilizer >> 7) & myDiags) > 0) +
+        // left to right
+        (((enemyImmobilizer << 1 | enemyImmobilizer >> 1) & myLines) > 0);
+
+    // apply penalty based on the number of available lines of attack
+    evaluation += (20 * (enemyImmSq >> 3) + immLoSPen[enemyImmLoS]) * enemyImmImm;
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + myMobilityScore - enemyMobilityScore;
