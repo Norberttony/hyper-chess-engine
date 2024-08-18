@@ -570,7 +570,6 @@ void makeMove(Move m)
     int coordinateSq;
 
     U64 zobristHashUpdate = 0ULL;
-    U64 straddlerHashUpdate = 0ULL;
 
     // interpret capture bits
     switch(type)
@@ -584,11 +583,6 @@ void makeMove(Move m)
 
             // update zobrist hash as needed (remove captured pieces)
             zobristHashUpdate ^=
-                ((c1 != 0) * get_zobrist_hash(upSq, c1, toPlay)) ^
-                ((c2 != 0) * get_zobrist_hash(ltSq, c2, toPlay)) ^
-                ((c3 != 0) * get_zobrist_hash(rtSq, c3, toPlay)) ^
-                ((c4 != 0) * get_zobrist_hash(dnSq, c4, toPlay));
-            straddlerHashUpdate ^=
                 ((c1 != 0) * get_zobrist_hash(upSq, c1, toPlay)) ^
                 ((c2 != 0) * get_zobrist_hash(ltSq, c2, toPlay)) ^
                 ((c3 != 0) * get_zobrist_hash(rtSq, c3, toPlay)) ^
