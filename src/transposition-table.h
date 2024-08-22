@@ -35,7 +35,7 @@ extern struct TranspositionEntry transpositionTable_depth[TRANSPOSITION_TABLE_EN
 extern struct TranspositionEntry transpositionTable_always[TRANSPOSITION_TABLE_ENTRIES];
 
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
-struct TranspositionEntry* getTranspositionTableEntry(int myDepth);
+struct TranspositionEntry* getTranspositionTableEntry();
 void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
 
 // returns the evaluation of the position based on the transposition table

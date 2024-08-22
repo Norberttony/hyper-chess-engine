@@ -1,6 +1,10 @@
 
 #include "think.h"
 
+// how often the order first (from TT) performs
+int orderFirstAttempts = 0;
+int orderFirstSuccess = 0;
+
 // search nodes and quiescent search nodes visited
 int nodesVisited = 0;
 int qNodesVisited = 0;
@@ -26,6 +30,9 @@ Move thinkFor(int time)
     int totalNodesVisited = 0;
     int totalQNodesVisited = 0;
 
+    int totalOrderFirstAttempts = 0;
+    int totalOrderFirstSuccess = 0;
+
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
@@ -34,6 +41,9 @@ Move thinkFor(int time)
     {
         nodesVisited = 0;
         qNodesVisited = 0;
+
+        orderFirstAttempts = 0;
+        orderFirstSuccess = 0;
 
         /*
         TT_misses = 0;
@@ -65,14 +75,19 @@ Move thinkFor(int time)
         printf("\n");
         printf("Visited %d nodes\n", nodesVisited);
         printf("Visited %d quiescent nodes\n", qNodesVisited);
+        printf("Ordered first and was correct %d/%d times\n", orderFirstSuccess, orderFirstAttempts);
         printf("\n");
 
         totalNodesVisited += nodesVisited;
         totalQNodesVisited += qNodesVisited;
+
+        totalOrderFirstAttempts += orderFirstAttempts;
+        totalOrderFirstSuccess += orderFirstSuccess;
     }
 
     printf("Total number of nodes visited: %d\n", totalNodesVisited);
     printf("Total number of quiescent nodes visited: %d\n", totalQNodesVisited);
+    printf("Total number of order first successes: %d/%d\n", totalOrderFirstSuccess, totalOrderFirstAttempts);
 
     if (myHash != zobristHash)
     {
@@ -93,6 +108,8 @@ int think(int depth, int alpha, int beta)
 
     int nodeType = TT_LOWER;
 
+    int isFromTT = 0;
+
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
@@ -101,22 +118,25 @@ int think(int depth, int alpha, int beta)
         struct TranspositionEntry* savedEval = getTranspositionTableEntry(depth);
         if (savedEval)
         {
-            if (savedEval->nodeType == TT_EXACT)
+            if (savedEval->depth >= depth)
             {
-                // determine upper bound for mate score
-                return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (maxDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (maxDepth - depth);
+                if (savedEval->nodeType == TT_EXACT)
+                {
+                    // determine upper bound for mate score
+                    return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (maxDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (maxDepth - depth);
+                }
+                else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
+                {
+                    return alpha;
+                }
+                else if (savedEval->nodeType == TT_UPPER && beta <= savedEval->eval)
+                {
+                    return beta;
+                }
             }
-            else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
-            {
-                return alpha;
-            }
-            else if (savedEval->nodeType == TT_UPPER && beta <= savedEval->eval)
-            {
-                return beta;
-            }
-
             // order based on saved entry
             orderFirst = savedEval->bestMove;
+            isFromTT = 1;
         }
     }
 #endif
@@ -126,6 +146,9 @@ int think(int depth, int alpha, int beta)
     {
         return thinkCaptures(alpha, beta, 1);
     }
+
+    orderFirstAttempts += isFromTT;
+    orderFirstSuccess += isFromTT;
 
     Move movelist[MAX_MOVES];
     int size = generateMoves((Move*)movelist);
@@ -195,6 +218,9 @@ int think(int depth, int alpha, int beta)
             nodeType = TT_EXACT;
             alpha = eval;
             bestMove = m;
+
+            orderFirstSuccess -= isFromTT;
+            isFromTT = 0;
         }
     }
 

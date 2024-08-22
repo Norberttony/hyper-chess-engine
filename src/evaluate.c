@@ -32,7 +32,7 @@ const int immBonus[] =
 // The highest penalty occurs when no lines of sights are blocked.
 const int immLoSPen[] =
 {
-    150, 100, 50, 25, 0
+    0, 25, 50, 100, 150
 };
 
 const int pieceSquareTables[7][64] =
@@ -217,41 +217,59 @@ int evaluate()
         }
     }
 
+
     // determines which boards should be used to count as blockers
     U64 enemyDiags = totalBoard;
     U64 enemyLines = totalBoard;
 
+    // determines whether to test left to right (-1) or up to down (1)
+    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
+    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
+    int onlyTest = testUpDn - testLtRt;
+
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & enemyDiags) > 0) +
+        (((myImmobilizer << 9 | myImmobilizer >> 9) & enemyDiags) > 0) * (onlyTest == 0) +
         // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & enemyLines) > 0) +
+        (((myImmobilizer << 8 | myImmobilizer >> 8) & enemyLines) > 0) * (onlyTest >= 0) +
         // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & enemyDiags) > 0) +
+        (((myImmobilizer << 7 | myImmobilizer >> 7) & enemyDiags) > 0) * (onlyTest == 0) +
         // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & enemyLines) > 0);
+        (((myImmobilizer << 1 | myImmobilizer >> 1) & enemyLines) > 0) * (onlyTest <= 0);
+
+    // handle a corner case (well, literally, the immobilizer being in the corner)
+    myImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    evaluation -= (20 * (myImmSq >> 3) + immLoSPen[myImmLoS]) * myImmImm;
+    evaluation -= ((toPlay == white) * 140 + -perspective * 20 * (myImmSq >> 3) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0);
+
 
     // determines which boards should be used to count as blockers
     U64 myDiags = totalBoard;
     U64 myLines = totalBoard;
 
+    // determines whether to test left to right (-1) or up to down (1)
+    testUpDn = enemyImmobilizer & ranks[0] | enemyImmobilizer & ranks[7];
+    testLtRt = enemyImmobilizer & files[7] | enemyImmobilizer & files[0];
+    onlyTest = testUpDn - testLtRt;
+
     // count lines of sight for the immobilizer
     int enemyImmLoS = 
         // top left to bottom right diagonal
-        (((enemyImmobilizer << 9 | enemyImmobilizer >> 9) & myDiags) > 0) +
+        (((enemyImmobilizer << 9 | enemyImmobilizer >> 9) & myDiags) > 0) * (onlyTest == 0) +
         // up to down
-        (((enemyImmobilizer << 8 | enemyImmobilizer >> 8) & myLines) > 0) +
+        (((enemyImmobilizer << 8 | enemyImmobilizer >> 8) & myLines) > 0) * (onlyTest >= 0) +
         // top right to bottom left
-        (((enemyImmobilizer << 7 | enemyImmobilizer >> 7) & myDiags) > 0) +
+        (((enemyImmobilizer << 7 | enemyImmobilizer >> 7) & myDiags) > 0) * (onlyTest == 0) +
         // left to right
-        (((enemyImmobilizer << 1 | enemyImmobilizer >> 1) & myLines) > 0);
+        (((enemyImmobilizer << 1 | enemyImmobilizer >> 1) & myLines) > 0) * (onlyTest <= 0);
+
+    // handle a corner case (well, literally, the immobilizer being in the corner)
+    enemyImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    evaluation += (20 * (enemyImmSq >> 3) + immLoSPen[enemyImmLoS]) * enemyImmImm;
+    evaluation += ((notToPlay == white) * 140 + perspective * 20 * (enemyImmSq >> 3) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + myMobilityScore - enemyMobilityScore;

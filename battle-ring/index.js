@@ -130,7 +130,7 @@ const elo1 = 20;
     }
 
     let gameIndex = (e1Wins + draws + e2Wins) / 2;
-    const threads = 2;
+    const threads = 1;
 
     let sprtResult = SPRT(e2Wins, draws, e1Wins, 0, elo1, 0.01, 0.01);
 

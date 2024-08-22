@@ -30,7 +30,7 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 }
 
 
-struct TranspositionEntry* getTranspositionTableEntry(int myDepth)
+struct TranspositionEntry* getTranspositionTableEntry()
 {
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
     struct TranspositionEntry* depthEntry = transpositionTable_depth + index;
@@ -38,12 +38,12 @@ struct TranspositionEntry* getTranspositionTableEntry(int myDepth)
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (depthEntry->depth >= myDepth && depthEntry->zobristHash == zobristHash)
+    if (depthEntry->zobristHash == zobristHash)
     {
         TT_hits++;
         return depthEntry;
     }
-    else if (alwaysEntry->depth >= myDepth && alwaysEntry->zobristHash == zobristHash)
+    else if (alwaysEntry->zobristHash == zobristHash)
     {
         TT_hits++;
         return alwaysEntry;
