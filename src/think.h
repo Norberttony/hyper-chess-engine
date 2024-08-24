@@ -9,12 +9,13 @@
 #include "transposition-table.h"
 #include "evaluate.h"
 
-#define MAX_DEPTH 128
 #define USE_TRANSPOSITION_TABLE
 
 
 extern int orderFirstAttempts;
 extern int orderFirstSuccess;
+
+extern int nodeOccurrence[4];
 
 
 // performs a min-max alpha-beta search from the current position to the given depth.

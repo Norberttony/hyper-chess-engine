@@ -8,6 +8,9 @@
 #include "look-up-tables.h"
 #include "defines.h"
 
+// defines the max depth that the engine can calculate to.
+#define MAX_DEPTH 128
+
 // defines the maximum possible number of moves in any attainable position
 #define MAX_MOVES 256
 

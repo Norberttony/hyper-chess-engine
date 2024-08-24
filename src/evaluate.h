@@ -6,6 +6,12 @@
 #include "magic-bitboards.h"
 #include "move.h"
 
+
+extern const int pieceValues[];
+
+extern const int pieceSquareTables[7][64];
+
+
 // greedy evaluation that counts material based on piece values
 int evaluate();
 

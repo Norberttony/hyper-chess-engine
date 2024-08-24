@@ -4,16 +4,52 @@
 
 Move orderFirst = 0;
 
+const int orderFirstValue = 100000;
+const int killerValue = 15;
 
-// orders captures first, and also orders the last best move first.
-int compareMoves(const void *a, const void *b)
+Move killerMoves[MAX_DEPTH][2] = { 0 };
+
+
+void orderMoves(Move* moves, int count, int depth)
 {
-    Move m1 = *((Move*)a);
-    Move m2 = *((Move*)b);
+    int scores[MAX_MOVES] = { 0 };
 
-    // order the orderFirst move the highest
-    int val1 = (m2 == orderFirst) * move_captMask + (int)(m2 & move_captMask);
-    int val2 = (m1 == orderFirst) * move_captMask + (int)(m1 & move_captMask);
+    // score the moves
+    for (int i = 0; i < count; i++)
+    {
+        Move m = moves[i];
+        int type = m & move_typeMask;
+        int fromSq = (m & move_fromMask) >> 3;
+        int toSq = (m & move_toMask) >> 9;
 
-    return val1 - val2;
+        int killScore = killerValue * (depth >= 0 && (killerMoves[depth][0] == m || killerMoves[depth][1] == m));
+
+        scores[i] = orderFirstValue * (m == orderFirst) + moveCaptureValue(m) + killScore;
+    }
+
+    // sort the moves using insertion sort
+    for (int i = 1; i < count; i++)
+    {
+        Move m = moves[i];
+        int s = scores[i];
+
+        int j;
+        for (j = i - 1; j >= 0 && scores[j] < s; j--)
+        {
+            moves[j + 1] = moves[j];
+            scores[j + 1] = scores[j];
+        }
+
+        moves[j + 1] = m;
+        scores[j + 1] = s;
+    }
+
+    /*
+    for (int i = 0; i < count; i++)
+    {
+        printMove(moves[i]);
+        printf(" %d, ", scores[i]);
+    }
+    puts("");
+    */
 }

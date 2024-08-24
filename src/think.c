@@ -13,6 +13,9 @@ int thinkingTime = -1;
 clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
 int maxDepth = 0;
 
+int nodeOccurrence[4] = { 0 };
+
+
 int getThinkAllowance()
 {
     return thinkStart == -1 || (float)(clock() - thinkStart) / (float)((clock_t)1) < thinkingTime;
@@ -25,6 +28,7 @@ Move thinkFor(int time)
     thinkingTime = time;
     orderFirst = 0;
 
+
     U64 myHash = zobristHash;
 
     int totalNodesVisited = 0;
@@ -32,6 +36,8 @@ Move thinkFor(int time)
 
     int totalOrderFirstAttempts = 0;
     int totalOrderFirstSuccess = 0;
+
+    int totalNodeOccurrence[4] = { 0 };
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
@@ -44,6 +50,10 @@ Move thinkFor(int time)
 
         orderFirstAttempts = 0;
         orderFirstSuccess = 0;
+
+        nodeOccurrence[1] = 0;
+        nodeOccurrence[2] = 0;
+        nodeOccurrence[3] = 0;
 
         /*
         TT_misses = 0;
@@ -76,6 +86,7 @@ Move thinkFor(int time)
         printf("Visited %d nodes\n", nodesVisited);
         printf("Visited %d quiescent nodes\n", qNodesVisited);
         printf("Ordered first and was correct %d/%d times\n", orderFirstSuccess, orderFirstAttempts);
+        printf("EXACT: %d\nLOWER: %d\nUPPER: %d\n", nodeOccurrence[TT_EXACT], nodeOccurrence[TT_LOWER], nodeOccurrence[TT_UPPER]);
         printf("\n");
 
         totalNodesVisited += nodesVisited;
@@ -83,11 +94,16 @@ Move thinkFor(int time)
 
         totalOrderFirstAttempts += orderFirstAttempts;
         totalOrderFirstSuccess += orderFirstSuccess;
+
+        totalNodeOccurrence[TT_EXACT] += nodeOccurrence[TT_EXACT];
+        totalNodeOccurrence[TT_LOWER] += nodeOccurrence[TT_LOWER];
+        totalNodeOccurrence[TT_UPPER] += nodeOccurrence[TT_UPPER];
     }
 
     printf("Total number of nodes visited: %d\n", totalNodesVisited);
     printf("Total number of quiescent nodes visited: %d\n", totalQNodesVisited);
     printf("Total number of order first successes: %d/%d\n", totalOrderFirstSuccess, totalOrderFirstAttempts);
+    printf("Total number of node occurrences | EXACT: %d LOWER: %d UPPER: %d\n", totalNodeOccurrence[TT_EXACT], totalNodeOccurrence[TT_LOWER], totalNodeOccurrence[TT_UPPER]);
 
     if (myHash != zobristHash)
     {
@@ -159,7 +175,7 @@ int think(int depth, int alpha, int beta)
     }
 
     // order most promising moves first
-    qsort(movelist, size, sizeof(Move), compareMoves);
+    orderMoves(movelist, size, depth);
 
     int hasLegalMoves = 0;
 
@@ -210,6 +226,13 @@ int think(int depth, int alpha, int beta)
 #ifdef USE_TRANSPOSITION_TABLE
             writeToTranspositionTable(depth, beta, m, TT_UPPER);
 #endif
+            nodeOccurrence[TT_UPPER]++;
+            
+            // store killer move
+            int isStored = killerMoves[depth][0] == m;
+            killerMoves[depth][1] = !isStored * killerMoves[depth][0] + isStored * killerMoves[depth][1];
+            killerMoves[depth][0] = !isStored * m + isStored * killerMoves[depth][0];
+
             return beta;
         }
 
@@ -229,6 +252,8 @@ int think(int depth, int alpha, int beta)
     {
         return 0;
     }
+
+    nodeOccurrence[nodeType]++;
 
     // save this entry in the transposition table
 #ifdef USE_TRANSPOSITION_TABLE
@@ -270,7 +295,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
     }
 
     // determine most promising moves
-    qsort(movelist, size, sizeof(Move), compareMoves);
+    orderMoves(movelist, size, -1);
 
     int nodeType = TT_LOWER;
 
@@ -344,7 +369,7 @@ Move getBestMove(int depth)
     }
 
     // determine most promising moves
-    qsort(movelist, size, sizeof(Move), compareMoves);
+    orderMoves(movelist, size, depth);
 
     int alpha = INT_MIN + 1;
     int beta = INT_MAX - 1;

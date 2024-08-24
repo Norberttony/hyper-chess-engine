@@ -29,8 +29,6 @@ function loadGame(){
     xhr.send();
 }
 
-loadGame();
-
 //evaluateGame(0);
 
 let candidates = [];
