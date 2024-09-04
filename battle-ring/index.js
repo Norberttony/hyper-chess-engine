@@ -102,7 +102,6 @@ function playerVsEngineHandler(engine, data){
 */
 
 // play many games
-
 const elo1 = 20;
 
 (async () => {

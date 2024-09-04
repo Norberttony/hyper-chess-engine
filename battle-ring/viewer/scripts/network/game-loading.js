@@ -40,24 +40,59 @@ let numberOfCaptures2 = 0;
 let numberOfCaptures3 = 0;
 let numberOfCaptures4 = 0;
 let numberOfCaptures5 = 0;
+let dbFormat = ``;
 
 function loadLANGame(notation){
-    const fen = notation.split("\n")[0];
-    gameState.loadFEN(fen.replace("FEN: ", ""));
-    
+    const nSplit = notation.split("\n");
+    const fen = nSplit[0].replace("FEN: ", "");
+    gameState.loadFEN(fen);
+
+    const wp = nSplit[1].replace("White: ", "");
+    const bp = nSplit[2].replace("Black: ", "");
+
+    let moveStr = ``;
+    let result;
+
     for (const uci of notation.split("\n")){
+
+        const allMoves = gameState.board.generateMoves(true);
+        numberOfTurns++;
+        numberOfMoves += allMoves.length;
+
+        for (const m of allMoves){
+            if (m.captures.length > 0)
+                numberOfCaptureMoves++;
+            if (m.captures.length == 1)
+                numberOfCaptures1++;
+            else if (m.captures.length == 2)
+                numberOfCaptures2++;
+            else if (m.captures.length == 3)
+                numberOfCaptures3++;
+            else if (m.captures.length == 4)
+                numberOfCaptures4++;
+            else if (m.captures.length == 5)
+                numberOfCaptures5++;
+        }
 
         const sq = algebraicToSquare(uci);
         // go through all possible moves
         const moves = gameState.board.generatePieceMoves(sq, gameState.board.squares[sq]);
 
+        if (!isNaN(uci) && uci.length > 0){
+            result = uci;
+            break;
+        }
+
         for (const m of moves){
             if (m.uci == uci){
+                moveStr += " " + getMoveSAN(gameState.board, m);
                 gameState.board.makeMove(m);
                 break;
             }
         }
     }
+
+    dbFormat += `${fen}\t${wp}\t${bp}\t${result}\t\t${moveStr}\n`;
 }
 
 function prettyLoadLANGame(notation){
@@ -105,6 +140,8 @@ function prettyLoadLANGame(notation){
     document.getElementById("black_player").innerText = `${black} | ${blackScore}`;
 }
 
+const materialPoints = [ 0, 0, 300, 900, 400, 1100, 100, 1300 ];
+
 function evaluateGame(index){
     console.log(`Consider game ${index}`);
     const xhr = new XMLHttpRequest();
@@ -113,7 +150,19 @@ function evaluateGame(index){
         if (xhr.readyState == 4 && xhr.status == 200){
             loadLANGame(xhr.responseText);
             if (gameState.board.isGameOver() == "#"){
-                if (!gameState.board.isImmobilized(gameState.board.kings[gameState.board.turn == Piece.white ? 0 : 1], gameState.board.turn | Piece.king)){
+                // after a player delivers checkmate, it's technically the opponent's turn (who has no response).
+                // therefore, the winner is whoever's turn it is not.
+                const winner = gameState.board.turn == Piece.black ? Piece.white : Piece.black;
+                const winnerPerspective = winner == Piece.white ? 1 : -1;
+
+                let materialEval = 0;
+
+                for (const s of gameState.board.squares){
+                    const perspective = Piece.getColor(s) == Piece.white ? 1 : -1;
+                    materialEval += perspective * materialPoints[Piece.getType(s)];
+                }
+
+                if (materialEval * winnerPerspective <= -600 && !gameState.board.isImmobilized(gameState.board.kings[gameState.board.turn == Piece.white ? 0 : 1], gameState.board.turn | Piece.king)){
                     console.log("Candidate!");
                     candidates.push(xhr.responseText);
                 }
