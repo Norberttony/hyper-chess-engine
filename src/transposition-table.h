@@ -3,6 +3,7 @@
 
 #include "defines.h"
 #include "move.h"
+#include "make-unmake.h"
 
 #include <limits.h>
 #include <string.h>

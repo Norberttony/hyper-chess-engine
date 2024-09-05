@@ -88,10 +88,4 @@ int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist);
 void printMove(Move);
 void prettyPrintMove(Move);
 
-void makeMove(Move);
-void unmakeMove(Move);
-
-// used to pass (or "unpass") a turn
-void makeNullMove();
-
 #endif

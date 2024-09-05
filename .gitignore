@@ -1,14 +1,7 @@
 
 .vscode
 
-node_modules
-
 bin/*
 !bin/.gitkeep
-
-battle-ring/debug/*.txt
-battle-ring/debug *
-battle-ring/pgn.txt
-battle-ring/positions.txt
 
 *.exe

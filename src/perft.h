@@ -2,6 +2,7 @@
 #define PERFT_HEADER
 
 #include "move.h"
+#include "make-unmake.h"
 
 // general debug utilities that tend to be focused on counting the number of moves from the current
 // position to a certain depth.
