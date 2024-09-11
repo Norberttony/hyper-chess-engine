@@ -251,7 +251,7 @@ int isAttackingKing()
 
     U64 chamBoard = position[toPlay + chameleon];
     int cham1Sq = pop_lsb(chamBoard);
-    U64 cham1Board = ((chamBoard & notImmInfl) > 0) * (kingMoves[cham1Sq] & ~totalBoard);
+    U64 cham1Board = (chamBoard > 0 && (1ULL << cham1Sq & notImmInfl) > 0) * (kingMoves[cham1Sq] & ~totalBoard);
     int cham2Sq = pop_lsb(chamBoard - 1 & chamBoard);
     U64 cham2Board = (((chamBoard - 1 & chamBoard) & notImmInfl) > 0) * (kingMoves[cham2Sq] & ~totalBoard);
     

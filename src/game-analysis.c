@@ -17,7 +17,7 @@ void playGame(int mySide)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = thinkFor(200);
+            Move best = thinkFor(1000);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -174,4 +174,34 @@ int checkGameOver()
     }
 
     return 0;
+}
+
+void askForLAN(void)
+{
+    puts("Paste in the LAN");
+    fflush(stdout);
+
+    char lan[10000];
+    fgets(lan, 10000, stdin);
+
+    loadLAN(lan);
+}
+
+void loadLAN(char* str)
+{
+    printf("%s\n", str);
+    for (int i = 0; str[i] != '\0' && str[i + 1] != '\0'; i += 5)
+    {
+        // get coordinates of from square and to square
+        int fromF = str[i] - 'a';
+        int fromR = 7 - (str[i + 1] - '1');
+
+        int toF = str[i + 2] - 'a';
+        int toR = 7 - (str[i + 3] - '1');
+
+        int fromSq = fromR * 8 + fromF;
+        int toSq = toR * 8 + toF;
+
+        chooseMove(fromSq, toSq);
+    }
 }

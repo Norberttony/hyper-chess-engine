@@ -28,6 +28,8 @@ int main(void)
 
     askForFEN();
 
+    askForLAN();
+
     int mySide = askForSide();
 
     prettyPrintBoard();

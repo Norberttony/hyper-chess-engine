@@ -35,4 +35,8 @@ void analyzeGame(int depth);
 
 int checkGameOver();
 
+void askForLAN(void);
+
+void loadLAN(char*);
+
 #endif
