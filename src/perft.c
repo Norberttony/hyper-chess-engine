@@ -211,6 +211,26 @@ int chooseMove(int startSq, int endSq)
     return 0;
 }
 
+int chooseMoveBlind(int startSq, int endSq)
+{
+    Move moves[MAX_MOVES];
+    int size = generateMoves(moves);
+
+    for (int i = 0; i < size; i++)
+    {
+        Move m = moves[i];
+
+        if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
+        {
+            makeMove(m);
+            return m;
+        }
+    }
+
+    puts("Could not find move!");
+    return 0;
+}
+
 int isAttackingKing()
 {
     // get squares that enemy immobilizer is not influencing

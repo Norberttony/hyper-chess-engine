@@ -26,6 +26,9 @@ int countCaptures(Move);
 
 int chooseMove(int startSq, int endSq);
 
+// chooses a move without checking if it is legal or not.
+int chooseMoveBlind(int startSq, int endSq);
+
 // incomplete, only considers chameleon, king, and coordinator checks (excluding king walking up to king)
 // is the side to play attacking the king?
 int isAttackingKing();

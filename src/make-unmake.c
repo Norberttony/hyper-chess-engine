@@ -36,24 +36,16 @@ void makeMove(Move m)
                 ((c4 != 0) * get_zobrist_hash(dnSq, c4, toPlay));
 
             // up
-            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << upSq;
-            position[notToPlay] ^= 1ULL * (c1 > 0) << upSq;
-            pieceList[upSq] = pieceList[upSq] * (c1 == 0);
+            unset_piece(notToPlay, c1, c1 > 0, upSq);
 
             // left
-            position[notToPlay + c2] ^= 1ULL * (c2 > 0) << ltSq;
-            position[notToPlay] ^= 1ULL * (c2 > 0) << ltSq;
-            pieceList[ltSq] = pieceList[ltSq] * (c2 == 0);
+            unset_piece(notToPlay, c2, c2 > 0, ltSq);
 
             // right
-            position[notToPlay + c3] ^= 1ULL * (c3 > 0) << rtSq;
-            position[notToPlay] ^= 1ULL * (c3 > 0) << rtSq;
-            pieceList[rtSq] = pieceList[rtSq] * (c3 == 0);
+            unset_piece(notToPlay, c3, c3 > 0, rtSq);
 
             // down
-            position[notToPlay + c4] ^= 1ULL * (c4 > 0) << dnSq;
-            position[notToPlay] ^= 1ULL * (c4 > 0) << dnSq;
-            pieceList[to + 8] = pieceList[to + 8] * (c4 == 0);
+            unset_piece(notToPlay, c4, c4 > 0, dnSq);
 
             break;
         
@@ -65,15 +57,11 @@ void makeMove(Move m)
             
             // top death square
             int top = pop_lsb(deathSquares[coordinateSq][to][0]);
-            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << top;
-            position[notToPlay]      ^= 1ULL * (c1 > 0) << top;
-            pieceList[top] *= c1 == 0;
+            unset_piece(notToPlay, c1, c1 > 0, top);
 
             // bottom death square
             int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
-            position[notToPlay + c2] ^= 1ULL * (c2 > 0) << bottom;
-            position[notToPlay]      ^= 1ULL * (c2 > 0) << bottom;
-            pieceList[bottom] *= c2 == 0;
+            unset_piece(notToPlay, c2, c2 > 0, bottom);
 
             // update zobrist hash by removing captured pieces
             zobristHashUpdate ^= 
@@ -95,56 +83,39 @@ void makeMove(Move m)
             coordinateSq = pop_lsb(position[toPlay + coordinator]);
 
             // top death square
-            int deathSq = pop_lsb(deathSquares[coordinateSq][to][0]);
-            zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSq, c2, toPlay);
-            position[notToPlay + c2] ^= 1ULL * (c2 > 0) << deathSq;
-            position[notToPlay]      ^= 1ULL * (c2 > 0) << deathSq;
-            pieceList[deathSq] = pieceList[deathSq] * (c2 == 0);
+            int deathSqTop = pop_lsb(deathSquares[coordinateSq][to][0]);
+            zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSqTop, c2, toPlay);
+            unset_piece(notToPlay, c2, c2 > 0, deathSqTop);
 
             // bottom death square
-            deathSq = pop_lsb(deathSquares[coordinateSq][to][1]);
-            zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSq, c3, toPlay);
-            position[notToPlay + c3] ^= 1ULL * (c3 > 0) << deathSq;
-            position[notToPlay]      ^= 1ULL * (c3 > 0) << deathSq;
-            pieceList[deathSq] = pieceList[deathSq] * (c3 == 0);
+            int deathSqBottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+            zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSqBottom, c3, toPlay);
+            unset_piece(notToPlay, c3, c3 > 0, deathSqBottom);
 
-            // can form death squares with chameleons (only against coordinator)
+            // the king moving can form death squares with chameleons but only against the coordinator
             U64 chamBoard = position[toPlay + chameleon];
             int cham1 = pop_lsb(chamBoard);
+            U64 cham2Board = chamBoard & (chamBoard - 1);
             int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
 
-            // to-do: combine all of the boards into one and then apply them.
-            int isDeath = (m & move_kingc1mask) > 0;
-            deathSq = pop_lsb(deathSquares[cham1][to][0]);
-            position[notToPlay + coordinator] ^= 1ULL * isDeath << deathSq;
-            position[notToPlay]               ^= 1ULL * isDeath << deathSq;
-            pieceList[deathSq] *= (isDeath == 0);
+            // there's only one coordinator, so there can only be one square where it is captured.
+            // since this is makeMove, the enemy coordinator is still on the board. so, we can at
+            // most one bit turned on for this bitboard.
+            U64 coordDeath = (
+                (chamBoard > 0) * (
+                    deathSquares[cham1][to][0] |
+                    deathSquares[cham1][to][1]
+                ) |
+                (cham2Board > 0) * (
+                    deathSquares[cham2][to][0] |
+                    deathSquares[cham2][to][1]
+                )
+            ) & position[notToPlay + coordinator];
+            int deathSqC = pop_lsb(coordDeath);
+            
+            unset_piece(notToPlay, coordinator, coordDeath > 0, deathSqC);
 
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
-
-            isDeath = m & move_kingc2mask;
-            deathSq = pop_lsb(deathSquares[cham1][to][1]);
-            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] *= (isDeath == 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
-
-            isDeath = m & move_kingc3mask;
-            deathSq = pop_lsb(deathSquares[cham2][to][0]);
-            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] *= (isDeath == 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
-
-            isDeath = m & move_kingc4mask;
-            deathSq = pop_lsb(deathSquares[cham2][to][1]);
-            position[notToPlay + coordinator] ^= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               ^= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] *= (isDeath == 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
+            zobristHashUpdate ^= (coordDeath > 0) * get_zobrist_hash(deathSqC, coordinator, toPlay);
 
             break;
 
@@ -154,9 +125,7 @@ void makeMove(Move m)
             // a piece at
             coordinateSq = pop_lsb(springerCaptures[from][to]);
 
-            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
-            position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
-            pieceList[coordinateSq] *= (c1 == 0);
+            unset_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -167,9 +136,7 @@ void makeMove(Move m)
             // coordinateSq in this case is where the retractor captured a piece at
             coordinateSq = pop_lsb(retractorCaptures[from][to]);
 
-            position[notToPlay + c1] ^= 1ULL * (c1 > 0) << coordinateSq;
-            position[notToPlay]      ^= 1ULL * (c1 > 0) << coordinateSq;
-            pieceList[coordinateSq]  *= (c1 == 0);
+            unset_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -182,72 +149,63 @@ void makeMove(Move m)
             c3 = (m >> 17) & 1;
             c4 = (m >> 18) & 1;
 
-            // up
-            position[notToPlay + straddler] ^= 1ULL * c1 << (to - 8);
-            position[notToPlay]             ^= 1ULL * c1 << (to - 8);
-            pieceList[to - 8] *= !c1;
+            int upSqc = to - 8;
+            int ltSqc = to - 1;
+            int rtSqc = to + 1;
+            int dnSqc = to + 8;
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(to - 8, c1, toPlay);
+            // up
+            unset_piece(notToPlay, straddler, c1, upSqc);
+
+            zobristHashUpdate ^= c1 * get_zobrist_hash(upSqc, c1, toPlay);
 
             // left
-            position[notToPlay + straddler] ^= 1ULL * c2 << (to - 1);
-            position[notToPlay]             ^= 1ULL * c2 << (to - 1);
-            pieceList[to - 1] *= !c2;
+            unset_piece(notToPlay, straddler, c2, ltSqc);
 
-            zobristHashUpdate ^= c2 * get_zobrist_hash(to - 1, c2, toPlay);
+            zobristHashUpdate ^= c2 * get_zobrist_hash(ltSqc, c2, toPlay);
 
             // right
-            position[notToPlay + straddler] ^= 1ULL * c3 << (to + 1);
-            position[notToPlay]             ^= 1ULL * c3 << (to + 1);
-            pieceList[to + 1] *= !c3;
+            unset_piece(notToPlay, straddler, c3, rtSqc);
 
-            zobristHashUpdate ^= c3 * get_zobrist_hash(to + 1, c3, toPlay);
+            zobristHashUpdate ^= c3 * get_zobrist_hash(rtSqc, c3, toPlay);
 
             // down
-            position[notToPlay + straddler] ^= 1ULL * c4 << (to + 8);
-            position[notToPlay]             ^= 1ULL * c4 << (to + 8);
-            pieceList[to + 8] *= !c4;
+            unset_piece(notToPlay, straddler, c4, dnSqc);
 
-            zobristHashUpdate ^= c4 * get_zobrist_hash(to + 8, c4, toPlay);
+            zobristHashUpdate ^= c4 * get_zobrist_hash(dnSqc, c4, toPlay);
+
+            // chameleon might try to coordinate with the king...
+            coordinateSq = pop_lsb(position[toPlay + king]);
 
             // consider coordinator moves
-            coordinateSq = pop_lsb(position[toPlay + king]);
-            c1 = (m >> 19) & 1;
+            int c5 = (m >> 19) & 1;
             U64 death = deathSquares[to][coordinateSq][0];
-            int captureSq = pop_lsb(death);
-            position[notToPlay + coordinator]   ^= death * c1;
-            position[notToPlay]                 ^= death * c1;
-            pieceList[captureSq] *= !c1;
+            int coordCaptSqTop = pop_lsb(death);
+            unset_piece(notToPlay, coordinator, c5, coordCaptSqTop);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
+            zobristHashUpdate ^= c5 * get_zobrist_hash(coordCaptSqTop, coordinator, toPlay);
 
             // other death square for coordinator
-            c1 = (m >> 20) & 1;
+            int c6 = (m >> 20) & 1;
             death = deathSquares[to][coordinateSq][1];
-            captureSq = pop_lsb(death);
-            position[notToPlay + coordinator]   ^= death * c1;
-            position[notToPlay]                 ^= death * c1;
-            pieceList[captureSq] *= !c1;
+            int coordCaptSqBottom = pop_lsb(death);
+            unset_piece(notToPlay, coordinator, c6, coordCaptSqBottom);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
+            zobristHashUpdate ^= c6 * get_zobrist_hash(coordCaptSqBottom, coordinator, toPlay);
 
             // consider retractor moves
-            c1 = (m >> 21) & 1;
-            captureSq = pop_lsb(retractorCaptures[from][to]);
-            position[notToPlay + retractor] ^= 1ULL * c1 << captureSq;
-            position[notToPlay]             ^= 1ULL * c1 << captureSq;
-            pieceList[captureSq] *= !c1;
+            int c7 = (m >> 21) & 1;
+            int retrCaptSq = pop_lsb(retractorCaptures[from][to]);
+            unset_piece(notToPlay, retractor, c7, retrCaptSq);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, retractor, toPlay);
+            zobristHashUpdate ^= c7 * get_zobrist_hash(retrCaptSq, retractor, toPlay);
 
             // consider springer moves
-            c1 = (m >> 22) & 1;
-            captureSq = pop_lsb(springerCaptures[from][to]);
-            position[notToPlay + springer]  ^= 1ULL * c1 << captureSq;
-            position[notToPlay]             ^= 1ULL * c1 << captureSq;
-            pieceList[captureSq] *= !c1;
+            int c8 = (m >> 22) & 1;
+            int spriCaptSq = pop_lsb(springerCaptures[from][to]);
+            unset_piece(notToPlay, springer, c8, spriCaptSq);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, springer, toPlay);
+            zobristHashUpdate ^= c8 * get_zobrist_hash(spriCaptSq, springer, toPlay);
 
             break;
     }
@@ -345,24 +303,17 @@ void unmakeMove(Move m)
                 ((c4 != 0) * get_zobrist_hash(dnSq, c4, toPlay));
 
             // up
-            position[notToPlay + c1] |= 1ULL * (c1 > 0) << (to - 8);
-            position[notToPlay] |= 1ULL * (c1 > 0) << (to - 8);
-            pieceList[to - 8] += c1; // assumes that, after a capture, the piece at this square would be gone.
+            set_piece(notToPlay, c1, c1 > 0, upSq);
 
             // left
-            position[notToPlay + c2] |= 1ULL * (c2 > 0) << (to - 1);
-            position[notToPlay] |= 1ULL * (c2 > 0) << (to - 1);
-            pieceList[to - 1] += c2;
+            set_piece(notToPlay, c2, c2 > 0, ltSq);
 
             // right
-            position[notToPlay + c3] |= 1ULL * (c3 > 0) << (to + 1);
-            position[notToPlay] |= 1ULL * (c3 > 0) << (to + 1);
-            pieceList[to + 1] += c3;
+            set_piece(notToPlay, c3, c3 > 0, rtSq);
 
             // down
-            position[notToPlay + c4] |= 1ULL * (c4 > 0) << (to + 8);
-            position[notToPlay] |= 1ULL * (c4 > 0) << (to + 8);
-            pieceList[to + 8] += c4;
+            set_piece(notToPlay, c4, c4 > 0, dnSq);
+
             break;
 
         case immobilizer:
@@ -373,28 +324,22 @@ void unmakeMove(Move m)
             
             // top death square
             int top = pop_lsb(deathSquares[coordinateSq][to][0]);
-            position[notToPlay + c1] |= 1ULL * (c1 > 0) << top;
-            position[notToPlay]      |= 1ULL * (c1 > 0) << top;
-            pieceList[top] += c1;
+            set_piece(notToPlay, c1, c1 > 0, top);
 
             // bottom death square
             int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
-            position[notToPlay + c2] |= 1ULL * (c2 > 0) << bottom;
-            position[notToPlay]      |= 1ULL * (c2 > 0) << bottom;
-            pieceList[bottom] += c2;
+            set_piece(notToPlay, c2, c2 > 0, bottom);
 
             zobristHashUpdate ^=
                 ((c1 != 0) * get_zobrist_hash(top, c1, toPlay)) ^
                 ((c2 != 0) * get_zobrist_hash(bottom, c2, toPlay));
-            
+
             break;
 
         case king:
 
             // capture by displacement
-            position[notToPlay + c1] |= 1ULL * (c1 > 0) << to;
-            position[notToPlay]      |= 1ULL * (c1 > 0) << to;
-            pieceList[to] += c1;
+            set_piece(notToPlay, c1, c1 > 0, to);
 
             // uncapture piece on zobrist hash
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(to, c1, toPlay);
@@ -403,56 +348,36 @@ void unmakeMove(Move m)
             // can form death squares with own coordinator
             coordinateSq = pop_lsb(position[toPlay + coordinator]);
 
-            int deathSq = pop_lsb(deathSquares[coordinateSq][to][0]);
-            position[notToPlay + c2] |= 1ULL * (c2 > 0) << deathSq;
-            position[notToPlay]      |= 1ULL * (c2 > 0) << deathSq;
-            pieceList[deathSq] += c2;
+            int deathSqTop = pop_lsb(deathSquares[coordinateSq][to][0]);
+            set_piece(notToPlay, c2, c2 > 0, deathSqTop);
             
-            zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSq, c2, toPlay);
+            zobristHashUpdate ^= (c2 != 0) * get_zobrist_hash(deathSqTop, c2, toPlay);
 
-            deathSq = pop_lsb(deathSquares[coordinateSq][to][1]);
-            position[notToPlay + c3] |= 1ULL * (c3 > 0) << deathSq;
-            position[notToPlay]      |= 1ULL * (c3 > 0) << deathSq;
-            pieceList[deathSq] += c3;
+            int deathSqBottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+            set_piece(notToPlay, c3, c3 > 0, deathSqBottom);
 
-            zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSq, c3, toPlay);
+            zobristHashUpdate ^= (c3 != 0) * get_zobrist_hash(deathSqBottom, c3, toPlay);
 
             // consider king-chameleon duo
             U64 chamBoard = position[toPlay + chameleon];
             int cham1 = pop_lsb(chamBoard);
             int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
 
-            int isDeath = m & move_kingc1mask;
-            deathSq = pop_lsb(deathSquares[cham1][to][0]);
-            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] += coordinator * (isDeath > 0);
+            int isDeath1 = (m & move_kingc1mask) > 0;
+            int isDeath2 = (m & move_kingc2mask) > 0;
+            int isDeath3 = (m & move_kingc3mask) > 0;
+            int isDeath4 = (m & move_kingc4mask) > 0;
 
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
+            U64 coordDeath =
+                isDeath1 * deathSquares[cham1][to][0] |
+                isDeath2 * deathSquares[cham1][to][1] |
+                isDeath3 * deathSquares[cham2][to][0] |
+                isDeath4 * deathSquares[cham2][to][1];
+            
+            int deathSqC = pop_lsb(coordDeath);
+            set_piece(notToPlay, coordinator, coordDeath > 0, deathSqC);
 
-            isDeath = m & move_kingc2mask;
-            deathSq = pop_lsb(deathSquares[cham1][to][1]);
-            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] += coordinator * (isDeath > 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
-
-            isDeath = m & move_kingc3mask;
-            deathSq = pop_lsb(deathSquares[cham2][to][0]);
-            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] += coordinator * (isDeath > 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
-
-            isDeath = m & move_kingc4mask;
-            deathSq = pop_lsb(deathSquares[cham2][to][1]);
-            position[notToPlay + coordinator] |= 1ULL * (isDeath > 0) << deathSq;
-            position[notToPlay]               |= 1ULL * (isDeath > 0) << deathSq;
-            pieceList[deathSq] += coordinator * (isDeath > 0);
-
-            zobristHashUpdate ^= (isDeath != 0) * get_zobrist_hash(deathSq, coordinator, toPlay);
+            zobristHashUpdate ^= (coordDeath != 0) * get_zobrist_hash(deathSqC, coordinator, toPlay);
 
             break;
 
@@ -462,9 +387,7 @@ void unmakeMove(Move m)
             // a piece at
             coordinateSq = pop_lsb(springerCaptures[from][to]);
 
-            position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
-            position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
-            pieceList[coordinateSq] += c1;
+            set_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -475,9 +398,7 @@ void unmakeMove(Move m)
             // coordinateSq in this case is where the retractor captured a piece at
             coordinateSq = pop_lsb(retractorCaptures[from][to]);
 
-            position[notToPlay + c1] |= 1ULL * (c1 > 0) << coordinateSq;
-            position[notToPlay]      |= 1ULL * (c1 > 0) << coordinateSq;
-            pieceList[coordinateSq] += c1;
+            set_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
@@ -490,72 +411,59 @@ void unmakeMove(Move m)
             c3 = (m >> 17) & 1;
             c4 = (m >> 18) & 1;
 
-            // up
-            position[notToPlay + straddler] |= 1ULL * c1 << (to - 8);
-            position[notToPlay]             |= 1ULL * c1 << (to - 8);
-            pieceList[to - 8] += c1;
+            int upSqc = to - 8;
+            int ltSqc = to - 1;
+            int rtSqc = to + 1;
+            int dnSqc = to + 8;
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(to - 8, straddler, toPlay);
+            // up
+            set_piece(notToPlay, straddler, c1, upSqc);
+            zobristHashUpdate ^= c1 * get_zobrist_hash(upSqc, straddler, toPlay);
 
             // left
-            position[notToPlay + straddler] |= 1ULL * c2 << (to - 1);
-            position[notToPlay]             |= 1ULL * c2 << (to - 1);
-            pieceList[to - 1] += c2;
-
-            zobristHashUpdate ^= c2 * get_zobrist_hash(to - 1, straddler, toPlay);
+            set_piece(notToPlay, straddler, c2, ltSqc);
+            zobristHashUpdate ^= c2 * get_zobrist_hash(ltSqc, straddler, toPlay);
 
             // right
-            position[notToPlay + straddler] |= 1ULL * c3 << (to + 1);
-            position[notToPlay]             |= 1ULL * c3 << (to + 1);
-            pieceList[to + 1] += c3;
-
-            zobristHashUpdate ^= c3 * get_zobrist_hash(to + 1, straddler, toPlay);
+            set_piece(notToPlay, straddler, c3, rtSqc);
+            zobristHashUpdate ^= c3 * get_zobrist_hash(rtSqc, straddler, toPlay);
 
             // down
-            position[notToPlay + straddler] |= 1ULL * c4 << (to + 8);
-            position[notToPlay]             |= 1ULL * c4 << (to + 8);
-            pieceList[to + 8] += c4;
+            set_piece(notToPlay, straddler, c4, dnSqc);
+            zobristHashUpdate ^= c4 * get_zobrist_hash(dnSqc, straddler, toPlay);
 
-            zobristHashUpdate ^= c4 * get_zobrist_hash(to + 8, straddler, toPlay);
+            // chameleon might try to coordinate with the king...
+            coordinateSq = pop_lsb(position[toPlay + king]);
 
             // consider coordinator moves
-            coordinateSq = pop_lsb(position[toPlay + king]);
-            c1 = (m >> 19) & 1;
+            int c5 = (m >> 19) & 1;
             U64 death = deathSquares[to][coordinateSq][0];
-            int captureSq = pop_lsb(death);
-            position[notToPlay + coordinator]   |= death * c1;
-            position[notToPlay]                 |= death * c1;
-            pieceList[captureSq] += coordinator * c1;
+            int coordCaptSqTop = pop_lsb(death);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
+            set_piece(notToPlay, coordinator, c5, coordCaptSqTop);
+            zobristHashUpdate ^= c5 * get_zobrist_hash(coordCaptSqTop, coordinator, toPlay);
 
             // other death square for coordinator
-            c1 = (m >> 20) & 1;
+            int c6 = (m >> 20) & 1;
             death = deathSquares[to][coordinateSq][1];
-            captureSq = pop_lsb(death);
-            position[notToPlay + coordinator]   |= death * c1;
-            position[notToPlay]                 |= death * c1;
-            pieceList[captureSq] += coordinator * c1;
+            int coordCaptSqBottom = pop_lsb(death);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(captureSq, coordinator, toPlay);
+            set_piece(notToPlay, coordinator, c6, coordCaptSqBottom);
+            zobristHashUpdate ^= c6 * get_zobrist_hash(coordCaptSqBottom, coordinator, toPlay);
 
             // consider retractor moves
-            c1 = (m >> 21) & 1;
-            int sq = pop_lsb(retractorCaptures[from][to]);
-            position[notToPlay + retractor] |= 1ULL * c1 << sq;
-            position[notToPlay]             |= 1ULL * c1 << sq;
-            pieceList[sq] += retractor * c1;
+            int c7 = (m >> 21) & 1;
+            int retrCaptSq = pop_lsb(retractorCaptures[from][to]);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(sq, retractor, toPlay);
+            set_piece(notToPlay, retractor, c7, retrCaptSq);
+            zobristHashUpdate ^= c7 * get_zobrist_hash(retrCaptSq, retractor, toPlay);
 
             // consider springer moves
-            c1 = (m >> 22) & 1;
-            sq = pop_lsb(springerCaptures[from][to]);
-            position[notToPlay + springer]  |= 1ULL * c1 << sq;
-            position[notToPlay]             |= 1ULL * c1 << sq;
-            pieceList[sq] += springer * c1;
+            int c8 = (m >> 22) & 1;
+            int spriCaptSq = pop_lsb(springerCaptures[from][to]);
 
-            zobristHashUpdate ^= c1 * get_zobrist_hash(sq, springer, toPlay);
+            set_piece(notToPlay, springer, c8, spriCaptSq);
+            zobristHashUpdate ^= c8 * get_zobrist_hash(spriCaptSq, springer, toPlay);
 
             break;
     }
