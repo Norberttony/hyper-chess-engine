@@ -126,8 +126,10 @@ int generateMoves(Move *movelist)
         int cham1 = pop_lsb(chamBoard);
         int cham2 = pop_lsb(chamBoard2);
 
+        U64 chamInfl = (chamBoard > 0) * kingMoves[cham1] | (chamBoard2 > 0) * kingMoves[cham2];
+
         // now generate immobilizer moves
-        U64 immBoard = position[toPlay + immobilizer] & (notImmInfl & ~(kingMoves[cham1] * (chamBoard > 0)) & ~(kingMoves[cham2] * (chamBoard2 > 0)));
+        U64 immBoard = position[toPlay + immobilizer] & notImmInfl & ~chamInfl;
         int sq = pop_lsb(immBoard);
         U64 moves = (immBoard > 0) * (
             get_rook_attacks(sq, totalBoard) |
@@ -137,8 +139,9 @@ int generateMoves(Move *movelist)
     }
 
     // coordinator moves (there's only one)
+    U64 coordBoard = position[toPlay + coordinator] & notImmInfl;
+    if (coordBoard)
     {
-        U64 coordBoard = position[toPlay + coordinator] & notImmInfl;
         int sq = pop_lsb(coordBoard);
         U64 moves = (coordBoard > 0) * (
             get_rook_attacks(sq, totalBoard) |
@@ -148,8 +151,9 @@ int generateMoves(Move *movelist)
     }
 
     // king moves (there's only one)
+    U64 kingBoard = position[toPlay + king] & notImmInfl;
+    if (kingBoard)
     {
-        U64 kingBoard = position[toPlay + king] & notImmInfl;
         int sq = pop_lsb(kingBoard);
         U64 moves = (kingBoard > 0) * kingMoves[sq] & ~position[toPlay];
         size += generateKingMoves(sq, moves, &movelist[size]);
@@ -173,8 +177,9 @@ int generateMoves(Move *movelist)
     }
 
     // retractor moves (there's only one per side)
+    U64 retractorBoard = position[toPlay + retractor] & notImmInfl;
+    if (retractorBoard)
     {
-        U64 retractorBoard = position[toPlay + retractor] & notImmInfl;
         int sq = pop_lsb(retractorBoard);
         U64 moves = (retractorBoard > 0) * (
             get_rook_attacks(sq, totalBoard) |

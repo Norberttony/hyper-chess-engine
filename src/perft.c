@@ -269,31 +269,30 @@ int isAttackingKing()
         get_bishop_attacks(coordSq, totalBoard)
     ) & ~totalBoard;
 
-    U64 chamBoard = position[toPlay + chameleon];
+    // board with (at most) two unimmobilized chameleons
+    U64 chamBoard = position[toPlay + chameleon] & notImmInfl;
+    // board with (at most) one unimmobilized chameleon
+    U64 cham2Board = chamBoard & (chamBoard - 1);
+
     int cham1Sq = pop_lsb(chamBoard);
-    U64 cham1Board = (chamBoard > 0 && (1ULL << cham1Sq & notImmInfl) > 0) * (kingMoves[cham1Sq] & ~totalBoard);
-    int cham2Sq = pop_lsb(chamBoard - 1 & chamBoard);
-    U64 cham2Board = (((chamBoard - 1 & chamBoard) & notImmInfl) > 0) * (kingMoves[cham2Sq] & ~totalBoard);
+    int cham2Sq = pop_lsb(cham2Board);
+
+    // kings and chameleons, whether immobilized or not.
+    U64 kingAndChamBoard = kingBoard | position[toPlay + chameleon];
+
+    // this works because a chameleon never captures by displacement...
+    U64 kingAndChamKingMoves =
+        (chamBoard > 0) * (kingMoves[cham1Sq] & ~totalBoard) |
+        (cham2Board > 0) * (kingMoves[cham2Sq] & ~totalBoard) |
+        king1Board;
     
     int isCheck =
-        // king stays coordinator moves
-        sqFiles[realKingSq] == sqFiles[targetKingSq] && coordBoard & sqRanks[targetKingSq] ||
-        sqRanks[realKingSq] == sqRanks[targetKingSq] && coordBoard & sqFiles[targetKingSq] ||
-        // chameleon 1 stays coordinator moves
-        sqFiles[cham1Sq] * (chamBoard > 0) == sqFiles[targetKingSq] && coordBoard & sqRanks[targetKingSq] ||
-        sqRanks[cham1Sq] * (chamBoard > 0) == sqRanks[targetKingSq] && coordBoard & sqFiles[targetKingSq] ||
-        // chameleon 2 stays coordinator moves
-        sqFiles[cham2Sq] * ((chamBoard - 1 & chamBoard) > 0) == sqFiles[targetKingSq] && coordBoard & sqRanks[targetKingSq] ||
-        sqRanks[cham2Sq] * ((chamBoard - 1 & chamBoard) > 0) == sqRanks[targetKingSq] && coordBoard & sqFiles[targetKingSq] ||
-        // coordinator stays king moves
-        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && king1Board & sqRanks[targetKingSq] ||
-        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && king1Board & sqFiles[targetKingSq] ||
-        // coordinator stays chameleon 1 moves
-        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && cham1Board & sqRanks[targetKingSq] ||
-        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && cham1Board & sqFiles[targetKingSq] ||
-        // coordinator stays chameleon 2 moves
-        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && cham2Board & sqRanks[targetKingSq] ||
-        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && cham2Board & sqFiles[targetKingSq];
+        // king/chameleons stay, coordinator moves
+        (sqFiles[targetKingSq] & kingAndChamBoard) > 0 && coordBoard & sqRanks[targetKingSq] ||
+        (sqRanks[targetKingSq] & kingAndChamBoard) > 0 && coordBoard & sqFiles[targetKingSq] ||
+        // coordinator stays, king/chameleons move
+        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && kingAndChamKingMoves & sqRanks[targetKingSq] ||
+        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && kingAndChamKingMoves & sqFiles[targetKingSq];
 
     // check springer checks
     U64 springerBoard = position[toPlay + springer] & notImmInfl;
@@ -326,9 +325,6 @@ int isAttackingKing()
 
     // check straddler checks
     // king is in check if straddler above, and another straddler can move below...
-    // this technique can be extended to find all squares that straddlers attack (can it be updated
-    // incrementally? probably not.. uh...)
-    
     U64 straddlerBoard = position[toPlay + straddler] & notImmInfl;
 
     int aboveSq = targetKingSq - 8;
@@ -356,6 +352,23 @@ int isAttackingKing()
 
 int isCheckmate()
 {
+    // toggle turn
+    toPlay = !toPlay * 8;
+    notToPlay = !notToPlay * 8;
+
+    // make sure king is actually attacked
+    // if not, then it cannot be checkmate.
+    int isAttacked = isAttackingKing();
+
+    // toggle turn back
+    toPlay = !toPlay * 8;
+    notToPlay = !notToPlay * 8;
+
+    if (!isAttacked)
+    {
+        return 0;
+    }
+
     // generate responses to the attack
     Move moves[MAX_MOVES];
     int size = generateMoves(moves);
@@ -369,18 +382,6 @@ int isCheckmate()
         }
     }
 
-    // toggle turn
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
-
-    // make sure king is actually attacked
-    // if not, then it's actually stalemate.
-    int isAttacked = isAttackingKing();
-
-    // toggle turn back
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
-
     // checkmate!!!
-    return isAttacked;
+    return 1;
 }
