@@ -13,6 +13,7 @@
 
 // defines the maximum possible number of moves in any attainable position
 #define MAX_MOVES 256
+#define MAX_CAPTURES 90
 
 // 32-bit moves
 // LSB
@@ -61,15 +62,16 @@ extern const U64 straddlerBounds[];
 
 // pass in pointer to array, which is then populated with the pseudo-legal moves.
 // returns the number of moves
-int generateMoves(Move*);
+int generateMoves(Move*, int capturesOnly);
 
 int generateStraddlerMoves(int sq, U64 moves, Move* movelist);
 
 int generateImmobilizerMoves(int sq, U64 moves, Move* movelist);
 
 int generateCoordinatorMoves(int sq, U64 moves, Move* movelist);
+int generateCoordinatorCaptures(int sq, U64 moves, Move* movelist);
 
-int generateKingMoves(int sq, U64 moves, Move* movelist);
+int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly);
 
 // assumes that the given moves do not capture any pieces
 int generateSpringerMoves(int sq, U64 moves, Move* movelist);
@@ -79,10 +81,10 @@ int generateSpringerCaptures(int sq, U64 moves, Move* movelist);
 // assumes that the given moves do not capture any pieces
 int generateRetractorMoves(int sq, U64 moves, Move* movelist);
 
-int generateRetractorCaptures(int sq, U64 moves, Move* movelist);
+int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnly);
 
-int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64, U64, U64, U64);
-int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist);
+int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64, U64, U64, U64, int capturesOnly);
+int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int capturesOnly);
 int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist);
 
 void printMove(Move);

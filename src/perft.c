@@ -10,7 +10,7 @@ struct MoveCounter divide(int depth)
     }
 
     Move moves[MAX_MOVES];
-    int size = generateMoves((Move*)moves);
+    int size = generateMoves((Move*)moves, 0);
 
     if (size == 0)
     {
@@ -78,7 +78,7 @@ struct MoveCounter countMoves(int depth)
     }
 
     Move moves[MAX_MOVES];
-    int size = generateMoves((Move*)moves);
+    int size = generateMoves((Move*)moves, 0);
 
     if (size == 0)
     {
@@ -189,7 +189,7 @@ int countCaptures(Move move)
 int chooseMove(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
-    int size = generateMoves(moves);
+    int size = generateMoves(moves, 0);
 
     for (int i = 0; i < size; i++)
     {
@@ -214,7 +214,7 @@ int chooseMove(int startSq, int endSq)
 int chooseMoveBlind(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
-    int size = generateMoves(moves);
+    int size = generateMoves(moves, 0);
 
     for (int i = 0; i < size; i++)
     {
@@ -371,7 +371,7 @@ int isCheckmate()
 
     // generate responses to the attack
     Move moves[MAX_MOVES];
-    int size = generateMoves(moves);
+    int size = generateMoves(moves, 0);
     
     for (int i = 0; i < size; i++)
     {

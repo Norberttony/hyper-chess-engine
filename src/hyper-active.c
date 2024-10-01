@@ -28,7 +28,7 @@ int main(void)
 
     askForFEN();
 
-    askForLAN();
+    //askForLAN();
 
     int mySide = askForSide();
 

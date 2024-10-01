@@ -46,7 +46,7 @@ const U64 straddlerBounds[] = {
     281474976710655ULL      // down
 };
 
-int generateMoves(Move *movelist)
+int generateMoves(Move *movelist, int capturesOnly)
 {
     int size = 0;
 
@@ -90,7 +90,10 @@ int generateMoves(Move *movelist)
 
         U64 straddlerCaptures = moves & straddlerCaptureBoard;
 
-        size += generateStraddlerMoves(sq, moves & ~straddlerCaptures, &movelist[size]);
+        if (!capturesOnly)
+        {
+            size += generateStraddlerMoves(sq, moves & ~straddlerCaptures, &movelist[size]);
+        }
 
         // also add the captures right here. right now. just to be able to use the up/left/right/down straddler board from before.
         while (straddlerCaptures)
@@ -118,6 +121,7 @@ int generateMoves(Move *movelist)
     }
 
     // immobilizer moves (there's only one)
+    if (!capturesOnly)
     {
         // enemy chameleon can immobilize an immobilizer...
         U64 chamBoard = position[notToPlay + chameleon];
@@ -147,7 +151,29 @@ int generateMoves(Move *movelist)
             get_rook_attacks(sq, totalBoard) |
             get_bishop_attacks(sq, totalBoard)
         ) & ~totalBoard;
-        size += generateCoordinatorMoves(sq, moves, &movelist[size]);
+
+        int kingSq = pop_lsb(position[toPlay + king]);
+        U64 kingFile = files[kingSq & 0b111] & position[notToPlay];
+        U64 kingRank = ranks[kingSq >> 3] & position[notToPlay];
+
+        // find all squares where if a coordinator got there it would capture a piece.
+        U64 captures = 0ULL;
+        while (kingRank)
+        {
+            captures |= files[pop_lsb(kingRank) & 0b111];
+            kingRank &= kingRank - 1;
+        }
+        while (kingFile)
+        {
+            captures |= ranks[pop_lsb(kingFile) >> 3];
+            kingFile &= kingFile - 1;
+        }
+
+        if (!capturesOnly)
+        {
+            size += generateCoordinatorMoves(sq, moves & ~captures, &movelist[size]);
+        }
+        size += generateCoordinatorCaptures(sq, moves & captures, &movelist[size]);
     }
 
     // king moves (there's only one)
@@ -156,7 +182,8 @@ int generateMoves(Move *movelist)
     {
         int sq = pop_lsb(kingBoard);
         U64 moves = (kingBoard > 0) * kingMoves[sq] & ~position[toPlay];
-        size += generateKingMoves(sq, moves, &movelist[size]);
+
+        size += generateKingMoves(sq, moves, &movelist[size], capturesOnly);
     }
 
     // all springer moves
@@ -170,7 +197,10 @@ int generateMoves(Move *movelist)
             get_rook_attacks(sq, totalBoard) |
             get_bishop_attacks(sq, totalBoard);
 
-        size += generateSpringerMoves(sq, moves & ~totalBoard, &movelist[size]);
+        if (!capturesOnly)
+        {
+            size += generateSpringerMoves(sq, moves & ~totalBoard, &movelist[size]);
+        }
         size += generateSpringerCaptures(sq, moves & position[notToPlay], &movelist[size]);
 
         springers &= springers - 1;
@@ -186,9 +216,13 @@ int generateMoves(Move *movelist)
             get_bishop_attacks(sq, totalBoard)
         );
 
+        if (!capturesOnly)
+        {
+            size += generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, &movelist[size]);
+        }
+
         // consider moves separately from (potential) captures.
-        size += generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, &movelist[size]);
-        size += generateRetractorCaptures(sq, moves & kingMoves[sq] & ~totalBoard, &movelist[size]);
+        size += generateRetractorCaptures(sq, moves & kingMoves[sq] & ~totalBoard, &movelist[size], capturesOnly);
     }
 
     // chameleon moves
@@ -210,8 +244,8 @@ int generateMoves(Move *movelist)
         U64 rookMoves = get_rook_attacks(sq, totalBoard);
         U64 bishopMoves = get_bishop_attacks(sq, totalBoard);
 
-        size += generateChameleonRookMoves(sq, rookMoves & ~totalBoard, &movelist[size], chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard);
-        size += generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, &movelist[size]);
+        size += generateChameleonRookMoves(sq, rookMoves & ~totalBoard, &movelist[size], chamUpBoard, chamLeftBoard, chamRightBoard, chamDownBoard, capturesOnly);
+        size += generateChameleonBishopMoves(sq, bishopMoves & ~totalBoard, &movelist[size], capturesOnly);
         size += generateChameleonSpringerCaptures(sq, (rookMoves | bishopMoves) & position[notToPlay + springer], &movelist[size]);
 
         chameleons &= chameleons - 1;
@@ -260,6 +294,23 @@ int generateCoordinatorMoves(int sq, U64 moves, Move* movelist)
     int size = 0;
 
     // if a coordinator is on the board, there should always be a king as well.
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        Move move = (to << 9) | (sq << 3) | coordinator;
+
+        movelist[size++] = move;
+        moves &= moves - 1;
+    }
+
+    return size;
+}
+
+int generateCoordinatorCaptures(int sq, U64 moves, Move* movelist)
+{
+    int size = 0;
+
+    // if a coordinator is on the board, there should always be a king as well.
     int kingSq = pop_lsb(position[toPlay + king]);
     while (moves)
     {
@@ -282,7 +333,7 @@ int generateCoordinatorMoves(int sq, U64 moves, Move* movelist)
     return size;
 }
 
-int generateKingMoves(int sq, U64 moves, Move* movelist)
+int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
 {
     int size = 0;
 
@@ -324,7 +375,8 @@ int generateKingMoves(int sq, U64 moves, Move* movelist)
         death = deathSquares[cham2][to][1] * ((chamBoard - 1 & chamBoard) > 0);
         move |= (((position[notToPlay + coordinator] & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
 
-        movelist[size++] = move;
+        movelist[size] = move;
+        size += !capturesOnly || (move & move_captMask) > 0;
         moves &= moves - 1;
     }
 
@@ -386,7 +438,7 @@ int generateRetractorMoves(int sq, U64 moves, Move* movelist)
     return size;
 }
 
-int generateRetractorCaptures(int sq, U64 moves, Move* movelist)
+int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnly)
 {
     int size = 0;
 
@@ -399,14 +451,15 @@ int generateRetractorCaptures(int sq, U64 moves, Move* movelist)
 
         Move move = ((pieceList[capturing] << 15) * ((position[notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
 
-        movelist[size++] = move;
+        movelist[size] = move;
+        size += !capturesOnly || (move & move_captMask) > 0;
         moves &= moves - 1;
     }
 
     return size;
 }
 
-int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerUpBoard, U64 straddlerLeftBoard, U64 straddlerRightBoard, U64 straddlerDownBoard)
+int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerUpBoard, U64 straddlerLeftBoard, U64 straddlerRightBoard, U64 straddlerDownBoard, int capturesOnly)
 {
     int size = 0;
 
@@ -441,14 +494,15 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
         move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
-        movelist[size++] = move;
+        movelist[size] = move;
+        size += !capturesOnly || (move & move_captMask) > 0;
         moves &= moves - 1;
     }
 
     return size;
 }
 
-int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist)
+int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
 {
     int size = 0;
 
@@ -470,7 +524,8 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist)
         move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
-        movelist[size++] = move;
+        movelist[size] = move;
+        size += !capturesOnly || (move & move_captMask) > 0;
         moves &= moves - 1;
     }
 

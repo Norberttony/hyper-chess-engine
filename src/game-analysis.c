@@ -9,7 +9,9 @@ void playGame(int mySide)
     {
         puts("");
         if (checkGameOver())
+        {
             break;
+        }
 
         // time to consider which moves are played
         if (mySide == toPlay)
@@ -17,7 +19,7 @@ void playGame(int mySide)
             puts("Thinking . . .");
 
             clock_t start = clock();
-            Move best = thinkFor(1000);
+            Move best = thinkFor(200);
             clock_t end = clock();
 
             printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -145,7 +147,7 @@ int checkGameOver()
 {
     // yeah, a bit of a bad way to check for game-ending situations. oh well...
     Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist);
+    int size = generateMoves((Move*)movelist, 0);
     // consider only legal moves
     int legalMoves = 0;
     for (int i = 0; i < size; i++)

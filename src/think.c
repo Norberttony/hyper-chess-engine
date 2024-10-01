@@ -167,7 +167,7 @@ int think(int depth, int alpha, int beta)
     orderFirstSuccess += isFromTT;
 
     Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist);
+    int size = generateMoves((Move*)movelist, 0);
 
     if (size == 0)
     {
@@ -286,12 +286,13 @@ int thinkCaptures(int alpha, int beta, int accessTT)
         alpha = eval;
     }
 
-    Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist);
+    // generate only captures
+    Move movelist[MAX_CAPTURES];
+    int size = generateMoves((Move*)movelist, 1);
 
     if (size == 0)
     {
-        return 0; // no moves!
+        return alpha; // no moves!
     }
 
     // determine most promising moves
@@ -302,10 +303,6 @@ int thinkCaptures(int alpha, int beta, int accessTT)
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
-        if (!(m & move_captMask))
-        {
-            break; // done deciding on captures (which should all be first)
-        }
         makeMove(m);
 
         if (isAttackingKing())
@@ -361,7 +358,7 @@ Move getBestMove(int depth)
     nodesVisited++;
 
     Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist);
+    int size = generateMoves((Move*)movelist, 0);
 
     if (size == 0)
     {
