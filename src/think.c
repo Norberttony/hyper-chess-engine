@@ -10,21 +10,28 @@ int nodesVisited = 0;
 int qNodesVisited = 0;
 
 int thinkingTime = -1;
-clock_t thinkStart = -1; // to-do: worried about the precision of clock_t
+float thinkStart = -1.0f;
 int maxDepth = 0;
 
 int nodeOccurrence[4] = { 0 };
 
 
-int getThinkAllowance()
+// returns the current time in ms
+inline float getCurrentTime(void)
 {
-    return thinkStart == -1 || (float)(clock() - thinkStart) / (float)((clock_t)1) < thinkingTime;
+    return (float)clock() / CLOCKS_PER_SEC;
+}
+
+// returns 1 if the engine is still allowed to think and 0 otherwise
+inline int getThinkAllowance()
+{
+    return thinkStart < 0 || (getCurrentTime() - thinkStart) * 1000.0f < thinkingTime;
 }
 
 Move thinkFor(int time)
 {
     // thinking is back on schedule
-    thinkStart = clock();
+    thinkStart = getCurrentTime();
     thinkingTime = time;
     orderFirst = 0;
 
