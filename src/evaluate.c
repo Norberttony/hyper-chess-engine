@@ -9,7 +9,7 @@ const int pieceValues[] =
     400,        // springer
     1100,       // coordinator
     1300,       // immobilizer
-    900,        // chameleon
+    700,        // chameleon
     0           // king (priceless)
 };
 
@@ -136,9 +136,6 @@ int evaluate()
     int myMobilityScore = 0;
     int enemyMobilityScore = 0;
 
-    // counts number of pieces EXCLUDING straddlers
-    int numPieces = 0;
-
     // count mobility
     U64 totalBoard = position[toPlay] | position[notToPlay];
     for (int i = 2; i <= 6; i++)
@@ -155,7 +152,6 @@ int evaluate()
                 moveBoard &= moveBoard - 1;
             }
 
-            numPieces++;
             myBoard &= myBoard - 1;
         }
 
@@ -171,7 +167,6 @@ int evaluate()
                 moveBoard &= moveBoard - 1;
             }
 
-            numPieces++;
             enemyBoard &= enemyBoard - 1;
         }
     }
@@ -179,7 +174,7 @@ int evaluate()
     // for when the immobilizer is immobilized by a chameleon
     U64 enemyChamInfl = myImmobilizer * ((myInfl & position[notToPlay + chameleon]) > 0);
     U64 myChamInfl = enemyImmobilizer * ((enemyInfl & position[toPlay + chameleon]) > 0);
-    
+
     int evaluation = 0;
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
     for (int i = 1; i <= 7; i++)
@@ -217,6 +212,8 @@ int evaluate()
         }
     }
 
+
+    // === IMMOBILIZER LINES OF SIGHT === //
 
     // determines which boards should be used to count as blockers
     U64 enemyDiags = totalBoard;
@@ -271,8 +268,75 @@ int evaluate()
     // apply penalty based on the number of available lines of attack
     evaluation += ((notToPlay == white) * 140 + perspective * 20 * (enemyImmSq >> 3) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);
 
+
+    // === KING COORDINATOR CAPTURE DISTANCE === //
+
+    // if my king or coordinator end up in the corners, then there cannot be a penalty
+    U64 enemyImmCorners = (enemyImmobilizer << 9 | enemyImmobilizer << 7 | enemyImmobilizer >> 7 | enemyImmobilizer >> 9) & enemyInfl;
+    U64 myImmCorners = (myImmobilizer << 9 | myImmobilizer << 7 | myImmobilizer >> 7 | myImmobilizer >> 9) & myInfl;
+
+    // an additional penalty for how long it takes for king-coordinator duo to capture at the given sq
+    if (enemyImmobilizer && enemyImmImm && !(enemyImmCorners & (position[toPlay + coordinator] | position[toPlay + king])))
+    {
+        evaluation += kingCoordCaptPen(toPlay, enemyImmSq);
+    }
+    if (myImmobilizer && myImmImm && !(myImmCorners & (position[notToPlay + coordinator] | position[notToPlay + king])))
+    {
+        evaluation -= kingCoordCaptPen(notToPlay, myImmSq);
+    }
+
+
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + myMobilityScore - enemyMobilityScore;
+}
+
+const int kingCoordKingPenalty[] =
+{
+    100, 80, 60, 35, 20, 10, 5, 0
+};
+
+const int kingCoordCoordPenalty[] =
+{
+    100, 85, 50
+};
+
+int kingCoordCaptPen(int stc, int sq)
+{
+    int notstc = !stc * 8;
+
+    U64 enemyImmobilizer = position[notstc + immobilizer];
+    int enemyImmSq = pop_lsb(enemyImmobilizer);
+    U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
+
+    U64 totalBoard = position[white] | position[black];
+
+    // coordinator mobility
+    int kingSq = pop_lsb(position[stc + king]);
+    U64 coordBoard = position[stc + coordinator];
+    int coordSq = pop_lsb(coordBoard);
+
+    U64 coordMob = get_rook_attacks(coordSq, totalBoard) | get_bishop_attacks(coordSq, totalBoard) | coordBoard & ~totalBoard;
+
+    // king to file, coordinator to rank
+    int kingFileDisp = (kingSq & 7) - (sq & 7);
+    int kingFileDist = kingFileDisp * ((kingFileDisp > 0) - (kingFileDisp < 0));
+
+    int validCoord = (coordBoard & ~enemyInfl) > 0;
+    
+    U64 sqRank = ranks[sq >> 3];
+    int coordRankDist = 2 - ((coordMob & sqRank) > 0) - ((coordBoard & sqRank) > 0);
+    int kfrr = (validCoord || coordBoard > 0 && coordRankDist == 0) * (kingCoordKingPenalty[kingFileDist] + kingCoordCoordPenalty[coordRankDist]);
+
+    // king to rank, coordinator to file
+    int kingRankDisp = (kingSq >> 3) - (sq >> 3);
+    int kingRankDist = kingRankDisp * ((kingRankDisp > 0) - (kingRankDisp < 0));
+
+    U64 sqFile = files[sq & 7];
+    int coordFileDist = 2 - ((coordMob & sqFile) > 0) - ((coordBoard & sqFile) > 0);
+    int krrf = (validCoord || coordBoard > 0 && coordFileDist == 0) * (kingCoordKingPenalty[kingRankDist] + kingCoordCoordPenalty[coordFileDist]);
+
+    // return the largest penalty
+    return kfrr < krrf ? krrf : kfrr;
 }
 
 int moveCaptureValue(Move m)

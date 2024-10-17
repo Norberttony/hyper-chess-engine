@@ -47,6 +47,10 @@ void playGame(int mySide)
 
             free(squares);
         }
+
+        printf("To Play captures immobilizer with king-coord dist: %d\n", kingCoordCaptPen(toPlay, pop_lsb(position[notToPlay + immobilizer])));
+        printf("Not To Play captures immobilizer with king-coord dist: %d\n", kingCoordCaptPen(notToPlay, pop_lsb(position[toPlay + immobilizer])));
+
     }
 }
 
