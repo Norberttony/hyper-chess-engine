@@ -290,14 +290,9 @@ int evaluate()
     return evaluation + myMobilityScore - enemyMobilityScore;
 }
 
-const int kingCoordKingPenalty[] =
+const int kcPenalty[] =
 {
-    100, 80, 60, 35, 20, 10, 5, 0
-};
-
-const int kingCoordCoordPenalty[] =
-{
-    100, 85, 50
+    180, 140, 120, 100, 80, 60, 35, 20, 10, 5, 0
 };
 
 int kingCoordCaptPen(int stc, int sq)
@@ -325,7 +320,7 @@ int kingCoordCaptPen(int stc, int sq)
     
     U64 sqRank = ranks[sq >> 3];
     int coordRankDist = 2 - ((coordMob & sqRank) > 0) - ((coordBoard & sqRank) > 0);
-    int kfrr = (validCoord || coordBoard > 0 && coordRankDist == 0) * (kingCoordKingPenalty[kingFileDist] + kingCoordCoordPenalty[coordRankDist]);
+    int kfrr = (validCoord || coordBoard > 0 && coordRankDist == 0) * (kcPenalty[kingFileDist + coordRankDist]);
 
     // king to rank, coordinator to file
     int kingRankDisp = (kingSq >> 3) - (sq >> 3);
@@ -333,7 +328,7 @@ int kingCoordCaptPen(int stc, int sq)
 
     U64 sqFile = files[sq & 7];
     int coordFileDist = 2 - ((coordMob & sqFile) > 0) - ((coordBoard & sqFile) > 0);
-    int krrf = (validCoord || coordBoard > 0 && coordFileDist == 0) * (kingCoordKingPenalty[kingRankDist] + kingCoordCoordPenalty[coordFileDist]);
+    int krrf = (validCoord || coordBoard > 0 && coordFileDist == 0) * (kcPenalty[kingRankDist + coordFileDist]);
 
     // return the largest penalty
     return kfrr < krrf ? krrf : kfrr;
@@ -375,4 +370,5 @@ int moveCaptureValue(Move m)
                 pieceValues[(m & move_c3Mask) >> 21] +
                 ((m & move_kingcmask) > 0) * pieceValues[coordinator];
     }
+    return 0;
 }

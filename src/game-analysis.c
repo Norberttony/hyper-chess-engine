@@ -97,7 +97,7 @@ int* askForMove()
     int* squares = (int*) malloc(2 * sizeof(int));
 
     char move[10]; // yes, risks buffer overflow, I know...
-    scanf("%s", &move);
+    scanf("%s", (char*)&move);
 
     // get coordinates of from square and to square
     int fromF = move[0] - 'a';

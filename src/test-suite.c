@@ -520,4 +520,6 @@ int runTestSuite()
         puts("All test suite positions succeeded!");
     }
     printf("Took %f seconds. Explored %d nodes.\n", (float)(end - start) / CLOCKS_PER_SEC, nodes);
+
+    return fullMatch;
 }

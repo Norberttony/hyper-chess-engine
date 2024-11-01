@@ -30,7 +30,7 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 }
 
 
-struct TranspositionEntry* getTranspositionTableEntry()
+struct TranspositionEntry* getTranspositionTableEntry(void)
 {
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
     struct TranspositionEntry* depthEntry = transpositionTable_depth + index;

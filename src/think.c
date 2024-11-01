@@ -138,7 +138,7 @@ int think(int depth, int alpha, int beta)
 #ifdef USE_TRANSPOSITION_TABLE
     if (depth >= TT_MIN_DEPTH)
     {
-        struct TranspositionEntry* savedEval = getTranspositionTableEntry(depth);
+        struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
         {
             if (savedEval->depth >= depth)

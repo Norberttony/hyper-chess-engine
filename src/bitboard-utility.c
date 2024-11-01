@@ -19,7 +19,7 @@ void printBitboard(U64 bitboard)
         for (int f = 0; f < 8; f++)
         {
             int sqIndex = r * 8 + f;
-            printf("%d ", (bitboard >> sqIndex) & 1);
+            printf("%llu ", (bitboard >> sqIndex) & 1);
         }
         printf("\n");
     }
