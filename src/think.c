@@ -240,6 +240,21 @@ int think(int depth, int alpha, int beta)
             killerMoves[depth][1] = !isStored * killerMoves[depth][0] + isStored * killerMoves[depth][1];
             killerMoves[depth][0] = !isStored * m + isStored * killerMoves[depth][0];
 
+            // update history values
+            if (!(m & move_captMask))
+            {
+                int bonus = depth * depth;
+                int type = m & move_typeMask;
+                int to = (m & move_toMask) >> 9;
+
+                int val = historyValues[toPlay == black][type][to] + bonus;
+                if (val > MAX_HISTORY)
+                {
+                    val = MAX_HISTORY;
+                }
+                historyValues[toPlay == black][type][to] = val;
+            }
+
             return beta;
         }
 

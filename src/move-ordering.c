@@ -4,15 +4,17 @@
 
 Move orderFirst = 0;
 
-const int orderFirstValue = 100000;
-const int killerValue = 15;
+const int orderFirstValue = 1000000000;
+const int isCaptValue = 900000000;
+const int killerValue = 800000000;
 
 Move killerMoves[MAX_DEPTH][2] = { 0 };
+int historyValues[2][8][64] = { 0 };
 
 
 void orderMoves(Move* moves, int count, int depth)
 {
-    int scores[MAX_MOVES] = { 0 };
+    int scores[MAX_MOVES];
 
     // score the moves
     for (int i = 0; i < count; i++)
@@ -21,10 +23,11 @@ void orderMoves(Move* moves, int count, int depth)
         int type = m & move_typeMask;
         int fromSq = (m & move_fromMask) >> 3;
         int toSq = (m & move_toMask) >> 9;
+        int isCapt = (m & move_captMask) > 0;
 
-        int killScore = killerValue * (depth >= 0 && (killerMoves[depth][0] == m || killerMoves[depth][1] == m));
+        int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
 
-        scores[i] = orderFirstValue * (m == orderFirst) + moveCaptureValue(m) + killScore;
+        scores[i] = orderFirstValue * (m == orderFirst) + moveCaptureValue(m) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][type][toSq] + killScore);
     }
 
     // sort the moves using insertion sort
@@ -47,9 +50,8 @@ void orderMoves(Move* moves, int count, int depth)
     /*
     for (int i = 0; i < count; i++)
     {
-        printMove(moves[i]);
-        printf(" %d, ", scores[i]);
+        prettyPrintMove(moves[i]);
+        printf("is valued at %d\n", scores[i]);
     }
-    puts("");
     */
 }
