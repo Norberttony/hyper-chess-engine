@@ -92,7 +92,9 @@ int rookMaskBitCount[64] =
     12, 11, 11, 11, 11, 11, 11, 12
 };
 
-U64 rookAttacks[64][4096];
+U64 rookAttacks[102400];
+
+U64 *rookRefs[64];
 
 U64 bishopMagics[64] =
 {
@@ -179,11 +181,29 @@ int bishopMaskBitCount[64] =
     6, 5, 5, 5, 5, 5, 5, 6
 };
 
-U64 bishopAttacks[64][512];
+U64 bishopAttacks[5248];
+
+U64* bishopRefs[64];
 
 
 void initMagicBitboards(int isBishop)
 {
+    // initialize DB
+    U64* curr = isBishop ? (U64*)bishopAttacks : (U64*)rookAttacks;
+    for (int s = 0; s < 64; s++)
+    {
+        if (isBishop)
+        {
+            bishopRefs[s] = curr;
+        }
+        else
+        {
+            rookRefs[s] = curr;
+        }
+        curr += intPow(2, isBishop ? bishopMaskBitCount[s] : rookMaskBitCount[s]);
+    }
+
+    // initialize magic bitboards
     for (int s = 0; s < 64; s++)
     {
         U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
@@ -214,11 +234,11 @@ void initMagicBitboards(int isBishop)
 
             if (isBishop)
             {
-                bishopAttacks[s][testIndex] = attacks;
+                *(bishopRefs[s] + testIndex) = attacks;
             }
             else
             {
-                rookAttacks[s][testIndex] = attacks;
+                *(rookRefs[s] + testIndex) = attacks;
             }
         }
     }
@@ -312,4 +332,14 @@ U64 genBishopAttacks(int sq, U64 blockers)
     blockers &= ~attacks;
 
     return attacks;
+}
+
+int intPow(int a, int b)
+{
+    int val = 1;
+    for (int i = 0; i < b; i++)
+    {
+        val *= a;
+    }
+    return val;
 }
