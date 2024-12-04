@@ -1,8 +1,7 @@
 
 #include "transposition-table.h"
 
-struct TranspositionEntry transpositionTable_depth[TRANSPOSITION_TABLE_ENTRIES];
-struct TranspositionEntry transpositionTable_always[TRANSPOSITION_TABLE_ENTRIES];
+struct TranspositionEntry transpositionTable[TRANSPOSITION_TABLE_ENTRIES][2];
 
 int TT_misses = 0;
 int TT_hits = 0;
@@ -12,8 +11,8 @@ int TT_writes = 0;
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
-    struct TranspositionEntry* depthEntry = transpositionTable_depth + index;
-    struct TranspositionEntry* alwaysEntry = transpositionTable_always + index;
+    struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
+    struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
@@ -33,8 +32,8 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 struct TranspositionEntry* getTranspositionTableEntry(void)
 {
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
-    struct TranspositionEntry* depthEntry = transpositionTable_depth + index;
-    struct TranspositionEntry* alwaysEntry = transpositionTable_always + index;
+    struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
+    struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
@@ -67,12 +66,12 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     //TT_writes += transpositionTable_always[index].zobristHash == 0;
 
     // always replace any entry here
-    transpositionTable_always[index] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
+    transpositionTable[index][1] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
 
     // only replace if the depth is better
-    if (transpositionTable_depth[index].depth < depth)
+    if (transpositionTable[index][0].depth < depth)
     {
-        transpositionTable_depth[index] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
+        transpositionTable[index][0] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
     }
 }
 

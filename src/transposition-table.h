@@ -32,8 +32,8 @@ extern int TT_hits;
 extern int TT_overwrites;
 extern int TT_writes;
 
-extern struct TranspositionEntry transpositionTable_depth[TRANSPOSITION_TABLE_ENTRIES];
-extern struct TranspositionEntry transpositionTable_always[TRANSPOSITION_TABLE_ENTRIES];
+// [0] is replace by depth and [1] is always replace
+extern struct TranspositionEntry transpositionTable[TRANSPOSITION_TABLE_ENTRIES][2];
 
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
 struct TranspositionEntry* getTranspositionTableEntry(void);
