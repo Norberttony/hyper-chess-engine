@@ -1,6 +1,7 @@
 #ifndef MAKE_UNMAKE_HEADER
 #define MAKE_UNMAKE_HEADER
 
+#include "evaluate-defines.h"
 #include "move.h"
 
 

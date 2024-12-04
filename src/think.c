@@ -17,13 +17,13 @@ int nodeOccurrence[4] = { 0 };
 
 
 // returns the current time in ms
-inline float getCurrentTime(void)
+float getCurrentTime(void)
 {
     return (float)clock() / CLOCKS_PER_SEC;
 }
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
-inline int getThinkAllowance()
+int getThinkAllowance()
 {
     return thinkStart < 0 || (getCurrentTime() - thinkStart) * 1000.0f < thinkingTime;
 }

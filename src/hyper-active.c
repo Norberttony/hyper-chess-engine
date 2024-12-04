@@ -53,4 +53,5 @@ void initMoveGen()
     populateRetractorCaptures();
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
+    initPSQT();
 }

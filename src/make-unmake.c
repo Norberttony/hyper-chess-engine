@@ -16,6 +16,10 @@ void makeMove(Move m)
 
     int coordinateSq;
 
+    // incrementally update evaluation parameters
+    int pers = ((toPlay == white) << 1) - 1;
+    materialScore += pers * (PSQT(type, toPlay, to) - PSQT(type, toPlay, from));
+
     U64 zobristHashUpdate = 0ULL;
 
     // interpret capture bits
@@ -47,6 +51,15 @@ void makeMove(Move m)
             // down
             unset_piece(notToPlay, c4, c4 > 0, dnSq);
 
+            // perform incremental updates on the evaluation parameters
+            // captured opponent's pieces, so I gain points
+            materialScore += pers * (
+                PSQT(c1, notToPlay, upSq * (upSq >= 0))
+                + PSQT(c2, notToPlay, ltSq * (ltSq >= 0))
+                + PSQT(c3, notToPlay, rtSq * (rtSq < 64))
+                + PSQT(c4, notToPlay, dnSq * (dnSq < 64))
+            );
+
             break;
         
         case immobilizer:
@@ -67,6 +80,12 @@ void makeMove(Move m)
             zobristHashUpdate ^= 
                 ((c1 != 0) * get_zobrist_hash(top, c1, toPlay)) ^
                 ((c2 != 0) * get_zobrist_hash(bottom, c2, toPlay));
+
+            // perform incremental updates on the evaluation parameters
+            materialScore += pers * (
+                PSQT(c1, notToPlay, top)
+                + PSQT(c2, notToPlay, bottom)
+            );
 
             break;
 
@@ -111,11 +130,21 @@ void makeMove(Move m)
                     deathSquares[cham2][to][1]
                 )
             ) & position[notToPlay + coordinator];
-            int deathSqC = pop_lsb(coordDeath);
-            
-            unset_piece(notToPlay, coordinator, coordDeath > 0, deathSqC);
 
-            zobristHashUpdate ^= (coordDeath > 0) * get_zobrist_hash(deathSqC, coordinator, toPlay);
+            int deathSqC = pop_lsb(coordDeath);
+            int coordCapt = coordDeath > 0;
+            
+            unset_piece(notToPlay, coordinator, coordCapt, deathSqC);
+
+            zobristHashUpdate ^= coordCapt * get_zobrist_hash(deathSqC, coordinator, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            materialScore += pers * (
+                PSQT(c1, notToPlay, to)
+                + PSQT(c2, notToPlay, deathSqTop)
+                + PSQT(c3, notToPlay, deathSqBottom)
+                + PSQT(coordCapt * coordinator, notToPlay, deathSqC)
+            );
 
             break;
 
@@ -129,6 +158,9 @@ void makeMove(Move m)
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
+            // perform incremental updates on the evaluation parameters
+            materialScore += pers * PSQT(c1, notToPlay, coordinateSq);
+
             break;
         
         case retractor:
@@ -139,6 +171,9 @@ void makeMove(Move m)
             unset_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            materialScore += pers * PSQT(c1, notToPlay, coordinateSq);
 
             break;
 
@@ -206,6 +241,25 @@ void makeMove(Move m)
             unset_piece(notToPlay, springer, c8, spriCaptSq);
 
             zobristHashUpdate ^= c8 * get_zobrist_hash(spriCaptSq, springer, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            int t1 = c1 * straddler;
+            int t2 = c2 * straddler;
+            int t3 = c3 * straddler;
+            int t4 = c4 * straddler;
+            int t56 = (c5 + c6) * coordinator;
+            int t7 = c7 * retractor;
+            int t8 = c8 * springer;
+
+            materialScore += pers * (
+                PSQT(t1, notToPlay, upSqc * (upSqc >= 0))
+                + PSQT(t2, notToPlay, ltSqc * (ltSqc >= 0))
+                + PSQT(t3, notToPlay, rtSqc * (rtSqc < 64))
+                + PSQT(t4, notToPlay, dnSqc * (dnSqc < 64))
+                + PSQT(t56, notToPlay, c5 * coordCaptSqTop + c6 * coordCaptSqBottom)
+                + PSQT(t7, notToPlay, retrCaptSq)
+                + PSQT(t8, notToPlay, spriCaptSq)
+            );
 
             break;
     }
@@ -285,6 +339,10 @@ void unmakeMove(Move m)
     pieceList[from] = pieceList[to];
     pieceList[to] = 0;
 
+    // incrementally update evaluation parameters
+    int pers = ((toPlay == white) << 1) - 1;
+    materialScore += pers * (PSQT(type, toPlay, from) - PSQT(type, toPlay, to));
+
     // interpret capture bits
     switch(type)
     {
@@ -314,6 +372,15 @@ void unmakeMove(Move m)
             // down
             set_piece(notToPlay, c4, c4 > 0, dnSq);
 
+            // perform incremental updates on the evaluation parameters
+            // captured opponent's pieces, so I lose points (place back captured pieces)
+            materialScore -= pers * (
+                PSQT(c1, notToPlay, upSq * (upSq >= 0))
+                + PSQT(c2, notToPlay, ltSq * (ltSq >= 0))
+                + PSQT(c3, notToPlay, rtSq * (rtSq < 64))
+                + PSQT(c4, notToPlay, dnSq * (dnSq < 64))
+            );
+
             break;
 
         case immobilizer:
@@ -333,6 +400,12 @@ void unmakeMove(Move m)
             zobristHashUpdate ^=
                 ((c1 != 0) * get_zobrist_hash(top, c1, toPlay)) ^
                 ((c2 != 0) * get_zobrist_hash(bottom, c2, toPlay));
+
+            // perform incremental updates on the evaluation parameters
+            materialScore -= pers * (
+                PSQT(c1, notToPlay, top)
+                + PSQT(c2, notToPlay, bottom)
+            );
 
             break;
 
@@ -375,9 +448,19 @@ void unmakeMove(Move m)
                 isDeath4 * deathSquares[cham2][to][1];
             
             int deathSqC = pop_lsb(coordDeath);
-            set_piece(notToPlay, coordinator, coordDeath > 0, deathSqC);
+            int coordCapt = coordDeath > 0;
 
-            zobristHashUpdate ^= (coordDeath != 0) * get_zobrist_hash(deathSqC, coordinator, toPlay);
+            set_piece(notToPlay, coordinator, coordCapt, deathSqC);
+
+            zobristHashUpdate ^= coordCapt * get_zobrist_hash(deathSqC, coordinator, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            materialScore -= pers * (
+                PSQT(c1, notToPlay, to)
+                + PSQT(c2, notToPlay, deathSqTop)
+                + PSQT(c3, notToPlay, deathSqBottom)
+                + PSQT(coordCapt * coordinator, notToPlay, deathSqC)
+            );
 
             break;
 
@@ -391,6 +474,9 @@ void unmakeMove(Move m)
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
 
+            // perform incremental updates on the evaluation parameters
+            materialScore -= pers * PSQT(c1, notToPlay, coordinateSq);
+
             break;
 
         case retractor:
@@ -401,6 +487,9 @@ void unmakeMove(Move m)
             set_piece(notToPlay, c1, c1 > 0, coordinateSq);
 
             zobristHashUpdate ^= (c1 != 0) * get_zobrist_hash(coordinateSq, c1, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            materialScore -= pers * PSQT(c1, notToPlay, coordinateSq);
 
             break;
 
@@ -464,6 +553,25 @@ void unmakeMove(Move m)
 
             set_piece(notToPlay, springer, c8, spriCaptSq);
             zobristHashUpdate ^= c8 * get_zobrist_hash(spriCaptSq, springer, toPlay);
+
+            // perform incremental updates on the evaluation parameters
+            int t1 = c1 * straddler;
+            int t2 = c2 * straddler;
+            int t3 = c3 * straddler;
+            int t4 = c4 * straddler;
+            int t56 = (c5 + c6) * coordinator;
+            int t7 = c7 * retractor;
+            int t8 = c8 * springer;
+
+            materialScore -= pers * (
+                PSQT(t1, notToPlay, upSqc * (upSqc >= 0))
+                + PSQT(t2, notToPlay, ltSqc * (ltSqc >= 0))
+                + PSQT(t3, notToPlay, rtSqc * (rtSqc < 64))
+                + PSQT(t4, notToPlay, dnSqc * (dnSqc < 64))
+                + PSQT(t56, notToPlay, c5 * coordCaptSqTop + c6 * coordCaptSqBottom)
+                + PSQT(t7, notToPlay, retrCaptSq)
+                + PSQT(t8, notToPlay, spriCaptSq)
+            );
 
             break;
     }

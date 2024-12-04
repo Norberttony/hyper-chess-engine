@@ -27,7 +27,11 @@ void orderMoves(Move* moves, int count, int depth)
 
         int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
 
-        scores[i] = orderFirstValue * (m == orderFirst) + moveCaptureValue(m) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][type][toSq] + killScore);
+        scores[i] = orderFirstValue * (m == orderFirst) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][type][toSq] + killScore);
+        if (isCapt)
+        {
+            scores[i] += moveCaptureValue(m);
+        }
     }
 
     // sort the moves using insertion sort

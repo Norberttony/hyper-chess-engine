@@ -4,6 +4,7 @@
 #include <ctype.h> // for tolower and toupper
 #include <stdlib.h>
 
+#include "evaluate-defines.h"
 #include "bitboard-utility.h"
 
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
@@ -45,12 +46,15 @@ enum
 extern int toPlay;
 extern int notToPlay;
 extern int halfmove;
+extern int materialScore;
 
 extern U64 position[17];
 
 extern const char pieceFEN[];
 
 extern const char StartingFEN[];
+
+extern const char* squareNames[];
 
 // 8 squares above and 8 squares below as extra padding
 extern int pieceListStore[80];
