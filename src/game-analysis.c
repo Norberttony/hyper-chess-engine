@@ -16,15 +16,10 @@ void playGame(int mySide)
         // time to consider which moves are played
         if (mySide == toPlay)
         {
-            puts("Thinking . . .");
-
             clock_t start = clock();
             Move best = thinkFor(200);
             clock_t end = clock();
 
-            printf("Thought for %f seconds.\n", (float)(end - start) / CLOCKS_PER_SEC);
-
-            printf("makemove %s%s\n", squareNames[(best & move_fromMask) >> 3], squareNames[(best & move_toMask) >> 9]);
             fflush(stdout);
             makeMove(best);
             prettyPrintBoard();
@@ -47,10 +42,6 @@ void playGame(int mySide)
 
             free(squares);
         }
-
-        printf("To Play captures immobilizer with king-coord dist: %d\n", kingCoordCaptPen(toPlay, pop_lsb(position[notToPlay + immobilizer])));
-        printf("Not To Play captures immobilizer with king-coord dist: %d\n", kingCoordCaptPen(notToPlay, pop_lsb(position[toPlay + immobilizer])));
-
     }
 }
 
@@ -195,7 +186,6 @@ void askForLAN(void)
 
 void loadLAN(char* str)
 {
-    printf("%s\n", str);
     for (int i = 0; str[i] != '\0' && str[i + 1] != '\0'; i += 5)
     {
         // get coordinates of from square and to square

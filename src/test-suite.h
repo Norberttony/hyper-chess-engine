@@ -24,7 +24,6 @@ struct TestSuitePosition
 // shorthand
 typedef struct TestSuitePosition pos;
 
-//pos straddlerPinTests[];
 
 // runs all of the positions in the test suite.
 // returns 0 on failure and 1 on success

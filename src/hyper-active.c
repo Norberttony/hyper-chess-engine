@@ -15,6 +15,7 @@
 #include "test-suite.h"
 
 #include "game-analysis.h"
+#include "uci.h"
 
 // initializes the move generator
 void initMoveGen();
@@ -26,15 +27,9 @@ int main(void)
 
     srand(time(NULL));
 
-    askForFEN();
+    loadFEN(StartingFEN);
 
-    // askForLAN();
-
-    int mySide = askForSide();
-
-    prettyPrintBoard();
-
-    playGame(mySide);
+    uciLoop();
 
     puts("Good game!");
 

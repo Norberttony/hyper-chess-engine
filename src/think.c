@@ -7,120 +7,79 @@ int orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
 int nodesVisited = 0;
-int qNodesVisited = 0;
 
 int thinkingTime = -1;
-float thinkStart = -1.0f;
-int maxDepth = 0;
+int thinkStart = -1;
+int stopThinking = 0;
+int currDepth = 0;
+
+int maxDepth = -1;
 
 int nodeOccurrence[4] = { 0 };
 
 
-// returns the current time in ms
-float getCurrentTime(void)
-{
-    return (float)clock() / CLOCKS_PER_SEC;
-}
-
 // returns 1 if the engine is still allowed to think and 0 otherwise
-int getThinkAllowance()
+void determineThinkAllowance()
 {
-    return thinkStart < 0 || (getCurrentTime() - thinkStart) * 1000.0f < thinkingTime;
+    if (!(thinkingTime < 0 || (getCurrentTime() - thinkStart) < thinkingTime))
+    {
+        stopThinking = 1;
+    }
+    readInput();
 }
 
-Move thinkFor(int time)
+Move thinkFor(int ms)
+{
+    thinkingTime = ms;
+    maxDepth = MAX_DEPTH;
+
+    return startThink();
+}
+
+// Parameters to set
+// - maxDepth: must be set to the depth that will be iteratively searched to.
+// - thinkStart: -1 if meant to think indefinitely
+// - thinkingTime: must be set
+Move startThink(void)
 {
     // thinking is back on schedule
-    thinkStart = getCurrentTime();
-    thinkingTime = time;
+    stopThinking = 0;
     orderFirst = 0;
-
 
     U64 myHash = zobristHash;
 
     int totalNodesVisited = 0;
-    int totalQNodesVisited = 0;
-
-    int totalOrderFirstAttempts = 0;
-    int totalOrderFirstSuccess = 0;
-
-    int totalNodeOccurrence[4] = { 0 };
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
     Move bestMove = 0;
-    while (getThinkAllowance() && depth < MAX_DEPTH)
+    while (!stopThinking && depth < maxDepth)
     {
         nodesVisited = 0;
-        qNodesVisited = 0;
-
-        orderFirstAttempts = 0;
-        orderFirstSuccess = 0;
-
-        nodeOccurrence[1] = 0;
-        nodeOccurrence[2] = 0;
-        nodeOccurrence[3] = 0;
-
-        /*
-        TT_misses = 0;
-        TT_hits = 0;
-        TT_overwrites = 0;
-        */
-
-        printf("Searching at depth %d\n", depth + 1);
-        printf("Order first: ");
-        prettyPrintMove(orderFirst);
 
         Move candidate = getBestMove(++depth);
-
-        /*
-        puts("Transposition Table Results");
-        printf("Hits: %d\n", TT_hits);
-        printf("Misses: %d\n", TT_misses);
-        printf("Writes: %d / %d\n", TT_writes, TRANSPOSITION_TABLE_ENTRIES + 1);
-        printf("Overwrites: %d / %d\n", TT_overwrites, TT_writes + TT_overwrites);
-        */
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
         orderFirst = candidate;
-
         bestMove = candidate;
-        printEval();
-        printPrincipalVariation(depth);
-        printf("\n");
-        printf("Visited %d nodes\n", nodesVisited);
-        printf("Visited %d quiescent nodes\n", qNodesVisited);
-        printf("Ordered first and was correct %d/%d times\n", orderFirstSuccess, orderFirstAttempts);
-        printf("EXACT: %d\nLOWER: %d\nUPPER: %d\n", nodeOccurrence[TT_EXACT], nodeOccurrence[TT_LOWER], nodeOccurrence[TT_UPPER]);
-        printf("\n");
 
         totalNodesVisited += nodesVisited;
-        totalQNodesVisited += qNodesVisited;
 
-        totalOrderFirstAttempts += orderFirstAttempts;
-        totalOrderFirstSuccess += orderFirstSuccess;
-
-        totalNodeOccurrence[TT_EXACT] += nodeOccurrence[TT_EXACT];
-        totalNodeOccurrence[TT_LOWER] += nodeOccurrence[TT_LOWER];
-        totalNodeOccurrence[TT_UPPER] += nodeOccurrence[TT_UPPER];
+        printf("info score ");
+        printEval();
+        printf(" depth %d nodes %d time %d pv ", depth, totalNodesVisited, getCurrentTime() - thinkStart);
+        printPrincipalVariation(depth);
+        puts("");
     }
 
-    printf("Total number of nodes visited: %d\n", totalNodesVisited);
-    printf("Total number of quiescent nodes visited: %d\n", totalQNodesVisited);
-    printf("Total number of order first successes: %d/%d\n", totalOrderFirstSuccess, totalOrderFirstAttempts);
-    printf("Total number of node occurrences | EXACT: %d LOWER: %d UPPER: %d\n", totalNodeOccurrence[TT_EXACT], totalNodeOccurrence[TT_LOWER], totalNodeOccurrence[TT_UPPER]);
+    printf("bestmove %s%s\n", squareNames[(bestMove & move_fromMask) >> 3], squareNames[(bestMove & move_toMask) >> 9]);
 
     if (myHash != zobristHash)
     {
         puts("PANIC! HASH ERROR!");
     }
-
-    printf("Had to stop at depth %d\n", depth);
-
-    // set back to always think
-    thinkingTime = -1;
 
     return bestMove;
 }
@@ -146,7 +105,7 @@ int think(int depth, int alpha, int beta)
                 if (savedEval->nodeType == TT_EXACT)
                 {
                     // determine upper bound for mate score
-                    return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (maxDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (maxDepth - depth);
+                    return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (currDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (currDepth - depth);
                 }
                 else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
                 {
@@ -206,7 +165,7 @@ int think(int depth, int alpha, int beta)
 
         if (isCheckmate())
         {
-            eval = INT_MAX - 1 - (maxDepth - depth);
+            eval = INT_MAX - 1 - (currDepth - depth);
         }
         else if (threefold)
         {
@@ -219,7 +178,7 @@ int think(int depth, int alpha, int beta)
         unmakeMove(m);
 
         // make sure we are still allowed to think.
-        if (!getThinkAllowance())
+        if (stopThinking)
         {
             return beta;
         }
@@ -289,7 +248,12 @@ int think(int depth, int alpha, int beta)
 int thinkCaptures(int alpha, int beta, int accessTT)
 {
     // leaf node is ignored in count of qNodes visited
-    qNodesVisited += !accessTT;
+    nodesVisited += !accessTT;
+    
+    if ((nodesVisited & 2047) == 0)
+    {
+        determineThinkAllowance();
+    }
 
     // not capturing might be better
     int eval = evaluate();
@@ -337,7 +301,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 
         unmakeMove(m);
 
-        if (!getThinkAllowance())
+        if (stopThinking)
         {
             return beta;
         }
@@ -376,7 +340,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 
 Move getBestMove(int depth)
 {
-    maxDepth = depth;
+    currDepth = depth;
     nodesVisited++;
 
     Move movelist[MAX_MOVES];
@@ -393,9 +357,6 @@ Move getBestMove(int depth)
     int alpha = INT_MIN + 1;
     int beta = INT_MAX - 1;
     Move bestMove = movelist[0];
-
-    printf("Ordered first ");
-    prettyPrintMove(bestMove);
 
     for (int i = 0; i < size; i++)
     {
@@ -416,7 +377,7 @@ Move getBestMove(int depth)
 
         if (isCheckmate())
         {
-            eval = INT32_MAX - 1 - (maxDepth - depth);
+            eval = INT32_MAX - 1 - (currDepth - depth);
         }
         else if (threefold)
         {
@@ -430,23 +391,17 @@ Move getBestMove(int depth)
 
         // make sure we are still allowed to think.
         // if not, throw in the best move we've got!
-        if (!getThinkAllowance())
+        if (stopThinking)
         {
-            printf("depth %d: evaluating the position as %d\n", depth, alpha);
             return bestMove;
         }
 
         if (eval > alpha)
         {
-            printf("Overthrew last best move with eval %d, new best move with eval %d is ", alpha, eval);
-            prettyPrintMove(m);
-            puts("");
             alpha = eval;
             bestMove = m;
         }
     }
-
-    printf("depth %d: evaluating the position as %d\n", depth, alpha);
 
 #ifdef USE_TRANSPOSITION_TABLE
     writeToTranspositionTable(depth, alpha, bestMove, TT_EXACT);
