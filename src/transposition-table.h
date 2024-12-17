@@ -8,7 +8,11 @@
 #include <limits.h>
 #include <string.h>
 
+#ifdef WEB
+#define TRANSPOSITION_TABLE_ENTRIES 899981
+#else
 #define TRANSPOSITION_TABLE_ENTRIES 17999987
+#endif
 
 #define TT_EXACT 1
 #define TT_LOWER 2

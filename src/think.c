@@ -30,6 +30,7 @@ void determineThinkAllowance()
 
 Move thinkFor(int ms)
 {
+    thinkStart = getCurrentTime();
     thinkingTime = ms;
     maxDepth = MAX_DEPTH;
 
