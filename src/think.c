@@ -13,6 +13,8 @@ int thinkStart = -1;
 int stopThinking = 0;
 int currDepth = 0;
 
+Move currBestMove = 0;
+
 int maxDepth = -1;
 
 int nodeOccurrence[4] = { 0 };
@@ -37,6 +39,15 @@ Move thinkFor(int ms)
     return startThink();
 }
 
+Move getBestMove(int depth)
+{
+    thinkStart = getCurrentTime();
+    thinkingTime = -1;
+    maxDepth = depth;
+
+    return startThink();
+}
+
 // Parameters to set
 // - maxDepth: must be set to the depth that will be iteratively searched to.
 // - thinkStart: -1 if meant to think indefinitely
@@ -54,17 +65,16 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
-    Move bestMove = 0;
     while (!stopThinking && depth < maxDepth)
     {
         nodesVisited = 0;
 
-        Move candidate = getBestMove(++depth);
+        currDepth = ++depth;
+        think(depth, INT_MIN + 1, INT_MAX - 1);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
-        orderFirst = candidate;
-        bestMove = candidate;
+        orderFirst = currBestMove;
 
         totalNodesVisited += nodesVisited;
 
@@ -75,19 +85,24 @@ Move startThink(void)
         puts("");
     }
 
-    printf("bestmove %s%s\n", squareNames[(bestMove & move_fromMask) >> 3], squareNames[(bestMove & move_toMask) >> 9]);
+    printf("bestmove %s%s\n", squareNames[(currBestMove & move_fromMask) >> 3], squareNames[(currBestMove & move_toMask) >> 9]);
 
     if (myHash != zobristHash)
     {
         puts("PANIC! HASH ERROR!");
     }
 
-    return bestMove;
+    return currBestMove;
 }
 
 int think(int depth, int alpha, int beta)
 {
     nodesVisited++;
+
+    if ((nodesVisited & 2047) == 0)
+    {
+        determineThinkAllowance();
+    }
 
     int nodeType = TT_LOWER;
 
@@ -96,7 +111,7 @@ int think(int depth, int alpha, int beta)
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
-    if (depth >= TT_MIN_DEPTH)
+    if (currDepth != depth && depth >= TT_MIN_DEPTH)
     {
         struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
@@ -144,9 +159,16 @@ int think(int depth, int alpha, int beta)
     // order most promising moves first
     orderMoves(movelist, size, depth);
 
+    // have at least a move before time runs out
+    if (depth == currDepth)
+    {
+        currBestMove = movelist[0];
+    }
+
     int hasLegalMoves = 0;
 
     Move bestMove = 0;
+    int foundPV = 0;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -166,7 +188,7 @@ int think(int depth, int alpha, int beta)
 
         if (isCheckmate())
         {
-            eval = INT_MAX - 1 - (currDepth - depth);
+            eval = INT_MAX - 2 - (currDepth - depth);
         }
         else if (threefold)
         {
@@ -224,8 +246,16 @@ int think(int depth, int alpha, int beta)
             alpha = eval;
             bestMove = m;
 
+            // set current best move in search only if this is the root node.
+            if (depth == currDepth)
+            {
+                currBestMove = m;
+            }
+
             orderFirstSuccess -= isFromTT;
             isFromTT = 0;
+
+            foundPV = 1;
         }
     }
 
@@ -337,76 +367,4 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 
     // return best evaluation
     return alpha;
-}
-
-Move getBestMove(int depth)
-{
-    currDepth = depth;
-    nodesVisited++;
-
-    Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist, 0);
-
-    if (size == 0)
-    {
-        return 0; // no moves!
-    }
-
-    // determine most promising moves
-    orderMoves(movelist, size, depth);
-
-    int alpha = INT_MIN + 1;
-    int beta = INT_MAX - 1;
-    Move bestMove = movelist[0];
-
-    for (int i = 0; i < size; i++)
-    {
-        Move m = movelist[i];
-        makeMove(m);
-
-        if (isAttackingKing())
-        {
-            unmakeMove(m);
-            continue;
-        }
-
-        // try to maximize value
-        int eval;
-
-        // check for three fold repetition
-        int threefold = getThreefoldFlag();
-
-        if (isCheckmate())
-        {
-            eval = INT32_MAX - 1 - (currDepth - depth);
-        }
-        else if (threefold)
-        {
-            eval = 0;
-        }
-        else
-        {
-            eval = -think(depth - 1, -beta, -alpha);
-        }
-        unmakeMove(m);
-
-        // make sure we are still allowed to think.
-        // if not, throw in the best move we've got!
-        if (stopThinking)
-        {
-            return bestMove;
-        }
-
-        if (eval > alpha)
-        {
-            alpha = eval;
-            bestMove = m;
-        }
-    }
-
-#ifdef USE_TRANSPOSITION_TABLE
-    writeToTranspositionTable(depth, alpha, bestMove, TT_EXACT);
-#endif
-
-    return bestMove;
 }

@@ -22,6 +22,9 @@ extern int maxDepth;
 // returns the evaluation of the position.
 int think(int depth, int alpha, int beta);
 
+// performs a min-max alpha-beta search up to the given depth and returns the best move.
+Move getBestMove(int depth);
+
 // attempts to think for the specified amount of time in ms
 Move thinkFor(int ms);
 
@@ -30,9 +33,6 @@ Move startThink(void);
 // a quiescent search, this function only performs min-max alphabeta pruning on sequences of
 // captures
 int thinkCaptures(int alpha, int beta, int accessTT);
-
-// performs a min-max alpha-beta search up to the given depth and returns the best move.
-Move getBestMove(int depth);
 
 void readInput(void);
 
