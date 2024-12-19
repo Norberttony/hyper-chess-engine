@@ -98,7 +98,6 @@ int loadFEN(const char* fen)
 
     // clear scores
     materialScore = 0;
-    immBonusScore = 0;
 
     // clear zobrist hash
     zobristHash = 0ULL;

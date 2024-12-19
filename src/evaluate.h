@@ -18,4 +18,7 @@ int moveCaptureValue(Move m);
 // returns a penalty based on how fast the square is capturable.
 int kingCoordCaptPen(int stc, int sq);
 
+// calculates the bonus of the immobilizer. does not check if the immobilizer exists before doing so
+int calcImmBonus(int sq, int side);
+
 #endif

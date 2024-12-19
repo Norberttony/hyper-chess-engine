@@ -201,6 +201,25 @@ int kingCoordCaptPen(int stc, int sq)
     return kfrr < krrf ? krrf : kfrr;
 }
 
+int calcImmBonus(int sq, int side)
+{
+    U64 infl = kingMoves[sq] & position[!side * 8];
+    int score = 0;
+    int isImm = 0;
+
+    while (infl)
+    {
+        int piece = pieceList[pop_lsb(infl)];
+        score += immBonus[piece];
+        isImm = isImm || (piece == immobilizer || piece == chameleon);
+        infl &= infl - 1;
+    }
+
+    score -= isImm * immBonus[immobilizer];
+
+    return score;
+}
+
 int moveCaptureValue(Move m)
 {
     switch (m & move_typeMask)

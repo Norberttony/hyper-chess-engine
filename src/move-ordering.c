@@ -16,6 +16,8 @@ void orderMoves(Move* moves, int count, int depth)
 {
     int scores[MAX_MOVES];
 
+    int fromScore = calcImmBonus(pop_lsb(position[toPlay + immobilizer]), toPlay);
+
     // score the moves
     for (int i = 0; i < count; i++)
     {
@@ -31,6 +33,12 @@ void orderMoves(Move* moves, int count, int depth)
         if (isCapt)
         {
             scores[i] += moveCaptureValue(m);
+        }
+        else if (type == immobilizer)
+        {
+            // immobilizer moves should be tested first if they result in a good bonus score.
+            int diff = calcImmBonus(toSq, toPlay) - fromScore;
+            scores[i] += diff / 2;
         }
     }
 
