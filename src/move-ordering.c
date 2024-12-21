@@ -9,7 +9,7 @@ const int isCaptValue = 900000000;
 const int killerValue = 800000000;
 
 Move killerMoves[MAX_DEPTH][2] = { 0 };
-int historyValues[2][8][64] = { 0 };
+int historyValues[2][64][64] = { 0 };
 
 
 void orderMoves(Move* moves, int count, int depth)
@@ -20,14 +20,14 @@ void orderMoves(Move* moves, int count, int depth)
     for (int i = 0; i < count; i++)
     {
         Move m = moves[i];
-        int type = m & move_typeMask;
-        int fromSq = (m & move_fromMask) >> 3;
-        int toSq = (m & move_toMask) >> 9;
-        int isCapt = (m & move_captMask) > 0;
+        int type = get_type(m);
+        int fromSq = get_from(m);
+        int toSq = get_to(m);
+        int isCapt = is_move_capt(m);
 
         int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
 
-        scores[i] = orderFirstValue * (m == orderFirst) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][type][toSq] + killScore);
+        scores[i] = orderFirstValue * (m == orderFirst) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][fromSq][toSq] + killScore);
         if (isCapt)
         {
             scores[i] += moveCaptureValue(m);
@@ -58,4 +58,27 @@ void orderMoves(Move* moves, int count, int depth)
         printf("is valued at %d\n", scores[i]);
     }
     */
+}
+
+void addKillerMove(Move m, int depth)
+{
+    int isStored = killerMoves[depth][0] == m;
+    killerMoves[depth][1] = !isStored * killerMoves[depth][0] + isStored * killerMoves[depth][1];
+    killerMoves[depth][0] = !isStored * m + isStored * killerMoves[depth][0];
+}
+
+void updateHistory(int from, int to, int bonus)
+{
+    // clamp bonus between -MAX_HISTORY and MAX_HISTORY to avoid oversaturated history values
+    if (bonus > MAX_HISTORY)
+    {
+        bonus = MAX_HISTORY;
+    }
+    if (bonus < -MAX_HISTORY)
+    {
+        bonus = -MAX_HISTORY;
+    }
+
+    // apply the history gravity formula, which gives smaller bonuses if the history move was expected
+    historyValues[toPlay == black][from][to] += bonus - historyValues[toPlay == black][from][to] * abs(bonus) / MAX_HISTORY;
 }

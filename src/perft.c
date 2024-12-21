@@ -51,7 +51,7 @@ struct MoveCounter divide(int depth)
         counter.pieceCaptures   += temp.pieceCaptures;
         counter.checkmates      += temp.checkmates;
 
-        if (move & move_captMask)
+        if (is_move_capt(move))
         {
             counter.captureMoves++;
         }
@@ -121,7 +121,7 @@ struct MoveCounter countMoves(int depth)
         counter.checkmates      += temp.checkmates;
 
         // check with capture mask
-        if (move & move_captMask)
+        if (is_move_capt(move))
         {
             counter.captureMoves++;
         }
@@ -147,38 +147,38 @@ int isMoveLegal(Move m)
 
 int countCaptures(Move move)
 {
-    switch(move & move_typeMask)
+    switch(get_type(move))
     {
         case straddler:
         case coordinator:
         case retractor:
         case springer:
             return
-                ((move & move_c1Mask) > 0) +
-                ((move & move_c2Mask) > 0) +
-                ((move & move_c3Mask) > 0) +
-                ((move & move_c4Mask) > 0);
+                (get_c1(move) > 0) +
+                (get_c2(move) > 0) +
+                (get_c3(move) > 0) +
+                (get_c4(move) > 0);
 
         case chameleon:
             return
-                ((move & move_cham_u_mask)  > 0) +
-                ((move & move_cham_l_mask)  > 0) +
-                ((move & move_cham_r_mask)  > 0) +
-                ((move & move_cham_d_mask)  > 0) +
-                ((move & move_cham_d1_mask) > 0) +
-                ((move & move_cham_d2_mask) > 0) +
-                ((move & move_cham_q_mask)  > 0) +
-                ((move & move_cham_n_mask)  > 0);
+                (get_b_cu(move)  > 0) +
+                (get_b_cl(move)  > 0) +
+                (get_b_cr(move)  > 0) +
+                (get_b_cd(move)  > 0) +
+                (get_b_cd1(move) > 0) +
+                (get_b_cd2(move) > 0) +
+                (get_b_cq(move)  > 0) +
+                (get_b_cn(move)  > 0);
 
         case king:
             return
-                ((move & move_c1Mask) > 0) +
-                ((move & move_c2Mask) > 0) +
-                ((move & move_c3Mask) > 0) +
-                ((move & move_kingc1mask) > 0) +
-                ((move & move_kingc2mask) > 0) +
-                ((move & move_kingc3mask) > 0) +
-                ((move & move_kingc4mask) > 0);
+                (get_c1(move)    > 0) +
+                (get_c2(move)    > 0) +
+                (get_c3(move)    > 0) +
+                (get_kb_c1(move) > 0) +
+                (get_kb_c2(move) > 0) +
+                (get_kb_c3(move) > 0) +
+                (get_kb_c4(move) > 0);
 
         case immobilizer:
         default:
@@ -200,7 +200,7 @@ int chooseMove(int startSq, int endSq)
             continue;
         }
 
-        if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
+        if (get_from(m) == startSq && get_to(m) == endSq)
         {
             makeMove(m);
             return m;
@@ -220,7 +220,7 @@ int chooseMoveBlind(int startSq, int endSq)
     {
         Move m = moves[i];
 
-        if ((m & move_fromMask) >> 3 == startSq && (m & move_toMask) >> 9 == endSq)
+        if (get_from(m) == startSq && get_to(m) == endSq)
         {
             makeMove(m);
             return m;

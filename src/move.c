@@ -1,31 +1,31 @@
 
 #include "move.h"
 
-const int move_typeMask     = 0b0000000000000000000000000111; // piece performing move
-const int move_fromMask     = 0b0000000000000000000111111000; // from
-const int move_toMask       = 0b0000000000000111111000000000; // to
-const int move_c1Mask       = 0b0000000000111000000000000000; // tends to be first capture
-const int move_c2Mask       = 0b0000000111000000000000000000; // tends to be second capture
-const int move_c3Mask       = 0b0000111000000000000000000000; // tends to be third capture
-const int move_c4Mask       = 0b0111000000000000000000000000; // tends to be fourth capture
+const int move_typeMask     = 0x3; // piece performing move
+const int move_fromMask     = 0x1F8; // from
+const int move_toMask       = 0x7E00; // to
+const int move_c1Mask       = 0x38000; // tends to be first capture
+const int move_c2Mask       = 0x1C0000; // tends to be second capture
+const int move_c3Mask       = 0xE00000; // tends to be third capture
+const int move_c4Mask       = 0x7000000; // tends to be fourth capture
 
-const int move_kingcmask    = 0b1111000000000000000000000000;
-const int move_kingc1mask   = 0b0001000000000000000000000000;
-const int move_kingc2mask   = 0b0010000000000000000000000000;
-const int move_kingc3mask   = 0b0100000000000000000000000000;
-const int move_kingc4mask   = 0b1000000000000000000000000000;
+const int move_kingcmask    = 0xE000000;
+const int move_kingc1mask   = 0x1000000;
+const int move_kingc2mask   = 0x2000000;
+const int move_kingc3mask   = 0x4000000;
+const int move_kingc4mask   = 0x8000000;
 
-const int move_cham_c_mask  = 0b0000011111111000000000000000;
-const int move_cham_u_mask  = 0b0000000000001000000000000000;
-const int move_cham_l_mask  = 0b0000000000010000000000000000;
-const int move_cham_r_mask  = 0b0000000000100000000000000000;
-const int move_cham_d_mask  = 0b0000000001000000000000000000;
-const int move_cham_d1_mask = 0b0000000010000000000000000000;
-const int move_cham_d2_mask = 0b0000000100000000000000000000;
-const int move_cham_q_mask  = 0b0000001000000000000000000000;
-const int move_cham_n_mask  = 0b0000010000000000000000000000;
+const int move_cham_c_mask  = 0x7F8000;
+const int move_cham_u_mask  = 0x008000;
+const int move_cham_l_mask  = 0x010000;
+const int move_cham_r_mask  = 0x020000;
+const int move_cham_d_mask  = 0x040000;
+const int move_cham_d1_mask = 0x080000;
+const int move_cham_d2_mask = 0x100000;
+const int move_cham_q_mask  = 0x200000;
+const int move_cham_n_mask  = 0x400000;
 
-const int move_captMask     = 0b1111111111111000000000000000; // all capture bits
+const int move_captMask     = 0xFFF8000; // all capture bits
 
 const U64 straddlerBounds[] = {
     18446744073709486080ULL,// up

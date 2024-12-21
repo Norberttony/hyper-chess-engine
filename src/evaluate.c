@@ -106,7 +106,7 @@ int evaluate()
     myImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    evaluation -= ((toPlay == white) * 140 + -perspective * 20 * (myImmSq >> 3) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0);
+    evaluation -= ((toPlay == white) * 140 + -perspective * imm_dist_penalty(myImmSq) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0);
 
 
     // determines which boards should be used to count as blockers
@@ -133,7 +133,7 @@ int evaluate()
     enemyImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    evaluation += ((notToPlay == white) * 140 + perspective * 20 * (enemyImmSq >> 3) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);
+    evaluation += ((notToPlay == white) * 140 + perspective * imm_dist_penalty(enemyImmSq) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);
 
 
     // === KING COORDINATOR CAPTURE DISTANCE === //
@@ -142,15 +142,20 @@ int evaluate()
     U64 enemyImmCorners = (enemyImmobilizer << 9 | enemyImmobilizer << 7 | enemyImmobilizer >> 7 | enemyImmobilizer >> 9) & enemyInfl;
     U64 myImmCorners = (myImmobilizer << 9 | myImmobilizer << 7 | myImmobilizer >> 7 | myImmobilizer >> 9) & myInfl;
 
+    int myKCImm = (enemyImmCorners & (position[toPlay + coordinator] | position[toPlay + king])) > 0;
+    int enemyKCImm = (myImmCorners & (position[notToPlay + coordinator] | position[notToPlay + king])) > 0;
+
     // an additional penalty for how long it takes for king-coordinator duo to capture at the given sq
-    if (enemyImmobilizer && enemyImmImm && !(enemyImmCorners & (position[toPlay + coordinator] | position[toPlay + king])))
+    if (enemyImmobilizer && enemyImmImm && !myKCImm)
     {
         evaluation += kingCoordCaptPen(toPlay, enemyImmSq);
     }
-    if (myImmobilizer && myImmImm && !(myImmCorners & (position[notToPlay + coordinator] | position[notToPlay + king])))
+    if (myImmobilizer && myImmImm && !enemyKCImm)
     {
         evaluation -= kingCoordCaptPen(notToPlay, myImmSq);
     }
+
+    // evaluation += 200 * (enemyKCImm - myKCImm);
 
 
     // whoever has more material MUST be winning (not necessarily but y'know)
@@ -203,39 +208,39 @@ int kingCoordCaptPen(int stc, int sq)
 
 int moveCaptureValue(Move m)
 {
-    switch (m & move_typeMask)
+    switch (get_type(m))
     {
         case straddler:
             return
-                pieceValues[(m & move_c1Mask) >> 15] +
-                pieceValues[(m & move_c2Mask) >> 18] +
-                pieceValues[(m & move_c3Mask) >> 21] +
-                pieceValues[(m & move_c4Mask) >> 24];
+                pieceValues[get_c1(m)] +
+                pieceValues[get_c2(m)] +
+                pieceValues[get_c3(m)] +
+                pieceValues[get_c4(m)];
         case retractor:
         case springer:
-            return pieceValues[(m & move_c1Mask) >> 15];
+            return pieceValues[get_c1(m)];
         case coordinator:
             return
-                pieceValues[(m & move_c1Mask) >> 15] +
-                pieceValues[(m & move_c2Mask) >> 18];
+                pieceValues[get_c1(m)] +
+                pieceValues[get_c2(m)];
         case immobilizer:
             return 0;
         case chameleon:
             return
-                pieceValues[(m & move_cham_u_mask) > 0] +
-                pieceValues[(m & move_cham_l_mask) > 0] +
-                pieceValues[(m & move_cham_r_mask) > 0] +
-                pieceValues[(m & move_cham_d_mask) > 0] +
+                pieceValues[get_b_cu(m)] +
+                pieceValues[get_b_cl(m) > 0] +
+                pieceValues[get_b_cr(m) > 0] +
+                pieceValues[get_b_cd(m) > 0] +
 
-                ((m & (move_cham_d1_mask | move_cham_d2_mask)) > 0) * pieceValues[coordinator] +
-                ((m & move_cham_q_mask) > 0) * pieceValues[retractor] +
-                ((m & move_cham_n_mask) > 0) * pieceValues[springer];
+                (get_b_cd1(m) | get_b_cd2(m)) * pieceValues[coordinator] +
+                get_b_cq(m) * pieceValues[retractor] +
+                get_b_cn(m) * pieceValues[springer];
         case king:
             return
-                pieceValues[(m & move_c1Mask) >> 15] +
-                pieceValues[(m & move_c2Mask) >> 18] +
-                pieceValues[(m & move_c3Mask) >> 21] +
-                ((m & move_kingcmask) > 0) * pieceValues[coordinator];
+                pieceValues[get_c1(m)] +
+                pieceValues[get_c2(m)] +
+                pieceValues[get_c3(m)] +
+                get_kb_c(m) * pieceValues[coordinator];
     }
     return 0;
 }

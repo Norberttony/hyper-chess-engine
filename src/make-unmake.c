@@ -436,10 +436,10 @@ void unmakeMove(Move m)
             int cham1 = pop_lsb(chamBoard);
             int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
 
-            int isDeath1 = (m & move_kingc1mask) > 0;
-            int isDeath2 = (m & move_kingc2mask) > 0;
-            int isDeath3 = (m & move_kingc3mask) > 0;
-            int isDeath4 = (m & move_kingc4mask) > 0;
+            int isDeath1 = get_kb_c1(m);
+            int isDeath2 = get_kb_c2(m);
+            int isDeath3 = get_kb_c3(m);
+            int isDeath4 = get_kb_c4(m);
 
             U64 coordDeath =
                 isDeath1 * deathSquares[cham1][to][0] |

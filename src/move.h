@@ -15,6 +15,37 @@
 #define MAX_MOVES 256
 #define MAX_CAPTURES 90
 
+// most moves are structured such that captured pieces are consecutively ordered
+#define get_type(move)  (move & 0x3)
+#define get_from(move)  ((move & 0x1F8) >> 3)
+#define get_to(move)    ((move & 0x7E00) >> 9)
+#define get_c1(move)    ((move & 0x38000) >> 15)
+#define get_c2(move)    ((move & 0x1C0000) >> 18)
+#define get_c3(move)    ((move & 0xE00000) >> 21)
+#define get_c4(move)    ((move & 0x7000000) >> 24)
+
+// king uses c1, c2, c3, but may also capture coordinator with chameleons. this identifies which of
+// the four squares it could have been (4 bits).
+#define get_kb_c(move)  ((move & 0xE000000) >> 24)
+#define get_kb_c1(move) ((move & 0x1000000) >> 24)
+#define get_kb_c2(move) ((move & 0x2000000) >> 25)
+#define get_kb_c3(move) ((move & 0x4000000) >> 26)
+#define get_kb_c4(move) ((move & 0x8000000) >> 27)
+
+// chameleon uses a single bit to indicate what piece (and sometimes the relative location, like up
+// or down for straddlers) was captured
+#define get_b_c(move)   ((move & 0x7F8000) >> 15)
+#define get_b_cu(move)  ((move & 0x008000) >> 15)
+#define get_b_cl(move)  ((move & 0x010000) >> 16)
+#define get_b_cr(move)  ((move & 0x020000) >> 17)
+#define get_b_cd(move)  ((move & 0x040000) >> 18)
+#define get_b_cd1(move) ((move & 0x080000) >> 19)
+#define get_b_cd2(move) ((move & 0x100000) >> 20)
+#define get_b_cq(move)  ((move & 0x200000) >> 21)
+#define get_b_cn(move)  ((move & 0x400000) >> 22)
+
+#define is_move_capt(move) ((move & 0xFFF8000) != 0)
+
 // 32-bit moves
 // LSB
 // - first 3 bits for what piece is moving
@@ -29,32 +60,6 @@
 // - - for the chameleon, 8 bits ULRDTBRN (up left right down top bottom retractor springer)
 // - - for the king, displacement, two death squares, four bits for which chameleon it coordinated with (if any)
 typedef uint32_t Move;
-
-extern const int move_typeMask; // piece performing move
-extern const int move_fromMask; // from
-extern const int move_toMask;   // to
-extern const int move_c1Mask;   // tends to be first capture
-extern const int move_c2Mask;   // tends to be second capture
-extern const int move_c3Mask;   // tends to be third capture
-extern const int move_c4Mask;   // tends to be fourth capture
-
-extern const int move_kingcmask;
-extern const int move_kingc1mask;
-extern const int move_kingc2mask;
-extern const int move_kingc3mask;
-extern const int move_kingc4mask;
-
-extern const int move_cham_c_mask;  // capture mask
-extern const int move_cham_u_mask;  // straddler up
-extern const int move_cham_l_mask;  // left
-extern const int move_cham_r_mask;  // right
-extern const int move_cham_d_mask;  // down
-extern const int move_cham_d1_mask; // death square 1
-extern const int move_cham_d2_mask; // death square 2
-extern const int move_cham_q_mask;  // retractor
-extern const int move_cham_n_mask;  // springer
-
-extern const int move_captMask; // all capture bits
 
 extern const char* squareNames[];
 

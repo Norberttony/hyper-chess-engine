@@ -8,6 +8,9 @@
 #include "move.h"
 
 
+#define imm_dist_penalty(sq) (20 * (sq >> 3))
+
+
 // greedy evaluation that counts material based on piece values
 int evaluate(void);
 

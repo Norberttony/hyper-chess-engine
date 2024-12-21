@@ -85,7 +85,7 @@ Move startThink(void)
         puts("");
     }
 
-    printf("bestmove %s%s\n", squareNames[(currBestMove & move_fromMask) >> 3], squareNames[(currBestMove & move_toMask) >> 9]);
+    printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);
 
     if (myHash != zobristHash)
     {
@@ -168,7 +168,6 @@ int think(int depth, int alpha, int beta)
     int hasLegalMoves = 0;
 
     Move bestMove = 0;
-    int foundPV = 0;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -216,25 +215,30 @@ int think(int depth, int alpha, int beta)
             writeToTranspositionTable(depth, beta, m, TT_UPPER);
 #endif
             nodeOccurrence[TT_UPPER]++;
-            
+
             // store killer move
-            int isStored = killerMoves[depth][0] == m;
-            killerMoves[depth][1] = !isStored * killerMoves[depth][0] + isStored * killerMoves[depth][1];
-            killerMoves[depth][0] = !isStored * m + isStored * killerMoves[depth][0];
+            addKillerMove(m, depth);
 
-            // update history values
-            if (!(m & move_captMask))
+            // for moves that do not capture...
+            if (!is_move_capt(m))
             {
-                int bonus = depth * depth;
-                int type = m & move_typeMask;
-                int to = (m & move_toMask) >> 9;
+                // update history moves
+                int bonus = 600 * depth * depth;
 
-                int val = historyValues[toPlay == black][type][to] + bonus;
-                if (val > MAX_HISTORY)
+                updateHistory(get_from(m), get_to(m), bonus);
+
+                // all previously searched quiet moves receive a negative score, as they did not
+                // provide the desired cut-off. (history maluses)
+                // this gives unpromising moves a negative score
+                int malusBonus = -bonus;
+                for (int j = 0; j < i; j++)
                 {
-                    val = MAX_HISTORY;
+                    Move mj = movelist[j];
+                    if (!is_move_capt(mj))
+                    {
+                        updateHistory(get_from(mj), get_to(mj), malusBonus);
+                    }
                 }
-                historyValues[toPlay == black][type][to] = val;
             }
 
             return beta;
@@ -254,8 +258,6 @@ int think(int depth, int alpha, int beta)
 
             orderFirstSuccess -= isFromTT;
             isFromTT = 0;
-
-            foundPV = 1;
         }
     }
 
