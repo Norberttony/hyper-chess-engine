@@ -168,6 +168,7 @@ int think(int depth, int alpha, int beta)
     int hasLegalMoves = 0;
 
     Move bestMove = 0;
+    int foundPV = 0;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -195,7 +196,22 @@ int think(int depth, int alpha, int beta)
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha);
+            if (!foundPV)
+            {
+                eval = -think(depth - 1, -beta, -alpha);
+            }
+            else
+            {
+                // If we found the principal variation, we can rely on move ordering and assume
+                // that finding another, better PV is very unlikely. So, we can try to confirm this
+                // by searching with a null window and seeing if alpha can be at all broken. If not,
+                // we have to perform the full search.
+                eval = -think(depth - 1, -alpha - 1, -alpha);
+                if (eval > alpha && eval < beta)
+                {
+                    eval = -think(depth - 1, -beta, -alpha);
+                }
+            }
         }
         unmakeMove(m);
 
@@ -249,6 +265,7 @@ int think(int depth, int alpha, int beta)
             nodeType = TT_EXACT;
             alpha = eval;
             bestMove = m;
+            foundPV = 1;
 
             // set current best move in search only if this is the root node.
             if (depth == currDepth)
