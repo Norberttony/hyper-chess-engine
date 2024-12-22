@@ -17,6 +17,8 @@ Move currBestMove = 0;
 
 int maxDepth = -1;
 
+int isNullMoveSearchAllowed = 1;
+
 int nodeOccurrence[4] = { 0 };
 
 
@@ -145,6 +147,35 @@ int think(int depth, int alpha, int beta)
         return thinkCaptures(alpha, beta, 1);
     }
 
+    // null move foward pruning
+    // searching with really small windows produces most pruning and is fast. by checking if the
+    // opponent does not have a good response if we do nothing, likely we do not have to confirm
+    // that our position is good. This fails in zugzwang positions...
+    if (isNullMoveSearchAllowed && currDepth != depth && depth - 1 - NULL_MOVE_PRUNING_R >= 0)
+    {
+        makeNullMove();
+        if (!isAttackingKing())
+        {
+            isNullMoveSearchAllowed--;
+            int eval = -think(depth - 1 - NULL_MOVE_PRUNING_R, -beta, -beta + 1);
+            makeNullMove();
+            if (eval >= beta)
+            {
+                return beta;
+            }
+        }
+        else
+        {
+            makeNullMove();
+        }
+    }
+    else
+    {
+        // if the move before initiated a null move search, then an intervening move should be played
+        // before null move search is allowed again
+        isNullMoveSearchAllowed = 2;
+    }
+
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
@@ -158,12 +189,6 @@ int think(int depth, int alpha, int beta)
 
     // order most promising moves first
     orderMoves(movelist, size, depth);
-
-    // have at least a move before time runs out
-    if (depth == currDepth)
-    {
-        currBestMove = movelist[0];
-    }
 
     int hasLegalMoves = 0;
 

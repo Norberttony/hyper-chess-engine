@@ -10,6 +10,8 @@
 
 #define USE_TRANSPOSITION_TABLE
 
+#define NULL_MOVE_PRUNING_R 2
+
 
 extern int thinkingTime;
 extern int thinkStart;

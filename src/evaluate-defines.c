@@ -14,7 +14,7 @@ const int immBonus[] =
     80,         // retractor
     100,        // springer
     200,        // coordinator
-    150,        // immobilizer
+    300,        // immobilizer
     125,        // chameleon
     200         // king
 };
