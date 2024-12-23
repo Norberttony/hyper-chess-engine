@@ -1,31 +1,31 @@
 
 #include "move.h"
 
-const int move_typeMask     = 0x3; // piece performing move
-const int move_fromMask     = 0x1F8; // from
-const int move_toMask       = 0x7E00; // to
-const int move_c1Mask       = 0x38000; // tends to be first capture
-const int move_c2Mask       = 0x1C0000; // tends to be second capture
-const int move_c3Mask       = 0xE00000; // tends to be third capture
-const int move_c4Mask       = 0x7000000; // tends to be fourth capture
+const Move move_typeMask     = 0x7; // piece performing move
+const Move move_fromMask     = 0x1F8; // from
+const Move move_toMask       = 0x7E00; // to
+const Move move_c1Mask       = 0x38000; // tends to be first capture
+const Move move_c2Mask       = 0x1C0000; // tends to be second capture
+const Move move_c3Mask       = 0xE00000; // tends to be third capture
+const Move move_c4Mask       = 0x7000000; // tends to be fourth capture
 
-const int move_kingcmask    = 0xE000000;
-const int move_kingc1mask   = 0x1000000;
-const int move_kingc2mask   = 0x2000000;
-const int move_kingc3mask   = 0x4000000;
-const int move_kingc4mask   = 0x8000000;
+const Move move_kingcmask    = 0xF000000;
+const Move move_kingc1mask   = 0x1000000;
+const Move move_kingc2mask   = 0x2000000;
+const Move move_kingc3mask   = 0x4000000;
+const Move move_kingc4mask   = 0x8000000;
 
-const int move_cham_c_mask  = 0x7F8000;
-const int move_cham_u_mask  = 0x008000;
-const int move_cham_l_mask  = 0x010000;
-const int move_cham_r_mask  = 0x020000;
-const int move_cham_d_mask  = 0x040000;
-const int move_cham_d1_mask = 0x080000;
-const int move_cham_d2_mask = 0x100000;
-const int move_cham_q_mask  = 0x200000;
-const int move_cham_n_mask  = 0x400000;
+const Move move_cham_c_mask  = 0x7F8000;
+const Move move_cham_u_mask  = 0x008000;
+const Move move_cham_l_mask  = 0x010000;
+const Move move_cham_r_mask  = 0x020000;
+const Move move_cham_d_mask  = 0x040000;
+const Move move_cham_d1_mask = 0x080000;
+const Move move_cham_d2_mask = 0x100000;
+const Move move_cham_q_mask  = 0x200000;
+const Move move_cham_n_mask  = 0x400000;
 
-const int move_captMask     = 0xFFF8000; // all capture bits
+const Move move_captMask     = 0xFFF8000; // all capture bits
 
 const U64 straddlerBounds[] = {
     18446744073709486080ULL,// up
@@ -546,13 +546,13 @@ int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist)
 
 void printMove(Move move)
 {
-    printf("%s%s ", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111]);
+    printf("%s%s ", squareNames[get_from(move)], squareNames[get_to(move)]);
 }
 
 void prettyPrintMove(Move m)
 {
     // get correct piece type
-    switch(m & move_typeMask)
+    switch(get_type(m))
     {
         case straddler:
             printf("Straddler ");
@@ -580,22 +580,22 @@ void prettyPrintMove(Move m)
     }
 
     // print movement
-    printf("moves from %s to %s ", squareNames[(m >> 3) & 0b111111], squareNames[(m >> 9) & 0b111111]);
+    printf("moves from %s to %s ", squareNames[get_from(m)], squareNames[get_to(m)]);
 
-    switch(m & move_typeMask)
+    switch(get_type(m))
     {
         case straddler:
         case coordinator:
         case immobilizer:
         case springer:
         case retractor:
-            printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, (m & move_c4Mask) >> 24);
+            printf("with capture of %d %d %d %d", get_c1(m), get_c2(m), get_c3(m), get_c4(m));
             break;
         case chameleon:
-            printf("with capture of %du %dl %dr %dd %dd1 %dd2 %dq %dn", (m & move_cham_u_mask) >> 15, (m & move_cham_l_mask) >> 16, (m & move_cham_r_mask) >> 17, (m & move_cham_d_mask) >> 18, (m & move_cham_d1_mask) >> 19, (m & move_cham_d2_mask) >> 20, (m & move_cham_q_mask) >> 21, (m & move_cham_n_mask) >> 22);
+            printf("with capture of %du %dl %dr %dd %dd1 %dd2 %dq %dn", get_b_cu(m), get_b_cl(m), get_b_cr(m), get_b_cd(m), get_b_cd1(m), get_b_cd2(m), get_b_cq(m), get_b_cn(m));
             break;
         case king:
-            printf("with capture of %d %d %d %d", (m & move_c1Mask) >> 15, (m & move_c2Mask) >> 18, (m & move_c3Mask) >> 21, ((m & move_kingcmask) > 0) * coordinator);
+            printf("with capture of %d %d %d %d", get_c1(m), get_c2(m), get_c3(m), get_kb_c(m) * coordinator);
             break;
         default:
             printf("???");

@@ -25,9 +25,15 @@ void orderMoves(Move* moves, int count, int depth)
         int toSq = get_to(m);
         int isCapt = is_move_capt(m);
 
-        int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
+        int orderFirstScore = orderFirstValue * (m == orderFirst);
+        int captScore = isCapt * isCaptValue;
 
-        scores[i] = orderFirstValue * (m == orderFirst) + isCapt * isCaptValue + !isCapt * (historyValues[toPlay == black][fromSq][toSq] + killScore);
+        int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
+        int historyScore = historyValues[toPlay == black][fromSq][toSq];
+
+        int quietScore = !isCapt * (historyScore + killScore);
+
+        scores[i] = orderFirstScore + captScore + quietScore;
         if (isCapt)
         {
             scores[i] += moveCaptureValue(m);

@@ -16,35 +16,35 @@
 #define MAX_CAPTURES 90
 
 // most moves are structured such that captured pieces are consecutively ordered
-#define get_type(move)  (move & 0x3)
-#define get_from(move)  ((move & 0x1F8) >> 3)
-#define get_to(move)    ((move & 0x7E00) >> 9)
-#define get_c1(move)    ((move & 0x38000) >> 15)
-#define get_c2(move)    ((move & 0x1C0000) >> 18)
-#define get_c3(move)    ((move & 0xE00000) >> 21)
-#define get_c4(move)    ((move & 0x7000000) >> 24)
+#define get_type(move)  (move & 0x7)
+#define get_from(move)  ((move & 0x1F8u) >> 3)
+#define get_to(move)    ((move & 0x7E00u) >> 9)
+#define get_c1(move)    ((move & 0x38000u) >> 15)
+#define get_c2(move)    ((move & 0x1C0000u) >> 18)
+#define get_c3(move)    ((move & 0xE00000u) >> 21)
+#define get_c4(move)    ((move & 0x7000000u) >> 24)
 
 // king uses c1, c2, c3, but may also capture coordinator with chameleons. this identifies which of
 // the four squares it could have been (4 bits).
-#define get_kb_c(move)  ((move & 0xE000000) >> 24)
-#define get_kb_c1(move) ((move & 0x1000000) >> 24)
-#define get_kb_c2(move) ((move & 0x2000000) >> 25)
-#define get_kb_c3(move) ((move & 0x4000000) >> 26)
-#define get_kb_c4(move) ((move & 0x8000000) >> 27)
+#define get_kb_c(move)  ((move & 0xE000000u) >> 24)
+#define get_kb_c1(move) ((move & 0x1000000u) >> 24)
+#define get_kb_c2(move) ((move & 0x2000000u) >> 25)
+#define get_kb_c3(move) ((move & 0x4000000u) >> 26)
+#define get_kb_c4(move) ((move & 0x8000000u) >> 27)
 
 // chameleon uses a single bit to indicate what piece (and sometimes the relative location, like up
 // or down for straddlers) was captured
-#define get_b_c(move)   ((move & 0x7F8000) >> 15)
-#define get_b_cu(move)  ((move & 0x008000) >> 15)
-#define get_b_cl(move)  ((move & 0x010000) >> 16)
-#define get_b_cr(move)  ((move & 0x020000) >> 17)
-#define get_b_cd(move)  ((move & 0x040000) >> 18)
-#define get_b_cd1(move) ((move & 0x080000) >> 19)
-#define get_b_cd2(move) ((move & 0x100000) >> 20)
-#define get_b_cq(move)  ((move & 0x200000) >> 21)
-#define get_b_cn(move)  ((move & 0x400000) >> 22)
+#define get_b_c(move)   ((move & 0x7F8000u) >> 15)
+#define get_b_cu(move)  ((move & 0x008000u) >> 15)
+#define get_b_cl(move)  ((move & 0x010000u) >> 16)
+#define get_b_cr(move)  ((move & 0x020000u) >> 17)
+#define get_b_cd(move)  ((move & 0x040000u) >> 18)
+#define get_b_cd1(move) ((move & 0x080000u) >> 19)
+#define get_b_cd2(move) ((move & 0x100000u) >> 20)
+#define get_b_cq(move)  ((move & 0x200000u) >> 21)
+#define get_b_cn(move)  ((move & 0x400000u) >> 22)
 
-#define is_move_capt(move) ((move & 0xFFF8000) != 0)
+#define is_move_capt(move) ((move & 0xFFF8000u) != 0)
 
 // 32-bit moves
 // LSB

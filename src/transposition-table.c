@@ -62,8 +62,8 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
 
     int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
 
-    //TT_overwrites += transpositionTable_always[index].zobristHash != 0;
-    //TT_writes += transpositionTable_always[index].zobristHash == 0;
+    // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
+    // TT_writes++;
 
     // always replace any entry here
     transpositionTable[index][1] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 

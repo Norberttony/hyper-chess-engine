@@ -15,6 +15,7 @@ extern int historyValues[2][64][64];
 
 
 void orderMoves(Move* moves, int count, int depth);
+void orderMovesDEBUG(Move* moves, int count, int depth);
 void addKillerMove(Move m, int depth);
 void updateHistory(int from, int to, int bonus);
 
