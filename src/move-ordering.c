@@ -16,6 +16,9 @@ void orderMoves(Move* moves, int count, int depth)
 {
     int scores[MAX_MOVES];
 
+    Move killer1 = killer_move(depth, 0);
+    Move killer2 = killer_move(depth, 1);
+
     // score the moves
     for (int i = 0; i < count; i++)
     {
@@ -28,7 +31,7 @@ void orderMoves(Move* moves, int count, int depth)
         int orderFirstScore = orderFirstValue * (m == orderFirst);
         int captScore = isCapt * isCaptValue;
 
-        int killScore = killerValue * (killerMoves[depth][0] == m || killerMoves[depth][1] == m);
+        int killScore = killerValue * (killer1 == m || killer2 == m);
         int historyScore = historyValues[toPlay == black][fromSq][toSq];
 
         int quietScore = !isCapt * (historyScore + killScore);
@@ -68,9 +71,9 @@ void orderMoves(Move* moves, int count, int depth)
 
 void addKillerMove(Move m, int depth)
 {
-    int isStored = killerMoves[depth][0] == m;
-    killerMoves[depth][1] = !isStored * killerMoves[depth][0] + isStored * killerMoves[depth][1];
-    killerMoves[depth][0] = !isStored * m + isStored * killerMoves[depth][0];
+    int isStored = killer_move(depth, 0) == m;
+    killer_move(depth, 1) = !isStored * killer_move(depth, 0) + isStored * killer_move(depth, 1);
+    killer_move(depth, 0) = !isStored * m + isStored * killer_move(depth, 0);
 }
 
 void updateHistory(int from, int to, int bonus)

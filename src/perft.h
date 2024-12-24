@@ -31,9 +31,18 @@ int chooseMoveBlind(int startSq, int endSq);
 
 // incomplete, only considers chameleon, king, and coordinator checks (excluding king walking up to king)
 // is the side to play attacking the king?
-int isAttackingKing();
+int isAttackingKing(void);
 
 // just played a move. is it checkmate?
 int isCheckmate();
+
+// returns the piece type if the square is controlled by the side to play, and 0 if it is not.
+int isSquareControlled(int stp, int sq, int pieceType);
+
+int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
+int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
+int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
+int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
+int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard);
 
 #endif
