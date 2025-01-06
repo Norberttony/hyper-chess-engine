@@ -26,7 +26,7 @@
 
 // king uses c1, c2, c3, but may also capture coordinator with chameleons. this identifies which of
 // the four squares it could have been (4 bits).
-#define get_kb_c(move)  ((move & 0xE000000u) >> 24)
+#define get_kb_c(move)  ((move & 0xF000000u) >> 24)
 #define get_kb_c1(move) ((move & 0x1000000u) >> 24)
 #define get_kb_c2(move) ((move & 0x2000000u) >> 25)
 #define get_kb_c3(move) ((move & 0x4000000u) >> 26)

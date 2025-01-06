@@ -159,7 +159,7 @@ int evaluate()
 
 
     // whoever has more material MUST be winning (not necessarily but y'know)
-    return evaluation + perspective * materialScore + myMobilityScore - enemyMobilityScore;
+    return evaluation + perspective * (materialScore[0] - materialScore[1]) + myMobilityScore - enemyMobilityScore;
 }
 
 const int kcPenalty[] =

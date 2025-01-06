@@ -18,6 +18,7 @@ const char* squareNames[] =
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
 };
 
+int materialScore[2] = { 0 };
 int toPlay = white;
 int notToPlay = black;
 int halfmove = 0;
@@ -97,8 +98,8 @@ int loadFEN(const char* fen)
     }
 
     // clear scores
-    materialScore = 0;
-    immBonusScore = 0;
+    materialScore[0] = 0;
+    materialScore[1] = 0;
 
     // clear zobrist hash
     zobristHash = 0ULL;
@@ -141,7 +142,7 @@ int loadFEN(const char* fen)
             // set piece list
             pieceList[sq] = val;
 
-            materialScore += (offset == white ? 1 : -1) * (pieceValues[val] + PSQT(val, offset, sq));
+            materialScore[offset == black] += PSQT(val, offset, sq);
 
             // update zobrist hash
             zobristHash ^= get_zobrist_hash(sq, val, isupper(fen[i]));

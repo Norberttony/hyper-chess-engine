@@ -387,15 +387,29 @@ int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoar
     int isLeft  = sqBoard & ~files[0] && (straddlerBoard & (sqBoard >> 1));
     int isRight = sqBoard & ~files[7] && (straddlerBoard & (sqBoard << 1));
 
-    return
-        // check if straddler is ready to capture at the targetSq because of a straddler above
-        isAbove && (belowSq < 64) && !((sqBoard << 8) & totalBoard) && (get_rook_attacks(belowSq, totalBoard) & activeStraddlerBoard) ||
-        // check if straddler is ready to capture at the targetSq because of a straddler below
-        isBelow && (aboveSq >= 0) && !((sqBoard >> 8) & totalBoard) && (get_rook_attacks(aboveSq, totalBoard) & activeStraddlerBoard) ||
-        // check if straddler is ready to capture at the targetSq because of a straddler to the left
-        isLeft && sqBoard & ~files[7] && !((sqBoard << 1) & totalBoard) && (get_rook_attacks(rightSq, totalBoard) & activeStraddlerBoard) ||
-        // check if straddler is ready to capture at the targetSq because of a straddler to the right
-        isRight && sqBoard & ~files[0] && !((sqBoard >> 1) & totalBoard) && (get_rook_attacks(leftSq, totalBoard) & activeStraddlerBoard);
+    // need: straddler above, and empty square below where another straddler can move to. This
+    // pattern is repeated for each of the directions.
+    U64 isVerticalCheck = 0;
+    if (isAbove && belowSq < 64 && !((sqBoard << 8) & totalBoard))
+    {
+        isVerticalCheck = get_rook_attacks(belowSq, totalBoard) & activeStraddlerBoard;
+    }
+    else if (isBelow && aboveSq >= 0 && !((sqBoard >> 8) & totalBoard))
+    {
+        isVerticalCheck = get_rook_attacks(aboveSq, totalBoard) & activeStraddlerBoard;
+    }
+
+    U64 isHorizontalCheck = 0;
+    if (isLeft && sqBoard & ~files[7] && !((sqBoard << 1) & totalBoard))
+    {
+        isHorizontalCheck = get_rook_attacks(rightSq, totalBoard) & activeStraddlerBoard;
+    }
+    else if (isRight && sqBoard & ~files[0] && !((sqBoard >> 1) & totalBoard))
+    {
+        isHorizontalCheck = get_rook_attacks(leftSq, totalBoard) & activeStraddlerBoard;
+    }
+
+    return isVerticalCheck || isHorizontalCheck;
 }
 
 int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
@@ -403,14 +417,18 @@ int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoar
     U64 retractorBoard = position[stp + retractor] & notImmInfl;
     int retractorSq = pop_lsb(retractorBoard);
 
-    U64 chamBoard = position[stp + chameleon] & notImmInfl;
-    U64 cham2Board = chamBoard - 1 & chamBoard;
+    if (inclCham)
+    {
+        U64 chamBoard = position[stp + chameleon] & notImmInfl;
+        U64 cham2Board = chamBoard - 1 & chamBoard;
+
+        return
+            chamBoard  && retractorCaptures[pop_lsb(chamBoard)][sq] & ~totalBoard ||
+            cham2Board && retractorCaptures[pop_lsb(cham2Board)][sq] & ~totalBoard;
+    }
 
     // ensures that retractor attacks king AND can land one square away
-    return
-        retractorBoard && retractorCaptures[retractorSq][sq] & ~totalBoard ||
-        inclCham && chamBoard && retractorCaptures[pop_lsb(chamBoard)][sq] & ~totalBoard ||
-        inclCham && cham2Board && retractorCaptures[pop_lsb(cham2Board)][sq] & ~totalBoard;
+    return retractorBoard && retractorCaptures[retractorSq][sq] & ~totalBoard;
 }
 
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
@@ -421,23 +439,28 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
 
     // springer 1
     int springer1Sq = pop_lsb(springerBoard);
-    U64 springer1Attack = (springerBoard > 0) * (
-        get_rook_attacks(springer1Sq, totalBoard) |
-        get_bishop_attacks(springer1Sq, totalBoard)
-    ) & (1ULL << sq);
+    U64 springer1Attack = 0ULL;
+    if (springerBoard && springerLeaps[springer1Sq][sq] & ~totalBoard)
+    {
+        springer1Attack = (
+            get_rook_attacks(springer1Sq, totalBoard) |
+            get_bishop_attacks(springer1Sq, totalBoard)
+        ) & (1ULL << sq);
+    }
 
     // springer 2
     int springer2Sq = pop_lsb(springer2Board);
-    U64 springer2Attack = (springer2Board > 0) * (
-        get_rook_attacks(springer2Sq, totalBoard) |
-        get_bishop_attacks(springer2Sq, totalBoard)
-    ) & (1ULL << sq);
-
-    int isSpringerCheck =
-        // springer 1
-        springer1Attack && springerLeaps[springer1Sq][sq] & ~totalBoard ||
+    U64 springer2Attack = 0ULL;
+    if (springer2Board && springerLeaps[springer2Sq][sq] & ~totalBoard)
+    {
         // springer 2
-        springer2Attack && springerLeaps[springer2Sq][sq] & ~totalBoard;
+        springer2Attack = (
+            get_rook_attacks(springer2Sq, totalBoard) |
+            get_bishop_attacks(springer2Sq, totalBoard)
+        ) & (1ULL << sq);
+    }
+
+    int isSpringerCheck = springer1Attack || springer2Attack;
 
     if (inclCham && !isSpringerCheck)
     {
@@ -475,10 +498,15 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
     U64 coordPieceBoard = position[stp + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
-    U64 coordBoard = ((coordPieceBoard & notImmInfl) > 0) * (
-        get_rook_attacks(coordSq, totalBoard) |
-        get_bishop_attacks(coordSq, totalBoard)
-    ) & ~totalBoard;
+    U64 coordBoard = 0ULL;
+
+    if (coordPieceBoard & notImmInfl && (sqFiles[sq] | sqRanks[sq]) & kingMovesBoard)
+    {   
+        coordBoard = (
+            get_rook_attacks(coordSq, totalBoard) |
+            get_bishop_attacks(coordSq, totalBoard)
+        ) & ~totalBoard;
+    }
 
     if (inclCham)
     {

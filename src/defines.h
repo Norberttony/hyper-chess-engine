@@ -46,7 +46,7 @@ enum
 extern int toPlay;
 extern int notToPlay;
 extern int halfmove;
-extern int materialScore;
+extern int materialScore[2];
 
 extern U64 position[17];
 

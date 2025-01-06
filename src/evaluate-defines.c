@@ -1,9 +1,6 @@
 
 #include "evaluate-defines.h"
 
-int materialScore = 0;
-int immBonusScore = 0;
-
 // immobilizer receives a bonus for the pieces it immobilizes.
 // some pieces don't lose their effectiveness (straddlers still teamwork, chameleon's primary uses
 // are immobilizing enemy immobilizer and/or dealing with coordinator, etc.)
