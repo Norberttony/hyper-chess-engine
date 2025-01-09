@@ -237,8 +237,8 @@ void genRookMasks()
     for (int s = 0; s < 64; s++)
     {
         // rank and file of square
-        int rank = s / 8;
-        int file = s % 8;
+        int rank = get_rank(s);
+        int file = get_file(s);
 
         // create relevant occupancy mask for a rook at this square (in each direction excluding last square)
         U64 mask = 0ULL;
@@ -276,8 +276,8 @@ void genBishopMasks()
     for (int s = 0; s < 64; s++)
     {
         // rank and file of square
-        int rank = s / 8;
-        int file = s % 8;
+        int rank = get_rank(s);
+        int file = get_file(s);
 
         // create relevant occupancy mask for a rook at this square (in each direction excluding last square)
         U64 mask = 0ULL;

@@ -9,13 +9,15 @@ typedef unsigned long long U64;
 
 // macros
 #define set_bit(board, sq) (board) | (1ULL << sq)
-#define pop_lsb(board) DebruijnIndexes64[(((board) & -(board)) * DebruinSequence64) >> 58]
+#define pop_lsb(board) g_DebruijnIndexes64[(((board) & -(board)) * g_DebruinSequence64) >> 58]
 #define remove_lsb(board) ((board - 1) & board)
+#define get_rank(sq) (sq >> 3)
+#define get_file(sq) (sq & 0x7)
 
 
-extern const U64 DebruinSequence64;
+extern const U64 g_DebruinSequence64;
 
-extern const int DebruijnIndexes64[];
+extern const int g_DebruijnIndexes64[];
 
 // easier representation of square indices
 enum

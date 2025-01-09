@@ -285,14 +285,20 @@ int isAttackingKing(void)
         get_rook_attacks(coordSq, totalBoard) |
         get_bishop_attacks(coordSq, totalBoard)
     ) & ~totalBoard;
+
+    U64 targetKingFile = files[get_file(targetKingSq)];
+    U64 targetKingRank = ranks[get_rank(targetKingSq)];
+
+    U64 coordFile = files[get_file(coordSq)];
+    U64 coordRank = ranks[get_rank(coordSq)];
     
     int isCheck =
         // king/chameleons stay, coordinator moves
-        (sqFiles[targetKingSq] & kingAndChamBoard) > 0 && coordBoard & sqRanks[targetKingSq] ||
-        (sqRanks[targetKingSq] & kingAndChamBoard) > 0 && coordBoard & sqFiles[targetKingSq] ||
+        (targetKingFile & kingAndChamBoard) > 0 && coordBoard & targetKingRank ||
+        (targetKingRank & kingAndChamBoard) > 0 && coordBoard & targetKingFile ||
         // coordinator stays, king/chameleons move
-        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[targetKingSq] && kingAndChamKingMoves & sqRanks[targetKingSq] ||
-        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[targetKingSq] && kingAndChamKingMoves & sqFiles[targetKingSq];
+        coordFile * (coordPieceBoard > 0) == targetKingFile && kingAndChamKingMoves & targetKingRank ||
+        coordRank * (coordPieceBoard > 0) == targetKingRank && kingAndChamKingMoves & targetKingFile;
 
     int isSpringerCheck = isSquareControlledBySpringer(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
 
@@ -500,7 +506,7 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
     int coordSq = pop_lsb(coordPieceBoard);
     U64 coordBoard = 0ULL;
 
-    if (coordPieceBoard & notImmInfl && (sqFiles[sq] | sqRanks[sq]) & kingMovesBoard)
+    if (coordPieceBoard & notImmInfl && (files[get_file(sq)] | ranks[get_rank(sq)]) & kingMovesBoard)
     {   
         coordBoard = (
             get_rook_attacks(coordSq, totalBoard) |
@@ -526,14 +532,17 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
             get_bishop_attacks(cham2Sq, totalBoard)
         ) & ~totalBoard;
     }
+
+    U64 sqFile = files[get_file(sq)];
+    U64 sqRank = ranks[get_rank(sq)];
     
     return
         // king stays, coordinator moves
-        (sqFiles[sq] & kingMovesBoard) > 0 && coordBoard & sqRanks[sq] ||
-        (sqRanks[sq] & kingMovesBoard) > 0 && coordBoard & sqFiles[sq] ||
+        (sqFile & kingMovesBoard) > 0 && coordBoard & sqRank ||
+        (sqRank & kingMovesBoard) > 0 && coordBoard & sqFile ||
         // coordinator stays, king moves
-        sqFiles[coordSq] * (coordPieceBoard > 0) == sqFiles[sq] && kingMovesBoard & sqRanks[sq] ||
-        sqRanks[coordSq] * (coordPieceBoard > 0) == sqRanks[sq] && kingMovesBoard & sqFiles[sq];
+        files[get_file(coordSq)] * (coordPieceBoard > 0) == sqFile && kingMovesBoard & sqRank ||
+        ranks[get_rank(coordSq)] * (coordPieceBoard > 0) == sqRank && kingMovesBoard & sqFile;
 }
 
 int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard)

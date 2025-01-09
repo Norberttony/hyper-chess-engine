@@ -5,10 +5,6 @@
 U64 ranks[8];
 U64 files[8];
 
-// [0] accesses 8th rank, [1] accesses 7th, etc.
-U64 sqRanks[64];
-U64 sqFiles[64];
-
 U64 kingMoves[64];
 U64 deathSquares[64][64][2];
 
@@ -38,12 +34,6 @@ void populateRanksAndFiles()
         }
         ranks[i] = rank;
 
-        // populate sqRanks
-        for (int f = 0; f < 8; f++)
-        {
-            sqRanks[i * 8 + f] = rank;
-        }
-
         // get ith file
         U64 file = 0ULL;
         for (int r = 0; r < 8; r++)
@@ -51,23 +41,17 @@ void populateRanksAndFiles()
             file |= 1ULL << (r * 8 + i);
         }
         files[i] = file;
-
-        // populate sqFiles
-        for (int r = 0; r < 8; r++)
-        {
-            sqFiles[r * 8 + i] = file;
-        }
     }
 }
 
 U64 genDeathSquares1(int sq1, int sq2)
 {
     // get files and ranks of both squares
-    int f1 = sq1 % 8;
-    int r1 = sq1 / 8;
+    int f1 = get_file(sq1);
+    int r1 = get_rank(sq1);
 
-    int f2 = sq2 % 8;
-    int r2 = sq2 / 8;
+    int f2 = get_file(sq2);
+    int r2 = get_rank(sq2);
     
     // if on same file/rank, no death squares
     if (f1 == f2 || r1 == r2)
@@ -82,11 +66,11 @@ U64 genDeathSquares1(int sq1, int sq2)
 U64 genDeathSquares2(int sq1, int sq2)
 {
     // get files and ranks of both squares
-    int f1 = sq1 % 8;
-    int r1 = sq1 / 8;
+    int f1 = get_file(sq1);
+    int r1 = get_rank(sq1);
 
-    int f2 = sq2 % 8;
-    int r2 = sq2 / 8;
+    int f2 = get_file(sq2);
+    int r2 = get_rank(sq2);
     
     // if on same file/rank, no death squares
     if (f1 == f2 || r1 == r2)
@@ -127,11 +111,11 @@ U64 genKingMoves(int sqIndex)
     attacks |= king >> 9;
 
     // check file to see if we have to factor in out of bounds
-    if (sqIndex % 8 == 7)
+    if (get_file(sqIndex) == 7)
     {
         attacks &= not_a_file;
     }
-    else if (sqIndex % 8 == 0)
+    else if (get_file(sqIndex) == 0)
     {
         attacks &= not_h_file;
     }
@@ -150,11 +134,11 @@ void populateKingMoves()
 U64 genSpringerLeap(int springerSq, int enemySq)
 {
     // get file and rank of both squares
-    int fs = springerSq % 8;
-    int rs = springerSq / 8;
+    int fs = get_file(springerSq);
+    int rs = get_rank(springerSq);
 
-    int fe = enemySq % 8;
-    int re = enemySq / 8;
+    int fe = get_file(enemySq);
+    int re = get_rank(enemySq);
 
     // difference in rank and file
     int fd = fs - fe;
@@ -252,11 +236,11 @@ void populateSpringerLeaps()
 U64 genSpringerCapture(int start, int end)
 {
     // get file and rank of both squares
-    int fs = start % 8;
-    int rs = start / 8;
+    int fs = get_file(start);
+    int rs = get_rank(start);
 
-    int fe = end % 8;
-    int re = end / 8;
+    int fe = get_file(end);
+    int re = get_rank(end);
 
     // difference in rank and file
     int fd = fs - fe;
@@ -339,8 +323,8 @@ U64 genRetractorCapture(int startSq, int enemySq)
 {
     U64 captures = 0ULL;
 
-    int file = startSq % 8;
-    int rank = startSq / 8;
+    int file = get_file(startSq);
+    int rank = get_rank(startSq);
     int diff = enemySq - startSq;
 
     // retractor makes moves away from the enemy
@@ -366,8 +350,8 @@ U64 genRetractorCapture(int startSq, int enemySq)
 
     // no wrapping around the board by capturing
     // aka retractor must make a 1 square move away from enemy
-    int enemyFile = enemySq % 8;
-    int enemyRank = enemySq / 8;
+    int enemyFile = get_file(enemySq);
+    int enemyRank = get_rank(enemySq);
     if (abs(enemyFile - file) > 1 || abs(enemyRank - rank) > 1 || enemyFile == file && enemyRank == rank)
     {
         return 0ULL;
