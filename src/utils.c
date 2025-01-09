@@ -7,7 +7,7 @@ int getCurrentTime(void)
 #ifdef WEB
         return 1000 * clock() / CLOCKS_PER_SEC;
 #else
-    #ifdef WIN64
+    #ifdef _WIN32
         return GetTickCount();
     #else
         struct timeval time_value;
@@ -28,7 +28,7 @@ int inputIsWaiting(void)
     return 0;
 #else
 
-#ifndef WIN64
+#ifndef _WIN32
     fd_set readfds;
     struct timeval tv;
     

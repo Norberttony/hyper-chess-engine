@@ -23,7 +23,6 @@ void orderMoves(Move* moves, int count, int depth)
     for (int i = 0; i < count; i++)
     {
         Move m = moves[i];
-        int type = get_type(m);
         int fromSq = get_from(m);
         int toSq = get_to(m);
         int isCapt = is_move_capt(m);

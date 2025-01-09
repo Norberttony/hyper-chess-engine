@@ -16,9 +16,7 @@ void playGame(int mySide)
         // time to consider which moves are played
         if (mySide == toPlay)
         {
-            clock_t start = clock();
             Move best = thinkFor(200);
-            clock_t end = clock();
 
             fflush(stdout);
             makeMove(best);

@@ -52,19 +52,19 @@ int generateMoves(Move *movelist, int capturesOnly)
     // first segment is generic straddler rule.
     // second segment is chameleon rule.
     U64 straddlerUpBoard =
-        (position[notToPlay] << 8) & (position[toPlay + straddler] << 16) |
-        (position[notToPlay + straddler] << 8) & (position[toPlay + chameleon] << 16); // move any pieces down to match straddler board
+        ((position[notToPlay] << 8) & (position[toPlay + straddler] << 16)) |
+        ((position[notToPlay + straddler] << 8) & (position[toPlay + chameleon] << 16)); // move any pieces down to match straddler board
     U64 straddlerLeftBoard = (
-        (position[notToPlay] << 1) & (position[toPlay + straddler] << 2) |
-        (position[notToPlay + straddler] << 1) & (position[toPlay + chameleon] << 2)
+        ((position[notToPlay] << 1) & (position[toPlay + straddler] << 2)) |
+        ((position[notToPlay + straddler] << 1) & (position[toPlay + chameleon] << 2))
     ) & straddlerBounds[1];
     U64 straddlerRightBoard = (
-        (position[notToPlay] >> 1) & (position[toPlay + straddler] >> 2) |
-        (position[notToPlay + straddler] >> 1) & (position[toPlay + chameleon] >> 2)
+        ((position[notToPlay] >> 1) & (position[toPlay + straddler] >> 2)) |
+        ((position[notToPlay + straddler] >> 1) & (position[toPlay + chameleon] >> 2))
     ) & straddlerBounds[2];
     U64 straddlerDownBoard =
-        (position[notToPlay] >> 8) & (position[toPlay + straddler] >> 16) |
-        (position[notToPlay + straddler] >> 8) & (position[toPlay + chameleon] >> 16);
+        ((position[notToPlay] >> 8) & (position[toPlay + straddler] >> 16)) |
+        ((position[notToPlay + straddler] >> 8) & (position[toPlay + chameleon] >> 16));
 
     // combine all boards together to form the CAPTURE BOARD
     U64 straddlerCaptureBoard = straddlerUpBoard | straddlerLeftBoard | straddlerRightBoard | straddlerDownBoard;
@@ -113,7 +113,7 @@ int generateMoves(Move *movelist, int capturesOnly)
     {
         // enemy chameleon can immobilize an immobilizer...
         U64 chamBoard = position[notToPlay + chameleon];
-        U64 chamBoard2 = chamBoard - 1 & chamBoard;
+        U64 chamBoard2 = (chamBoard - 1) & chamBoard;
 
         int cham1 = pop_lsb(chamBoard);
         int cham2 = pop_lsb(chamBoard2);
@@ -141,19 +141,19 @@ int generateMoves(Move *movelist, int capturesOnly)
         ) & ~totalBoard;
 
         int kingSq = pop_lsb(position[toPlay + king]);
-        U64 kingFile = files[kingSq & 0b111] & position[notToPlay];
-        U64 kingRank = ranks[kingSq >> 3] & position[notToPlay];
+        U64 kingFile = files[get_file(kingSq)] & position[notToPlay];
+        U64 kingRank = ranks[get_rank(kingSq)] & position[notToPlay];
 
         // find all squares where if a coordinator got there it would capture a piece.
         U64 captures = 0ULL;
         while (kingRank)
         {
-            captures |= files[pop_lsb(kingRank) & 0b111];
+            captures |= files[get_file(pop_lsb(kingRank))];
             kingRank &= kingRank - 1;
         }
         while (kingFile)
         {
-            captures |= ranks[pop_lsb(kingFile) >> 3];
+            captures |= ranks[get_rank(pop_lsb(kingFile))];
             kingFile &= kingFile - 1;
         }
 
@@ -332,7 +332,7 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
     // king can also coordinate with the chameleon, but only against the coordinator
     U64 chamBoard = position[toPlay + chameleon];
     int cham1 = pop_lsb(chamBoard);
-    int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
+    int cham2 = pop_lsb((chamBoard - 1) & chamBoard);
 
     while (moves)
     {
@@ -357,10 +357,10 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
         U64 deathch2 = deathSquares[cham1][to][1] * (chamBoard > 0);
         move |= (((position[notToPlay + coordinator] & deathch2) > 0) && (deathch2 != deathco2)) << 25;
 
-        U64 death = deathSquares[cham2][to][0] * ((chamBoard - 1 & chamBoard) > 0);
+        U64 death = deathSquares[cham2][to][0] * (((chamBoard - 1) & chamBoard) > 0);
         move |= (((position[notToPlay + coordinator] & death) > 0) && (death != deathco1 && death != deathch1)) << 26;
 
-        death = deathSquares[cham2][to][1] * ((chamBoard - 1 & chamBoard) > 0);
+        death = deathSquares[cham2][to][1] * (((chamBoard - 1) & chamBoard) > 0);
         move |= (((position[notToPlay + coordinator] & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
 
         movelist[size] = move;
@@ -474,8 +474,6 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
         move |= ((straddlerDownBoard & toBoard) > 0) << 18;
 
         // also consider the possibility of this being a retractor move
-        // determine where retractor lands
-        int capturing = pop_lsb(retractorCaptures[sq][to]);
         move |= move_cham_q_mask * ((position[notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
 
         // coordinator moves
@@ -505,7 +503,6 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int captures
         Move move = (to << 9) | (sq << 3) | chameleon;
 
         // determine where retractor lands
-        int capturing = pop_lsb(retractorCaptures[sq][to]);
         move |= move_cham_q_mask * ((position[notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
 
         // coordinator moves

@@ -7,12 +7,8 @@
 // WEB gets no libraries
 #ifndef WEB
 
-// by default, compiling it to windows. technically not 64 bit either, but... one day.
-// there's probably a better way of doing this, but I haven't found it yet.
-#define WIN64
-
-// Win64 needs different libraries than Unix
-#ifdef WIN64
+// _WIN32 needs different libraries than Unix
+#ifdef _WIN32
 #include "windows.h"
 #else
 #include "sys/time.h"

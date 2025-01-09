@@ -19,7 +19,6 @@ struct MoveCounter divide(int depth)
     }
 
     struct MoveCounter counter = { 0, 0, 0, 0 };
-    struct MoveCounter temp;
 
     for (int i = 0; i < size; i++)
     {
@@ -60,7 +59,7 @@ struct MoveCounter divide(int depth)
         counter.pieceCaptures += captureCount;
 
         // purpose of divide is to print the top level move and its move count
-        printf("%s%s %d %d %d %d\n", squareNames[(move >> 3) & 0b111111], squareNames[(move >> 9) & 0b111111], temp.moves, temp.captureMoves, temp.pieceCaptures, temp.checkmates);
+        printf("%s%s %d %d %d %d\n", squareNames[get_from(move)], squareNames[get_to(move)], temp.moves, temp.captureMoves, temp.pieceCaptures, temp.checkmates);
 
         // restore board state
         unmakeMove(move);
@@ -88,7 +87,6 @@ struct MoveCounter countMoves(int depth)
 
     // create a counter and a temp for holding countMoves's return
     struct MoveCounter counter = { 0, 0, 0, 0 };
-    struct MoveCounter temp;
 
     for (int i = 0; i < size; i++)
     {
@@ -254,7 +252,6 @@ int isAttackingKing(void)
     U64 targetKing = position[notToPlay + king];
     int targetKingSq = pop_lsb(targetKing);
     U64 kingBoard = position[toPlay + king];
-    int realKingSq = pop_lsb(kingBoard);
     int kingSq = pop_lsb(kingBoard);
     U64 king1Board = ((kingBoard & notImmInfl) > 0) * (kingMoves[kingSq] & ~position[toPlay]);
 
@@ -265,7 +262,7 @@ int isAttackingKing(void)
     // board with (at most) two unimmobilized chameleons
     U64 chamBoard = position[toPlay + chameleon] & notImmInfl;
     // board with (at most) one unimmobilized chameleon
-    U64 cham2Board = chamBoard & (chamBoard - 1);
+    U64 cham2Board = chamBoard & ((chamBoard - 1));
 
     int cham1Sq = pop_lsb(chamBoard);
     int cham2Sq = pop_lsb(cham2Board);
@@ -426,7 +423,7 @@ int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoar
     if (inclCham)
     {
         U64 chamBoard = position[stp + chameleon] & notImmInfl;
-        U64 cham2Board = chamBoard - 1 & chamBoard;
+        U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         return
             chamBoard  && retractorCaptures[pop_lsb(chamBoard)][sq] & ~totalBoard ||
@@ -441,7 +438,7 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
 {
     // check springer checks
     U64 springerBoard = position[stp + springer] & notImmInfl;
-    U64 springer2Board = springerBoard - 1 & springerBoard;
+    U64 springer2Board = (springerBoard - 1) & springerBoard;
 
     // springer 1
     int springer1Sq = pop_lsb(springerBoard);
@@ -471,7 +468,7 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
     if (inclCham && !isSpringerCheck)
     {
         U64 chamBoard = position[stp + chameleon] & notImmInfl;
-        U64 cham2Board = chamBoard - 1 & chamBoard;
+        U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         // chameleon 1
         int cham1Sq = pop_lsb(chamBoard);
@@ -517,7 +514,7 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
     if (inclCham)
     {
         U64 chamBoard = position[stp + chameleon] & notImmInfl;
-        U64 cham2Board = chamBoard - 1 & chamBoard;
+        U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         int cham1Sq = pop_lsb(chamBoard);
         int cham2Sq = pop_lsb(cham2Board);

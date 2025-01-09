@@ -2,7 +2,7 @@
 .PHONY: de-bruijn-gen
 
 all:
-	gcc -Ofast src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c src/transposition-table.c src/move-ordering.c src/think.c src/game-analysis.c src/make-unmake.c src/evaluate-defines.c src/uci.c src/utils.c -o bin/hyper-active
+	gcc -Wall -Wpedantic -Werror -Wno-parentheses -Ofast -std=c11 src/hyper-active.c src/bitboard-utility.c src/defines.c src/magic-bitboards.c src/move.c src/perft.c src/look-up-tables.c src/test-suite.c src/evaluate.c src/transposition-table.c src/move-ordering.c src/think.c src/game-analysis.c src/make-unmake.c src/evaluate-defines.c src/uci.c src/utils.c -o bin/hyper-active
 	./bin/hyper-active
 
 web:

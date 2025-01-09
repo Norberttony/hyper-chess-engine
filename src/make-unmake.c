@@ -3,7 +3,7 @@
 
 // this function assumes that the piece exists
 #define setPiece(stp, type, sq) \
-    U64 sqBoard = 1ULL << sq; \
+    U64 sqBoard = 1ULL << (sq); \
     position[stp + type] |= sqBoard; \
     position[stp]        |= sqBoard; \
     pieceList[sq] = type; \
@@ -11,7 +11,7 @@
 
 // this function assumes that the piece exists
 #define unsetPiece(stp, type, sq) \
-    U64 sqBoard = 1ULL << sq; \
+    U64 sqBoard = 1ULL << (sq); \
     position[stp + type] ^= sqBoard; \
     position[stp]        ^= sqBoard; \
     pieceList[sq] = 0; \
@@ -404,7 +404,7 @@ void unmakeMove(Move m)
             {
                 U64 chamBoard = position[toPlay + chameleon];
                 int cham1 = pop_lsb(chamBoard);
-                int cham2 = pop_lsb(chamBoard - 1 & chamBoard);
+                int cham2 = pop_lsb((chamBoard - 1) & chamBoard);
 
                 int isDeath1 = get_kb_c1(m);
                 int isDeath2 = get_kb_c2(m);
