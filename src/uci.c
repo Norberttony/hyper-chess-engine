@@ -192,11 +192,13 @@ void readInput(void)
 
     if (inputIsWaiting())
     {
+        puts("info string Paused. Type in 'stop'/'quit' to stop or just press Enter to continue.");
         do
         {
             bytes = read(fileno(stdin), input, 256);
         }
-        while (bytes < 0);
+        while (bytes <= 0);
+        puts("info string Input received.");
 
         endc = strchr(input, '\n');
 

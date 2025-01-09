@@ -69,8 +69,13 @@ Move startThink(void)
     {
         nodesVisited = 0;
 
-        currDepth = ++depth;
-        think(depth, INT_MIN + 1, INT_MAX - 1);
+        currDepth = depth;
+        int val = think(depth, INT_MIN + 1, INT_MAX - 1);
+
+        if (depth == 0)
+        {
+            printf("info string root-eval %d\n", val);
+        }
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
@@ -83,6 +88,7 @@ Move startThink(void)
         printf(" depth %d nodes %d time %d pv ", depth, totalNodesVisited, getCurrentTime() - thinkStart);
         printPrincipalVariation(depth);
         puts("");
+        depth++;
     }
 
     printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);

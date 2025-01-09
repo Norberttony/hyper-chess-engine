@@ -20,6 +20,7 @@ int getCurrentTime(void)
 
 // Source: https://www.youtube.com/watch?v=gVGadWuBqEA
 // Bluefever Software chess engine Vice
+// Modified the windows version to only listen to keyboard down events.
 int inputIsWaiting(void)
 {
     // temporary solution, currently WEB does not search infinitely
@@ -69,7 +70,28 @@ int inputIsWaiting(void)
     else
     {
         GetNumberOfConsoleInputEvents(inh, &dw);
-        return dw <= 1 ? 0 : dw;
+        
+        // determine if a key was pressed
+        if (dw > 0)
+        {
+            INPUT_RECORD records[1];
+            DWORD amt;
+            PeekConsoleInput(inh, &records[0], 1, &amt);
+
+            for (DWORD i = 0; i < amt; i++)
+            {
+                if (records[i].EventType == KEY_EVENT && records[i].Event.KeyEvent.bKeyDown)
+                {
+                    return 1;
+                }
+                else
+                {
+                    // eat input
+                    ReadConsoleInput(inh, &records[0], 1, &amt);
+                }
+            }
+        }
+        return 0;
     }
 
 #endif
