@@ -65,7 +65,7 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
-    while (!stopThinking && depth < maxDepth)
+    while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;
 
