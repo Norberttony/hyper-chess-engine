@@ -65,17 +65,13 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
+    printf("info string root-eval %d\n", -evaluate());
     while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;
 
         currDepth = depth;
-        int val = think(depth, INT_MIN + 1, INT_MAX - 1);
-
-        if (depth == 0)
-        {
-            printf("info string root-eval %d\n", val);
-        }
+        think(depth, INT_MIN + 1, INT_MAX - 1);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)

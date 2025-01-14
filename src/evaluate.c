@@ -64,18 +64,78 @@ int evaluate()
     int evaluation = 0;
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
 
-    // immobilized material
+    // immobilized material and penalties for badly-positioned immobilized pieces
     U64 myImmMaterial = position[toPlay] & (enemyInfl | enemyChamInfl);
+    int enemQ = (position[notToPlay + retractor] & ~myInfl) > 0;
+    int enemR = (position[notToPlay + coordinator] & ~myInfl) > 0;
+    int myHalfRank = perspective * 3 + ((perspective + 1) >> 1);
+
+    int enemCoordSq = pop_lsb(position[notToPlay + coordinator]);
+    U64 enemCoordinatorMoves = (enemR * get_queen_attacks(enemCoordSq, totalBoard)) & ~totalBoard;
+    U64 enemCoordinatorXray = enemR * get_queen_attacks(enemCoordSq, 0ULL);
+
+    int enemRetrSq = pop_lsb(position[notToPlay + retractor]);
+    U64 enemRetractorMoves = (enemQ * get_queen_attacks(enemRetrSq, totalBoard)) & ~totalBoard;
+    U64 enemRetractorXray = enemQ * get_queen_attacks(enemRetrSq, 0ULL);
+
+    int enemyKingSq = pop_lsb(position[notToPlay + king]);
+
     while (myImmMaterial)
     {
-        evaluation -= immBonus[pieceList[pop_lsb(myImmMaterial)]];
+        int sq = pop_lsb(myImmMaterial);
+        int piece = pieceList[sq];
+
+        int qRank = get_rank(sq) - perspective;
+        U64 qDanger = (kingMoves[sq] & ~totalBoard & ranks[qRank]) * (perspective * qRank < myHalfRank);
+        int qCount = ((enemRetractorMoves & qDanger) > 0) +
+                    ((enemRetractorXray & qDanger) > 0) +
+                    3 * (qDanger > 0);
+
+        U64 rankBoard = ranks[get_rank(sq)];
+        int rCount = ((enemCoordinatorMoves & rankBoard) > 0) +
+                    ((enemCoordinatorXray & rankBoard) > 0) +
+                    2 * (get_file(enemyKingSq) == get_file(sq));
+
+        evaluation -= (PSQT(piece, toPlay, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
+        evaluation -= immBonus[piece];
+
         myImmMaterial &= myImmMaterial - 1;
     }
 
     U64 enemyImmMaterial = position[notToPlay] & (myInfl | myChamInfl);
+    int myQ = (position[toPlay + retractor] & ~enemyInfl) > 0;
+    int myR = (position[toPlay + coordinator] & ~enemyInfl) > 0;
+    int enemHalfRank = -perspective * 3 + ((-perspective + 1) >> 1);
+
+    int myCoordSq = pop_lsb(position[toPlay + coordinator]);
+    U64 myCoordinatorMoves = ((myR * get_queen_attacks(myCoordSq, totalBoard)) & ~totalBoard);
+    U64 myCoordinatorXray = (myR * get_queen_attacks(myCoordSq, 0ULL));
+
+    int myRetrSq = pop_lsb(position[toPlay + retractor]);
+    U64 myRetractorMoves = ((myQ * get_queen_attacks(myRetrSq, totalBoard)) & ~totalBoard);
+    U64 myRetractorXray = (myQ * get_queen_attacks(myRetrSq, 0ULL));
+
+    int myKingSq = pop_lsb(position[toPlay + king]);
+
     while (enemyImmMaterial)
     {
-        evaluation += immBonus[pieceList[pop_lsb(enemyImmMaterial)]];
+        int sq = pop_lsb(enemyImmMaterial);
+        int piece = pieceList[sq];
+        
+        int qRank = get_rank(sq) - perspective;
+        U64 qDanger = (kingMoves[sq] & ~totalBoard & ranks[qRank]) * (perspective * qRank < enemHalfRank);
+        int qCount = ((myRetractorMoves & qDanger) > 0) +
+                    ((myRetractorXray & qDanger) > 0) +
+                    3 * (qDanger > 0);
+
+        U64 rankBoard = ranks[get_rank(sq)];
+        int rCount = ((myCoordinatorMoves & rankBoard) > 0) +
+                    ((myCoordinatorXray & rankBoard) > 0) +
+                    2 * (get_file(myKingSq) == get_file(sq));
+
+        evaluation += (PSQT(piece, notToPlay, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * myR)) / 200;
+        evaluation += immBonus[piece];
+
         enemyImmMaterial &= enemyImmMaterial - 1;
     }
 
@@ -133,77 +193,13 @@ int evaluate()
     enemyImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    evaluation += ((notToPlay == white) * 140 + perspective * imm_dist_penalty(enemyImmSq) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);
-
-
-    // === KING COORDINATOR CAPTURE DISTANCE === //
-
-    // if my king or coordinator end up in the corners, then there cannot be a penalty
-    U64 enemyImmCorners = (enemyImmobilizer << 9 | enemyImmobilizer << 7 | enemyImmobilizer >> 7 | enemyImmobilizer >> 9) & enemyInfl;
-    U64 myImmCorners = (myImmobilizer << 9 | myImmobilizer << 7 | myImmobilizer >> 7 | myImmobilizer >> 9) & myInfl;
-
-    int myKCImm = (enemyImmCorners & (position[toPlay + coordinator] | position[toPlay + king])) > 0;
-    int enemyKCImm = (myImmCorners & (position[notToPlay + coordinator] | position[notToPlay + king])) > 0;
-
-    // an additional penalty for how long it takes for king-coordinator duo to capture at the given sq
-    if (enemyImmobilizer && enemyImmImm && !myKCImm)
-    {
-        evaluation += kingCoordCaptPen(toPlay, enemyImmSq);
-    }
-    if (myImmobilizer && myImmImm && !enemyKCImm)
-    {
-        evaluation -= kingCoordCaptPen(notToPlay, myImmSq);
-    }
+    evaluation += ((notToPlay == white) * 140 + perspective * imm_dist_penalty(enemyImmSq) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);    
 
     // evaluation += 200 * (enemyKCImm - myKCImm);
 
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + perspective * (materialScore[0] - materialScore[1]) + myMobilityScore - enemyMobilityScore;
-}
-
-const int kcPenalty[] =
-{
-    180, 140, 120, 100, 80, 60, 35, 20, 10, 5, 0
-};
-
-int kingCoordCaptPen(int stc, int sq)
-{
-    int notstc = !stc * 8;
-
-    U64 enemyImmobilizer = position[notstc + immobilizer];
-    int enemyImmSq = pop_lsb(enemyImmobilizer);
-    U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
-
-    U64 totalBoard = position[white] | position[black];
-
-    // coordinator mobility
-    int kingSq = pop_lsb(position[stc + king]);
-    U64 coordBoard = position[stc + coordinator];
-    int coordSq = pop_lsb(coordBoard);
-
-    U64 coordMob = get_rook_attacks(coordSq, totalBoard) | get_bishop_attacks(coordSq, totalBoard) | coordBoard & ~totalBoard;
-
-    // king to file, coordinator to rank
-    int kingFileDisp = (kingSq & 7) - (sq & 7);
-    int kingFileDist = kingFileDisp * ((kingFileDisp > 0) - (kingFileDisp < 0));
-
-    int validCoord = (coordBoard & ~enemyInfl) > 0;
-    
-    U64 sqRank = ranks[sq >> 3];
-    int coordRankDist = 2 - ((coordMob & sqRank) > 0) - ((coordBoard & sqRank) > 0);
-    int kfrr = (validCoord || coordBoard > 0 && coordRankDist == 0) * (kcPenalty[kingFileDist + coordRankDist]);
-
-    // king to rank, coordinator to file
-    int kingRankDisp = (kingSq >> 3) - (sq >> 3);
-    int kingRankDist = kingRankDisp * ((kingRankDisp > 0) - (kingRankDisp < 0));
-
-    U64 sqFile = files[sq & 7];
-    int coordFileDist = 2 - ((coordMob & sqFile) > 0) - ((coordBoard & sqFile) > 0);
-    int krrf = (validCoord || coordBoard > 0 && coordFileDist == 0) * (kcPenalty[kingRankDist + coordFileDist]);
-
-    // return the largest penalty
-    return kfrr < krrf ? krrf : kfrr;
 }
 
 int moveCaptureValue(Move m)

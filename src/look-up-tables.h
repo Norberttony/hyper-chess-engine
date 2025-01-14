@@ -8,6 +8,8 @@
 extern U64 ranks[8];
 extern U64 files[8];
 
+extern const int g_ByteBitCounts[16];
+
 extern U64 kingMoves[64];
 extern U64 deathSquares[64][64][2];
 
