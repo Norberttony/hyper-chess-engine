@@ -1,6 +1,36 @@
 
 #include "evaluate.h"
 
+struct EvalContext {
+    U64 totalBoard;
+    U64 enemyInfl;
+};
+
+
+// counts number of pseudo-legal moves that the side can perform given the pieces.
+// does not actually work for king or straddler.
+static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int side, int pieceType)
+{
+    int mobility = 0;
+    U64 totalBoard = ctx->totalBoard;
+
+    U64 myBoard = position[side + pieceType] & ~ctx->enemyInfl;
+    while (myBoard)
+    {
+        int sq = pop_lsb(myBoard);
+        U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
+
+        while (moveBoard)
+        {
+            mobility++;
+            moveBoard &= moveBoard - 1;
+        }
+
+        myBoard &= myBoard - 1;
+    }
+
+    return mobility;
+}
 
 int evaluate()
 {
@@ -15,53 +45,29 @@ int evaluate()
     int myImmSq = pop_lsb(myImmobilizer);
     U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
 
+    struct EvalContext ctx =
+    {
+        .totalBoard = position[white] | position[black],
+        .enemyInfl = enemyInfl
+    };
+
     // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
     int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
 
-    // counts the number of pseudo-legal moves one can perform
-    int myMobilityScore = 0;
-    int enemyMobilityScore = 0;
+    int evaluation = 0;
 
     // count mobility
     U64 totalBoard = position[toPlay] | position[notToPlay];
     for (int i = 2; i <= 6; i++)
     {
-        U64 myBoard = position[toPlay + i] & ~enemyInfl;
-        while (myBoard)
-        {
-            int sq = pop_lsb(myBoard);
-            U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
-
-            while (moveBoard)
-            {
-                myMobilityScore++;
-                moveBoard &= moveBoard - 1;
-            }
-
-            myBoard &= myBoard - 1;
-        }
-
-        U64 enemyBoard = position[notToPlay + i] & ~myInfl;
-        while (enemyBoard)
-        {
-            int sq = pop_lsb(enemyBoard);
-            U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
-
-            while (moveBoard)
-            {
-                enemyMobilityScore++;
-                moveBoard &= moveBoard - 1;
-            }
-
-            enemyBoard &= enemyBoard - 1;
-        }
+        evaluation += evalMobility(&ctx, toPlay, i);
+        evaluation -= evalMobility(&ctx, notToPlay, i);
     }
     
     // for when the immobilizer is immobilized by a chameleon
     U64 enemyChamInfl = myImmobilizer * ((myInfl & position[notToPlay + chameleon]) > 0);
     U64 myChamInfl = enemyImmobilizer * ((enemyInfl & position[toPlay + chameleon]) > 0);
 
-    int evaluation = 0;
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
 
     // immobilized material and penalties for badly-positioned immobilized pieces
@@ -199,7 +205,7 @@ int evaluate()
 
 
     // whoever has more material MUST be winning (not necessarily but y'know)
-    return evaluation + perspective * (materialScore[0] - materialScore[1]) + myMobilityScore - enemyMobilityScore;
+    return evaluation + perspective * (materialScore[0] - materialScore[1]);
 }
 
 int moveCaptureValue(Move m)
