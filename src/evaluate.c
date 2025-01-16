@@ -3,18 +3,26 @@
 
 struct EvalContext {
     U64 totalBoard;
-    U64 enemyInfl;
+    U64 immobilizers[2];
+    U64 infl[2];
+};
+
+enum
+{
+    mine, enemy
 };
 
 
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
-static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int side, int pieceType)
+static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int reverseSide, int pieceType)
 {
+    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+
     int mobility = 0;
     U64 totalBoard = ctx->totalBoard;
 
-    U64 myBoard = position[side + pieceType] & ~ctx->enemyInfl;
+    U64 myBoard = position[side + pieceType] & ~ctx->infl[(enemy + reverseSide) & 1];
     while (myBoard)
     {
         int sq = pop_lsb(myBoard);
@@ -30,6 +38,72 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
     }
 
     return mobility;
+}
+
+// immobilized material and penalties for badly-positioned immobilized pieces
+static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
+{
+    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+    int notSide = !side * 8;
+
+    int mineValue = (mine + reverseSide) & 0x1;
+    int enemyValue = (enemy + reverseSide) & 0x1;
+
+    U64 totalBoard = ctx->totalBoard;
+    U64 myInfl = ctx->infl[mineValue];
+    U64 enemyInfl = ctx->infl[enemyValue];
+
+    int evaluation = 0;
+
+    U64 enemyChamInfl = ctx->immobilizers[mineValue] * ((myInfl & position[notSide + chameleon]) > 0);
+
+    U64 myImmMaterial = position[side] & (enemyInfl | enemyChamInfl);
+    int enemQ = (position[notSide + retractor] & ~myInfl) > 0;
+    int enemR = (position[notSide + coordinator] & ~myInfl) > 0;
+    int myHalfRank = perspective * 3 + ((perspective + 1) >> 1);
+
+    int enemCoordSq = pop_lsb(position[notSide + coordinator]);
+    U64 enemCoordinatorMoves = (enemR * get_queen_attacks(enemCoordSq, totalBoard)) & ~totalBoard;
+    U64 enemCoordinatorXray = enemR * get_queen_attacks(enemCoordSq, 0ULL);
+
+    int enemRetrSq = pop_lsb(position[notSide + retractor]);
+    U64 enemRetractorMoves = (enemQ * get_queen_attacks(enemRetrSq, totalBoard)) & ~totalBoard;
+    U64 enemRetractorXray = enemQ * get_queen_attacks(enemRetrSq, 0ULL);
+
+    int enemyKingSq = pop_lsb(position[notSide + king]);
+
+    while (myImmMaterial)
+    {
+        int sq = pop_lsb(myImmMaterial);
+        int piece = pieceList[sq];
+
+        // finds three forward squares of piece, and determines if they are on the opponent's side of the territory.
+        // The first three forward squares are most likely to be in the opponent's territory, AND are most vulnerable to a retractor.
+        int qRank = get_rank(sq) - perspective;
+        U64 qDanger = (kingMoves[sq] & ~totalBoard & ranks[qRank]) * (perspective * qRank < myHalfRank);
+
+        // the vulnerability existing is by itself dangerous, but for a more continuous eval and to
+        // encourage the engine to make progress in capturing the immobilized pieces, 
+        int qCount = ((enemRetractorMoves & qDanger) > 0) +     // retractor can move to vulnerable squares
+                    ((enemRetractorXray & qDanger) > 0) +       // retractor x-rays vulnerable squares
+                    3 * (qDanger > 0);                          // vulnerability exists
+
+        // similarly here, punish vulnerable rank squares that the opponent's coordinator can easily access.
+        U64 rankBoard = ranks[get_rank(sq)];
+        int rCount = ((enemCoordinatorMoves & rankBoard) > 0) +
+                    ((enemCoordinatorXray & rankBoard) > 0) +
+                    2 * (get_file(enemyKingSq) == get_file(sq));
+
+        // bonus based on how far away retractor or coordinator are to capture this piece.
+        evaluation -= (PSQT(piece, side, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
+
+        // flat bonus for piece being unable to move.
+        evaluation -= immBonus[piece];
+
+        myImmMaterial &= myImmMaterial - 1;
+    }
+
+    return evaluation;
 }
 
 int evaluate()
@@ -48,7 +122,14 @@ int evaluate()
     struct EvalContext ctx =
     {
         .totalBoard = position[white] | position[black],
-        .enemyInfl = enemyInfl
+        .immobilizers =
+        {
+            myImmobilizer, enemyImmobilizer
+        },
+        .infl =
+        {
+            myInfl, enemyInfl
+        }
     };
 
     // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
@@ -60,91 +141,14 @@ int evaluate()
     U64 totalBoard = position[toPlay] | position[notToPlay];
     for (int i = 2; i <= 6; i++)
     {
-        evaluation += evalMobility(&ctx, toPlay, i);
-        evaluation -= evalMobility(&ctx, notToPlay, i);
+        evaluation += evalMobility(&ctx, 0, i);
+        evaluation -= evalMobility(&ctx, 1, i);
     }
     
-    // for when the immobilizer is immobilized by a chameleon
-    U64 enemyChamInfl = myImmobilizer * ((myInfl & position[notToPlay + chameleon]) > 0);
-    U64 myChamInfl = enemyImmobilizer * ((enemyInfl & position[toPlay + chameleon]) > 0);
-
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
 
-    // immobilized material and penalties for badly-positioned immobilized pieces
-    U64 myImmMaterial = position[toPlay] & (enemyInfl | enemyChamInfl);
-    int enemQ = (position[notToPlay + retractor] & ~myInfl) > 0;
-    int enemR = (position[notToPlay + coordinator] & ~myInfl) > 0;
-    int myHalfRank = perspective * 3 + ((perspective + 1) >> 1);
-
-    int enemCoordSq = pop_lsb(position[notToPlay + coordinator]);
-    U64 enemCoordinatorMoves = (enemR * get_queen_attacks(enemCoordSq, totalBoard)) & ~totalBoard;
-    U64 enemCoordinatorXray = enemR * get_queen_attacks(enemCoordSq, 0ULL);
-
-    int enemRetrSq = pop_lsb(position[notToPlay + retractor]);
-    U64 enemRetractorMoves = (enemQ * get_queen_attacks(enemRetrSq, totalBoard)) & ~totalBoard;
-    U64 enemRetractorXray = enemQ * get_queen_attacks(enemRetrSq, 0ULL);
-
-    int enemyKingSq = pop_lsb(position[notToPlay + king]);
-
-    while (myImmMaterial)
-    {
-        int sq = pop_lsb(myImmMaterial);
-        int piece = pieceList[sq];
-
-        int qRank = get_rank(sq) - perspective;
-        U64 qDanger = (kingMoves[sq] & ~totalBoard & ranks[qRank]) * (perspective * qRank < myHalfRank);
-        int qCount = ((enemRetractorMoves & qDanger) > 0) +
-                    ((enemRetractorXray & qDanger) > 0) +
-                    3 * (qDanger > 0);
-
-        U64 rankBoard = ranks[get_rank(sq)];
-        int rCount = ((enemCoordinatorMoves & rankBoard) > 0) +
-                    ((enemCoordinatorXray & rankBoard) > 0) +
-                    2 * (get_file(enemyKingSq) == get_file(sq));
-
-        evaluation -= (PSQT(piece, toPlay, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
-        evaluation -= immBonus[piece];
-
-        myImmMaterial &= myImmMaterial - 1;
-    }
-
-    U64 enemyImmMaterial = position[notToPlay] & (myInfl | myChamInfl);
-    int myQ = (position[toPlay + retractor] & ~enemyInfl) > 0;
-    int myR = (position[toPlay + coordinator] & ~enemyInfl) > 0;
-    int enemHalfRank = -perspective * 3 + ((-perspective + 1) >> 1);
-
-    int myCoordSq = pop_lsb(position[toPlay + coordinator]);
-    U64 myCoordinatorMoves = ((myR * get_queen_attacks(myCoordSq, totalBoard)) & ~totalBoard);
-    U64 myCoordinatorXray = (myR * get_queen_attacks(myCoordSq, 0ULL));
-
-    int myRetrSq = pop_lsb(position[toPlay + retractor]);
-    U64 myRetractorMoves = ((myQ * get_queen_attacks(myRetrSq, totalBoard)) & ~totalBoard);
-    U64 myRetractorXray = (myQ * get_queen_attacks(myRetrSq, 0ULL));
-
-    int myKingSq = pop_lsb(position[toPlay + king]);
-
-    while (enemyImmMaterial)
-    {
-        int sq = pop_lsb(enemyImmMaterial);
-        int piece = pieceList[sq];
-        
-        int qRank = get_rank(sq) - perspective;
-        U64 qDanger = (kingMoves[sq] & ~totalBoard & ranks[qRank]) * (perspective * qRank < enemHalfRank);
-        int qCount = ((myRetractorMoves & qDanger) > 0) +
-                    ((myRetractorXray & qDanger) > 0) +
-                    3 * (qDanger > 0);
-
-        U64 rankBoard = ranks[get_rank(sq)];
-        int rCount = ((myCoordinatorMoves & rankBoard) > 0) +
-                    ((myCoordinatorXray & rankBoard) > 0) +
-                    2 * (get_file(myKingSq) == get_file(sq));
-
-        evaluation += (PSQT(piece, notToPlay, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * myR)) / 200;
-        evaluation += immBonus[piece];
-
-        enemyImmMaterial &= enemyImmMaterial - 1;
-    }
-
+    evaluation += evalImmPieces(&ctx, 0, perspective);
+    evaluation -= evalImmPieces(&ctx, 1, -perspective);
 
     // === IMMOBILIZER LINES OF SIGHT === //
 
