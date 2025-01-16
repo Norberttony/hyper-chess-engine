@@ -5,6 +5,8 @@ struct EvalContext {
     U64 totalBoard;
     U64 immobilizers[2];
     U64 infl[2];
+    int immSq[2];
+    int immImm[2];
 };
 
 enum
@@ -106,18 +108,53 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
     return evaluation;
 }
 
+static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *ctx, U64 diags, U64 lines, int reverseSide, int perspective)
+{
+    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+
+    int mineValue = (mine + reverseSide) & 0x1;
+
+    U64 myImmobilizer = ctx->immobilizers[mineValue];
+    int myImmSq = ctx->immSq[mineValue];
+    int myImmImm = ctx->immImm[mineValue];
+
+    // determines whether to test left to right (-1) or up to down (1)
+    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
+    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
+    int onlyTest = testUpDn - testLtRt;
+
+    // count lines of sight for the immobilizer
+    int myImmLoS = 
+        // top left to bottom right diagonal
+        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) > 0) * (onlyTest == 0) +
+        // up to down
+        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) > 0) * (onlyTest >= 0) +
+        // top right to bottom left
+        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) > 0) * (onlyTest == 0) +
+        // left to right
+        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) > 0) * (onlyTest <= 0);
+
+    // handle a corner case (well, literally, the immobilizer being in the corner)
+    myImmLoS *= !(testUpDn && testLtRt);
+
+    // apply penalty based on the number of available lines of attack
+    return -(((side == white) * 140 + -perspective * imm_dist_penalty(myImmSq) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0));
+}
+
 int evaluate()
 {
     U64 enemyImmobilizer = position[notToPlay + immobilizer];
     int enemyImmSq = pop_lsb(enemyImmobilizer);
     U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
 
-    // if enemy immobilizer is immobilized, then it shouldn't be evaluated highly
-    int enemyImmImm = (enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
-
     U64 myImmobilizer = position[toPlay + immobilizer];
     int myImmSq = pop_lsb(myImmobilizer);
     U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
+
+    // if immobilizer is immobilized, then it shouldn't be evaluated highly
+    int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
+    int enemyImmImm = (enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
+
 
     struct EvalContext ctx =
     {
@@ -129,11 +166,16 @@ int evaluate()
         .infl =
         {
             myInfl, enemyInfl
+        },
+        .immSq =
+        {
+            myImmSq, enemyImmSq
+        },
+        .immImm =
+        {
+            myImmImm, enemyImmImm
         }
     };
-
-    // if friendly immobilizer is immobilized, then it shouldn't be evaluated highly
-    int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
 
     int evaluation = 0;
 
@@ -151,62 +193,8 @@ int evaluate()
     evaluation -= evalImmPieces(&ctx, 1, -perspective);
 
     // === IMMOBILIZER LINES OF SIGHT === //
-
-    // determines which boards should be used to count as blockers
-    U64 enemyDiags = totalBoard;
-    U64 enemyLines = totalBoard;
-
-    // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
-    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
-    int onlyTest = testUpDn - testLtRt;
-
-    // count lines of sight for the immobilizer
-    int myImmLoS = 
-        // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & enemyDiags) > 0) * (onlyTest == 0) +
-        // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & enemyLines) > 0) * (onlyTest >= 0) +
-        // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & enemyDiags) > 0) * (onlyTest == 0) +
-        // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & enemyLines) > 0) * (onlyTest <= 0);
-
-    // handle a corner case (well, literally, the immobilizer being in the corner)
-    myImmLoS *= !(testUpDn && testLtRt);
-
-    // apply penalty based on the number of available lines of attack
-    evaluation -= ((toPlay == white) * 140 + -perspective * imm_dist_penalty(myImmSq) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0);
-
-
-    // determines which boards should be used to count as blockers
-    U64 myDiags = totalBoard;
-    U64 myLines = totalBoard;
-
-    // determines whether to test left to right (-1) or up to down (1)
-    testUpDn = enemyImmobilizer & ranks[0] | enemyImmobilizer & ranks[7];
-    testLtRt = enemyImmobilizer & files[7] | enemyImmobilizer & files[0];
-    onlyTest = testUpDn - testLtRt;
-
-    // count lines of sight for the immobilizer
-    int enemyImmLoS = 
-        // top left to bottom right diagonal
-        (((enemyImmobilizer << 9 | enemyImmobilizer >> 9) & myDiags) > 0) * (onlyTest == 0) +
-        // up to down
-        (((enemyImmobilizer << 8 | enemyImmobilizer >> 8) & myLines) > 0) * (onlyTest >= 0) +
-        // top right to bottom left
-        (((enemyImmobilizer << 7 | enemyImmobilizer >> 7) & myDiags) > 0) * (onlyTest == 0) +
-        // left to right
-        (((enemyImmobilizer << 1 | enemyImmobilizer >> 1) & myLines) > 0) * (onlyTest <= 0);
-
-    // handle a corner case (well, literally, the immobilizer being in the corner)
-    enemyImmLoS *= !(testUpDn && testLtRt);
-
-    // apply penalty based on the number of available lines of attack
-    evaluation += ((notToPlay == white) * 140 + perspective * imm_dist_penalty(enemyImmSq) + immLoSPen[enemyImmLoS]) * enemyImmImm * (enemyImmobilizer > 0);    
-
-    // evaluation += 200 * (enemyKCImm - myKCImm);
-
+    evaluation += evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
+    evaluation -= evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + perspective * (materialScore[0] - materialScore[1]);
