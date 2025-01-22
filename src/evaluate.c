@@ -151,9 +151,6 @@ static inline __attribute__((always_inline)) int evalKingSafety(struct EvalConte
     int shiftAmt = myKingSq + -perspective * 8 - 1;
     int undefendedCount = g_ByteBitCounts[undefended >> shiftAmt];
 
-    printf("Side %d has %d undefended squares\n", side, undefendedCount);
-    printBitboard(undefended);
-
     return -kingUndefendedPenalty[undefendedCount];
 }
 
