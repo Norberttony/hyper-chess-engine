@@ -11,6 +11,8 @@ extern const int pieceValues[];
 
 extern int pieceSquareTables[8][64];
 
+extern const int kingUndefendedPenalty[4];
+
 
 void initPSQT(void);
 

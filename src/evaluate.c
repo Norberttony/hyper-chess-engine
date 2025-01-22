@@ -141,6 +141,22 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     return -(((side == white) * 140 + -perspective * imm_dist_penalty(myImmSq) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0));
 }
 
+static inline __attribute__((always_inline)) int evalKingSafety(struct EvalContext *ctx, int reverseSide, int perspective)
+{
+    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+
+    int myKingSq = pop_lsb(position[side + king]);
+    U64 undefended = (kingMoves[myKingSq] & ranks[get_rank(myKingSq) - perspective]) & ~position[side];
+
+    int shiftAmt = myKingSq + -perspective * 8 - 1;
+    int undefendedCount = g_ByteBitCounts[undefended >> shiftAmt];
+
+    printf("Side %d has %d undefended squares\n", side, undefendedCount);
+    printBitboard(undefended);
+
+    return -kingUndefendedPenalty[undefendedCount];
+}
+
 int evaluate()
 {
     U64 enemyImmobilizer = position[notToPlay + immobilizer];
@@ -195,6 +211,10 @@ int evaluate()
     // === IMMOBILIZER LINES OF SIGHT === //
     evaluation += evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
     evaluation -= evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
+
+    // king safety
+    evaluation += evalKingSafety(&ctx, 0, perspective);
+    evaluation -= evalKingSafety(&ctx, 1, -perspective);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + perspective * (materialScore[0] - materialScore[1]);

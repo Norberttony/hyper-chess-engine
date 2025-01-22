@@ -35,6 +35,11 @@ const int pieceValues[] =
     0           // king (priceless)
 };
 
+const int kingUndefendedPenalty[4] =
+{
+    0, 40, 100, 150
+};
+
 int pieceSquareTables[8][64] =
 {
     { 0 },
