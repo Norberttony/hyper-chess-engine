@@ -1,9 +1,6 @@
 #ifndef UTILS_HEADER
 #define UTILS_HEADER
 
-#include <stdio.h>
-#include <time.h>
-
 // WEB gets no libraries
 #ifndef WEB
 
@@ -11,6 +8,7 @@
 #ifdef _WIN32
 #include "windows.h"
 #else
+#define _POSIX_SOURCE
 #include "sys/time.h"
 #include "sys/select.h"
 #include "unistd.h"
@@ -19,6 +17,8 @@
 
 #endif
 
+#include <stdio.h>
+#include <time.h>
 
 int getCurrentTime(void);
 int inputIsWaiting(void);

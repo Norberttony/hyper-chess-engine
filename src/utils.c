@@ -39,7 +39,7 @@ int inputIsWaiting(void)
     tv.tv_usec = 0;
     select(16, &readfds, 0, 0, &tv);
 
-    return (FD_ISSET(filno(stdin), &readfds));
+    return (FD_ISSET(fileno(stdin), &readfds));
 
 #else
 
