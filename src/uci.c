@@ -118,6 +118,10 @@ void parseGo(char* line)
     {
         time /= movesToGo;
         time -= 50; // some buffer to prevent bot from timing out
+        if (time < 0)
+        {
+            time = 0;
+        }
         thinkingTime = time + inc;
     }
 
