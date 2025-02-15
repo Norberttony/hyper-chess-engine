@@ -9,6 +9,8 @@ void uciLoop(void)
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
+    FILE* inputFile = stdin;
+
     char line[INPUT_BUFFER];
     uciOk();
 
@@ -16,9 +18,19 @@ void uciLoop(void)
     {
         fflush(stdout);
         // according to UCI, every command must end with a line break.
-        if (!fgets(line, INPUT_BUFFER, stdin) || line[0] == '\n')
+        if (!fgets(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
         {
+            if (inputFile != stdin)
+            {
+                fclose(inputFile);
+                inputFile = stdin;
+            }
             continue;
+        }
+
+        if (inputFile != stdin)
+        {
+            printf("%s", line);
         }
 
         if (!strncmp(line, "isready", 7))
@@ -46,10 +58,44 @@ void uciLoop(void)
         {
             uciOk();
         }
+        else if (!strncmp(line, "clear hash", 10))
+        {
+            memset(transpositionTable, 0, sizeof(struct TranspositionEntry) * 2 * TRANSPOSITION_TABLE_ENTRIES);
+        }
+        else if (!strncmp(line, "readfile", 8))
+        {
+            if (inputFile != stdin)
+            {
+                fclose(inputFile);
+            }
+
+            // removes the line break character at the end of the line.
+            for (int i = 9; i < INPUT_BUFFER; i++)
+            {
+                if (line[i] == '\0')
+                {
+                    line[i - 1] = '\0';
+                    break;
+                }
+            }
+            printf("Trying to open file %s...\n", &line[9]);
+
+            inputFile = fopen(&line[9], "r");
+            if (!inputFile)
+            {
+                inputFile = stdin;
+                puts("File not found");
+            }
+        }
         if (stopThinking == -1)
         {
             break;
         }
+    }
+
+    if (inputFile != stdin)
+    {
+        fclose(inputFile);
     }
 }
 

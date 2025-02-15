@@ -13,6 +13,15 @@ int thinkStart = -1;
 int stopThinking = 0;
 int currDepth = 0;
 
+#ifdef DEBUG
+int cutoffFirst = 0;
+int cutoffSecond = 0;
+int cutoffThird = 0;
+int cutoffAvg = 0;
+int cutoffRemaining = 0;
+int cutoffRemainingAvg = 0;
+#endif
+
 Move currBestMove = 0;
 
 int maxDepth = -1;
@@ -65,7 +74,7 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
-    printf("info string root-eval %d\n", -evaluate());
+    printf("info string root-eval %d\n", (toPlay == white ? 1 : -1) * evaluate());
     while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;
@@ -93,6 +102,17 @@ Move startThink(void)
     {
         puts("PANIC! HASH ERROR!");
     }
+
+#ifdef DEBUG
+    int cutoffs = nodeOccurrence[TT_UPPER];
+    printf("# of cut-offs: %d\n", cutoffs);
+    printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
+    printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
+    printf("Third move cut-off: %lf%%\n", 100 * (double)cutoffThird / cutoffs);
+    printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
+    printf("Cut-off in remaining moves (after hash, killers, captures): %d (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
+    printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
+#endif
 
     return currBestMove;
 }
@@ -158,6 +178,10 @@ int think(int depth, int alpha, int beta)
         return 0; // no moves! don't try sorting
     }
 
+#ifdef DEBUG
+    Move orderedFirst = orderFirst;
+#endif
+
     // order most promising moves first
     orderMoves(movelist, size, depth);
 
@@ -216,7 +240,21 @@ int think(int depth, int alpha, int beta)
 #ifdef USE_TRANSPOSITION_TABLE
             writeToTranspositionTable(depth, beta, m, TT_UPPER);
 #endif
+
+#ifdef DEBUG
             nodeOccurrence[TT_UPPER]++;
+            
+            cutoffFirst += i == 0;
+            cutoffSecond += i == 1;
+            cutoffThird += i == 3;
+            cutoffAvg += i + 1;
+
+            if (m != orderedFirst && !is_move_capt(m) && killer_move(depth, 0) != m && killer_move(depth, 1) != m)
+            {
+                cutoffRemaining++;
+                cutoffRemainingAvg += i;
+            }
+#endif
 
             // store killer move
             addKillerMove(m, depth);
