@@ -20,6 +20,8 @@ int cutoffThird = 0;
 int cutoffAvg = 0;
 int cutoffRemaining = 0;
 int cutoffRemainingAvg = 0;
+int hashTries = 0;
+int hashFails = 0;
 #endif
 
 Move currBestMove = 0;
@@ -112,6 +114,7 @@ Move startThink(void)
     printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
     printf("Cut-off in remaining moves (after hash, killers, captures): %d (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
     printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
+    printf("Hash successes / hash tries: %d / %d\n", hashTries - hashFails, hashTries);
 #endif
 
     return currBestMove;
@@ -171,19 +174,31 @@ int think(int depth, int alpha, int beta)
     orderFirstSuccess += isFromTT;
 
     Move movelist[MAX_MOVES];
-    int size = generateMoves((Move*)movelist, 0);
+    int size = 0;
+    int moveStatus = PARTIALLY_GENERATED;
 
-    if (size == 0)
+    if (isFromTT && isMoveValid(orderFirst))
     {
-        return 0; // no moves! don't try sorting
+        movelist[0] = orderFirst;
+        size = 1;
+#ifdef DEBUG
+        hashTries++;
+#endif
+    }
+    else
+    {
+        size = generateMoves((Move*)movelist, 0);
+        if (size == 0)
+        {
+            return 0;
+        }
+        orderMoves(movelist, size, depth);
+        moveStatus = FULLY_GENERATED;
     }
 
 #ifdef DEBUG
     Move orderedFirst = orderFirst;
 #endif
-
-    // order most promising moves first
-    orderMoves(movelist, size, depth);
 
     // have at least a move before time runs out
     if (depth == currDepth)
@@ -298,6 +313,18 @@ int think(int depth, int alpha, int beta)
 
             orderFirstSuccess -= isFromTT;
             isFromTT = 0;
+        }
+
+        // now it is necessary to consider the rest of the moves... might as well generate them.
+        if (moveStatus == PARTIALLY_GENERATED && i == size - 1)
+        {
+            size = generateMoves((Move*)movelist, 0);
+            orderMoves(movelist, size, depth);
+            moveStatus = FULLY_GENERATED;
+            i = 0;
+#ifdef DEBUG
+            hashFails++;
+#endif
         }
     }
 

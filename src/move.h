@@ -39,6 +39,7 @@
 #define get_b_cl(move)  ((move & 0x010000u) >> 16)
 #define get_b_cr(move)  ((move & 0x020000u) >> 17)
 #define get_b_cd(move)  ((move & 0x040000u) >> 18)
+#define get_b_cp(move)  ((move & 0x078000u) >> 15)
 #define get_b_cd1(move) ((move & 0x080000u) >> 19)
 #define get_b_cd2(move) ((move & 0x100000u) >> 20)
 #define get_b_cq(move)  ((move & 0x200000u) >> 21)

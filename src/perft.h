@@ -45,4 +45,6 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
 int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
 int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard);
 
+int isMoveValid(Move m);
+
 #endif

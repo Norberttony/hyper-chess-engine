@@ -17,6 +17,14 @@ extern int stopThinking;
 extern int maxDepth;
 
 
+// refers to whether moves are partially generated (via isMoveValid) or fully generated (via generateMoves)
+enum
+{
+    PARTIALLY_GENERATED,
+    FULLY_GENERATED
+};
+
+
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.
 // returns the evaluation of the position.
