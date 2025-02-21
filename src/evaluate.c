@@ -110,12 +110,9 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
 
 static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *ctx, U64 diags, U64 lines, int reverseSide, int perspective)
 {
-    int side = !reverseSide * toPlay + reverseSide * notToPlay;
-
     int mineValue = (mine + reverseSide) & 0x1;
 
     U64 myImmobilizer = ctx->immobilizers[mineValue];
-    int myImmSq = ctx->immSq[mineValue];
     int myImmImm = ctx->immImm[mineValue];
 
     // determines whether to test left to right (-1) or up to down (1)
@@ -138,7 +135,22 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     myImmLoS *= !(testUpDn && testLtRt);
 
     // apply penalty based on the number of available lines of attack
-    return -(((side == white) * 140 + -perspective * imm_dist_penalty(myImmSq) + immLoSPen[myImmLoS]) * myImmImm * (myImmobilizer > 0));
+    return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+}
+
+const int immDistPenalties[8] =
+{
+    0, 5, 10, 30, 50, 70, 70, 70
+};
+static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
+{
+    int mineValue = (mine + reverseSide) & 0x1;
+
+    U64 myImmobilizer = ctx->immobilizers[mineValue];
+    int myImmSq = ctx->immSq[mineValue];
+    int myImmImm = ctx->immImm[mineValue];
+
+    return (myImmobilizer > 0) * myImmImm * -immDistPenalties[(perspective == 1) * 7 + -perspective * get_rank(myImmSq)];
 }
 
 int evaluate()
@@ -195,6 +207,9 @@ int evaluate()
     // === IMMOBILIZER LINES OF SIGHT === //
     evaluation += evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
     evaluation -= evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
+
+    evaluation += evalImmDist(&ctx, 0, perspective);
+    evaluation -= evalImmDist(&ctx, 1, -perspective);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + perspective * (materialScore[0] - materialScore[1]);
