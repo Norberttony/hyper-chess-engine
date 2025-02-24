@@ -204,7 +204,6 @@ int evaluate()
     evaluation += evalImmPieces(&ctx, 0, perspective);
     evaluation -= evalImmPieces(&ctx, 1, -perspective);
 
-    // === IMMOBILIZER LINES OF SIGHT === //
     evaluation += evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
     evaluation -= evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
 

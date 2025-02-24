@@ -2,20 +2,24 @@
 #include "make-unmake.h"
 
 // this function assumes that the piece exists
-#define setPiece(stp, type, sq) \
-    U64 sqBoard = 1ULL << (sq); \
-    position[stp + type] |= sqBoard; \
-    position[stp]        |= sqBoard; \
-    pieceList[sq] = type; \
-    materialScore[stp == black] += PSQT(type, stp, sq)
+static inline __attribute__((always_inline)) void setPiece(int stp, int type, int sq)
+{
+    U64 sqBoard = 1ULL << sq;
+    position[stp + type] |= sqBoard;
+    position[stp]        |= sqBoard;
+    pieceList[sq] = type;
+    materialScore[stp == black] += PSQT(type, stp, sq);
+}
 
-// this function assumes that the piece exists
-#define unsetPiece(stp, type, sq) \
-    U64 sqBoard = 1ULL << (sq); \
-    position[stp + type] ^= sqBoard; \
-    position[stp]        ^= sqBoard; \
-    pieceList[sq] = 0; \
-    materialScore[stp == black] -= PSQT(type, stp, sq)
+static inline __attribute__((always_inline)) void unsetPiece(int stp, int type, int sq)
+{
+    U64 sqBoard = 1ULL << sq;
+    position[stp + type] ^= sqBoard;
+    position[stp] ^= sqBoard;
+    pieceList[sq] = 0;
+    materialScore[stp == black] -= PSQT(type, stp, sq);
+}
+
 
 void makeMove(Move m)
 {
