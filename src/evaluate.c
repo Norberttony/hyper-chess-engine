@@ -39,7 +39,7 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
         myBoard &= myBoard - 1;
     }
 
-    return mobility;
+    return 2 * mobility;
 }
 
 // immobilized material and penalties for badly-positioned immobilized pieces
