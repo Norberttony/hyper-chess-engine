@@ -97,6 +97,12 @@ int loadFEN(const char* fen)
         pieceList[s] = 0;
     }
 
+    // clear repeat table
+    for (int i = 0; i < REPEAT_TABLE_ENTRIES; i++)
+    {
+        repeatTable[i] = 0;
+    }
+
     // clear scores
     materialScore[0] = 0;
     materialScore[1] = 0;
