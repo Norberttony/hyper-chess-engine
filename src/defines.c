@@ -32,14 +32,26 @@ U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
 
 
+void printBoardLine()
+{
+    puts("   +---+---+---+---+---+---+---+---+");
+}
+
 void prettyPrintBoard()
 {
+    printBoardLine();
+    
+    // first char is light square, second char is dark square
+    const char* sqType = " :";
+
     for (int r = 0; r < 8; r++)
     {
-        printf(" %d  ", 8 - r);
+        printf(" %d ", 8 - r);
         for (int f = 0; f < 8; f++)
         {
             int s = f + r * 8;
+
+            char shade = sqType[(f + r) % 2];
 
             // search through all piece boards
             int isEmpty = 1;
@@ -59,7 +71,7 @@ void prettyPrintBoard()
                         printf("\nCollision problem with %d\n", p);
                         return;
                     }
-                    printf("%c ", pieceFEN[p]);
+                    printf("|%c%c%c", shade, pieceFEN[p], shade);
                     isEmpty = 0;
                 }
             }
@@ -67,16 +79,17 @@ void prettyPrintBoard()
             // indicate that this is an empty square
             if (isEmpty)
             {
-                printf("%c ", pieceFEN[0]);
+                printf("|%c%c%c", shade, shade, shade);
             }
         }
 
         // next rank
-        puts("");
+        puts("|");
+        printBoardLine();
     }
 
     // file names
-    puts("    a b c d e f g h");
+    puts("     a   b   c   d   e   f   g   h");
 
     printf("It is %s to play\n", toPlay == white ? "white": "black");
 

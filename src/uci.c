@@ -87,6 +87,10 @@ void uciLoop(void)
                 puts("File not found");
             }
         }
+        else if (!strncmp(line, "d\n", 3))
+        {
+            prettyPrintBoard();
+        }
         if (stopThinking == -1)
         {
             break;
