@@ -1,7 +1,7 @@
 
 #include "defines.h"
 
-U64 position[17];
+U64 position[16];
 
 const char pieceFEN[] = ".PQNRUBK.pqnrubk";
 const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
@@ -99,7 +99,7 @@ void prettyPrintBoard()
 int loadFEN(const char* fen)
 {
     // clear all boards
-    for (int i = 0; i < 17; i++)
+    for (int i = 0; i < 16; i++)
     {
         position[i] = 0ULL;
     }

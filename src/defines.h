@@ -9,21 +9,6 @@
 
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 
-// sets the piece of type t and color s on sq if c != 0
-// c must be either 0 or 1
-#define set_piece(s, t, c, sq) \
-    position[(s) + (t)] |= 1ULL * (c) << sq; \
-    position[s]     |= 1ULL * (c) << sq; \
-    pieceList[sq] += (c) * (t)
-
-// removes the piece of type t and color s on sq if c != 0
-// c must be either 0 or 1
-#define unset_piece(s, t, c, sq) \
-    position[(s) + (t)] ^= 1ULL * (c) << (sq); \
-    position[s] ^= 1ULL * (c) << (sq); \
-    pieceList[sq] *= (c) == 0
-
-
 // whose side it is to play
 enum
 {
@@ -48,7 +33,7 @@ extern int notToPlay;
 extern int halfmove;
 extern int materialScore[2];
 
-extern U64 position[17];
+extern U64 position[16];
 
 extern const char pieceFEN[];
 
