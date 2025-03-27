@@ -27,6 +27,8 @@ int main(void)
 
     srand(time(NULL));
 
+    printf("sizeof results in %llu\n", sizeof(transpositionTable));
+
     loadFEN(StartingFEN);
 
     uciLoop();

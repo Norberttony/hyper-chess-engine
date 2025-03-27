@@ -138,18 +138,21 @@ int think(int depth, int alpha, int beta)
         struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
         {
-            if (savedEval->depth >= depth)
+            int savedDepth = TT_getDepth(savedEval->flags);
+            int savedNodeType = TT_getNodeType(savedEval->flags);
+            int savedVal = TT_getEval(savedEval->flags);
+            if (savedDepth >= depth)
             {
-                if (savedEval->nodeType == TT_EXACT)
+                if (savedNodeType == TT_EXACT)
                 {
                     // determine upper bound for mate score
-                    return savedEval->eval - (savedEval->eval >= MATE_SCORE) * (currDepth - depth) + (savedEval->eval <= -MATE_SCORE) * (currDepth - depth);
+                    return savedVal - (savedVal >= MATE_SCORE) * (currDepth - depth + 1) + (savedVal <= -MATE_SCORE) * (currDepth - depth + 1);
                 }
-                else if (savedEval->nodeType == TT_LOWER && alpha >= savedEval->eval)
+                else if (savedNodeType == TT_LOWER && alpha >= savedVal)
                 {
                     return alpha;
                 }
-                else if (savedEval->nodeType == TT_UPPER && beta <= savedEval->eval)
+                else if (savedNodeType == TT_UPPER && beta <= savedVal)
                 {
                     return beta;
                 }
@@ -213,7 +216,7 @@ int think(int depth, int alpha, int beta)
 
         if (isCheckmate())
         {
-            eval = INT_MAX - 2 - (currDepth - depth);
+            eval = MAX_SCORE - (currDepth - depth) - 1;
         }
         else if (threefold)
         {

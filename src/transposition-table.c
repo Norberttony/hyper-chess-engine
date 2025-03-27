@@ -8,6 +8,11 @@ int TT_hits = 0;
 int TT_overwrites = 0;
 int TT_writes = 0;
 
+const int TT_nodeTypeMask = 0x3;
+const int TT_depthMask = 0x1FC;
+const int TT_evalSignMask = 0x200;
+const int TT_evalValueMask = 0xFFFFFC00;
+
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
     int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
@@ -16,11 +21,11 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (depthEntry->depth >= myDepth && depthEntry->zobristHash == g_pos.zobristHash && depthEntry->nodeType == TT_EXACT)
+    if (TT_getDepth(depthEntry->flags) >= myDepth && depthEntry->zobristHash == g_pos.zobristHash && TT_getNodeType(depthEntry->flags) == TT_EXACT)
     {
         return depthEntry;
     }
-    else if (alwaysEntry->depth >= myDepth && alwaysEntry->zobristHash == g_pos.zobristHash && alwaysEntry->nodeType == TT_EXACT)
+    else if (TT_getDepth(alwaysEntry->flags) >= myDepth && alwaysEntry->zobristHash == g_pos.zobristHash && TT_getNodeType(alwaysEntry->flags) == TT_EXACT)
     {
         return alwaysEntry;
     }
@@ -66,12 +71,13 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     // TT_writes++;
 
     // always replace any entry here
-    transpositionTable[index][1] = (struct TranspositionEntry){ g_pos.zobristHash, depth, eval, bestMove, nodeType }; 
+    uint32_t flags = ((uint32_t)abs(eval) << 10) | ((eval < 0) << 9) | (depth << 2) | nodeType;
+    transpositionTable[index][1] = (struct TranspositionEntry){ g_pos.zobristHash, bestMove, flags }; 
 
     // only replace if the depth is better
-    if (transpositionTable[index][0].depth < depth)
+    if (TT_getDepth(transpositionTable[index][0].flags) < depth)
     {
-        transpositionTable[index][0] = (struct TranspositionEntry){ g_pos.zobristHash, depth, eval, bestMove, nodeType }; 
+        transpositionTable[index][0] = (struct TranspositionEntry){ g_pos.zobristHash, bestMove, flags }; 
     }
 }
 
@@ -80,7 +86,7 @@ void printEval()
     struct TranspositionEntry* entry = getTranspositionTableEntryPV(0);
     if (entry)
     {
-        int eval = entry->eval;
+        int eval = TT_getEval(entry->flags);
         if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
         {
             printf("mate %+d ", (g_pos.toPlay == black ? -1 : 1) * (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));

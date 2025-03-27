@@ -9,7 +9,7 @@
 #include "defines.h"
 
 // defines the max depth that the engine can calculate to.
-#define MAX_DEPTH 128
+#define MAX_DEPTH 127
 
 // defines the maximum possible number of moves in any attainable position
 #define MAX_MOVES 256

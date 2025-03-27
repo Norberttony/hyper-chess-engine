@@ -59,8 +59,9 @@ extern U64 repeatTable[REPEAT_TABLE_ENTRIES];
 extern int repeatTableIndex;
 
 // used for storing mate in x evaluations. extract_mate_scores will return the depth until mate.
-#define MATE_SCORE (INT_MAX - 10000)
-#define extract_mate_score(score) (9999 - (score - MATE_SCORE))
+#define MAX_SCORE 4194303
+#define MATE_SCORE (MAX_SCORE - 10000)
+#define extract_mate_score(score) (MAX_SCORE - score)
 
 
 // prints all positions onto one board with FEN symbols
