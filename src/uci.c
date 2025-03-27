@@ -112,6 +112,8 @@ void uciOk(void)
 
 void parseGo(char* line)
 {
+    int toPlay = g_pos.toPlay;
+
     int depth = -1;
     int movesToGo = 30;
     int moveTime = -1;

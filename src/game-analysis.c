@@ -14,7 +14,7 @@ void playGame(int mySide)
         }
 
         // time to consider which moves are played
-        if (mySide == toPlay)
+        if (mySide == g_pos.toPlay)
         {
             Move best = thinkFor(200);
 
@@ -151,7 +151,7 @@ int checkGameOver()
     {
         if (isCheckmate())
         {
-            if (toPlay == white)
+            if (g_pos.toPlay == white)
             {
                 puts("result 0-1");
             }

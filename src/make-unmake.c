@@ -5,19 +5,19 @@
 static inline __attribute__((always_inline)) void setPiece(int stp, int type, int sq)
 {
     U64 sqBoard = 1ULL << sq;
-    position[stp + type] |= sqBoard;
-    position[stp]        |= sqBoard;
-    pieceList[sq] = type;
-    materialScore[stp == black] += PSQT(type, stp, sq);
+    g_pos.boards[stp + type] |= sqBoard;
+    g_pos.boards[stp]        |= sqBoard;
+    g_pos.pieceList[sq] = type;
+    g_pos.materialScore[stp == black] += PSQT(type, stp, sq);
 }
 
 static inline __attribute__((always_inline)) void unsetPiece(int stp, int type, int sq)
 {
     U64 sqBoard = 1ULL << sq;
-    position[stp + type] ^= sqBoard;
-    position[stp] ^= sqBoard;
-    pieceList[sq] = 0;
-    materialScore[stp == black] -= PSQT(type, stp, sq);
+    g_pos.boards[stp + type] ^= sqBoard;
+    g_pos.boards[stp] ^= sqBoard;
+    g_pos.pieceList[sq] = 0;
+    g_pos.materialScore[stp == black] -= PSQT(type, stp, sq);
 }
 
 
@@ -33,10 +33,13 @@ void makeMove(Move m)
     int c3 = get_c3(m);
     int c4 = get_c4(m);
 
+    int toPlay = g_pos.toPlay;
+    int notToPlay = g_pos.notToPlay;
+
     int coordinateSq;
 
     // incrementally update evaluation parameters
-    materialScore[toPlay == black] += PSQT(type, toPlay, to) - PSQT(type, toPlay, from);
+    g_pos.materialScore[toPlay == black] += PSQT(type, toPlay, to) - PSQT(type, toPlay, from);
 
     U64 zobristHashUpdate = 0ULL;
 
@@ -79,7 +82,7 @@ void makeMove(Move m)
             break;
 
         case coordinator:
-            coordinateSq = pop_lsb(position[toPlay + king]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + king]);
             
             // top death square
             if (__builtin_expect(c1, 0))
@@ -105,14 +108,14 @@ void makeMove(Move m)
             // assumes pieceList will be updated by king overwriting square
             if (__builtin_expect(c1, 0))
             {
-                position[notToPlay + c1] ^= 1ULL << to;
-                position[notToPlay]      ^= 1ULL << to;
-                materialScore[notToPlay == black] -= PSQT(c1, notToPlay, to);
+                g_pos.boards[notToPlay + c1] ^= 1ULL << to;
+                g_pos.boards[notToPlay]      ^= 1ULL << to;
+                g_pos.materialScore[notToPlay == black] -= PSQT(c1, notToPlay, to);
                 zobristHashUpdate ^= get_zobrist_hash(to, c1, toPlay);
             }
 
             // can form death squares with own coordinator
-            coordinateSq = pop_lsb(position[toPlay + coordinator]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + coordinator]);
 
             // top death square
             if (__builtin_expect(c2, 0))
@@ -135,7 +138,7 @@ void makeMove(Move m)
             // at most one bit turned on for this bitboard.
             if (__builtin_expect(get_kb_c(m), 0))
             {
-                int deathSqC = pop_lsb(position[notToPlay + coordinator]);
+                int deathSqC = pop_lsb(g_pos.boards[notToPlay + coordinator]);
                 unsetPiece(notToPlay, coordinator, deathSqC);
                 zobristHashUpdate ^= get_zobrist_hash(deathSqC, coordinator, toPlay);
             }
@@ -200,7 +203,7 @@ void makeMove(Move m)
             }
 
             // chameleon might try to coordinate with the king...
-            coordinateSq = pop_lsb(position[toPlay + king]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + king]);
 
             // consider coordinator moves
             if (__builtin_expect(get_b_cd1(m), 0))
@@ -241,8 +244,8 @@ void makeMove(Move m)
 
     // move piece
     U64 toggle = (1ULL << from) | (1ULL << to);
-    position[toPlay + type] ^= toggle;
-    position[toPlay] ^= toggle;
+    g_pos.boards[toPlay + type] ^= toggle;
+    g_pos.boards[toPlay] ^= toggle;
 
     // remove piece from zobrist hash
     zobristHashUpdate ^= get_zobrist_hash(from, type, !toPlay);
@@ -250,12 +253,12 @@ void makeMove(Move m)
     zobristHashUpdate ^= get_zobrist_hash(to, type, !toPlay);
 
     // update piece list
-    pieceList[to] = pieceList[from];
-    pieceList[from] = 0;
+    g_pos.pieceList[to] = g_pos.pieceList[from];
+    g_pos.pieceList[from] = 0;
 
     // toggle turn
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
+    g_pos.toPlay = !toPlay * 8;
+    g_pos.notToPlay = !notToPlay * 8;
 
     // toggle turn on zobrist hash
     zobristHashUpdate ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
@@ -268,7 +271,7 @@ void makeMove(Move m)
     repeatTableIndex -= REPEAT_TABLE_ENTRIES * (repeatTableIndex == REPEAT_TABLE_ENTRIES);
 
     // update halfmove counter
-    halfmove++;
+    g_pos.halfmove++;
 }
 
 void unmakeMove(Move m)
@@ -287,7 +290,7 @@ void unmakeMove(Move m)
     U64 zobristHashUpdate = 0ULL;
 
     // update halfmove counter
-    halfmove--;
+    g_pos.halfmove--;
 
     // remove from repeat table
     repeatTableIndex += REPEAT_TABLE_ENTRIES * (repeatTableIndex == 0);
@@ -297,8 +300,11 @@ void unmakeMove(Move m)
     zobristHashUpdate ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
 
     // toggle turn
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
+    g_pos.toPlay = !g_pos.toPlay * 8;
+    g_pos.notToPlay = !g_pos.notToPlay * 8;
+
+    int toPlay = g_pos.toPlay;
+    int notToPlay = g_pos.notToPlay;
 
     // remove piece from zobrist hash
     zobristHashUpdate ^= get_zobrist_hash(to, type, !toPlay);
@@ -307,15 +313,15 @@ void unmakeMove(Move m)
 
     // unmove piece
     U64 toggle = (1ULL << from) | (1ULL << to);
-    position[toPlay + type] ^= toggle;
-    position[toPlay] ^= toggle;
+    g_pos.boards[toPlay + type] ^= toggle;
+    g_pos.boards[toPlay] ^= toggle;
 
     // update piece list
-    pieceList[from] = pieceList[to];
-    pieceList[to] = 0;
+    g_pos.pieceList[from] = g_pos.pieceList[to];
+    g_pos.pieceList[to] = 0;
 
     // incrementally update evaluation parameters
-    materialScore[toPlay == black] += PSQT(type, toPlay, from) - PSQT(type, toPlay, to);
+    g_pos.materialScore[toPlay == black] += PSQT(type, toPlay, from) - PSQT(type, toPlay, to);
 
     // interpret capture bits
     switch(type)
@@ -356,7 +362,7 @@ void unmakeMove(Move m)
             break;
         
         case coordinator:
-            coordinateSq = pop_lsb(position[toPlay + king]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + king]);
             
             // top death square
             if (__builtin_expect(c1, 0))
@@ -387,7 +393,7 @@ void unmakeMove(Move m)
 
             // death squares with coordinator
             // can form death squares with own coordinator
-            coordinateSq = pop_lsb(position[toPlay + coordinator]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + coordinator]);
 
             if (__builtin_expect(c2, 0))
             {
@@ -406,7 +412,7 @@ void unmakeMove(Move m)
             // consider king-chameleon duo
             if (__builtin_expect(get_kb_c(m), 0))
             {
-                U64 chamBoard = position[toPlay + chameleon];
+                U64 chamBoard = g_pos.boards[toPlay + chameleon];
                 int cham1 = pop_lsb(chamBoard);
                 int cham2 = pop_lsb((chamBoard - 1) & chamBoard);
 
@@ -488,7 +494,7 @@ void unmakeMove(Move m)
             }
 
             // chameleon might try to coordinate with the king...
-            coordinateSq = pop_lsb(position[toPlay + king]);
+            coordinateSq = pop_lsb(g_pos.boards[toPlay + king]);
 
             // consider coordinator captures
             if (__builtin_expect(get_b_cd1(m), 0))
@@ -536,6 +542,6 @@ void makeNullMove()
     zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
 
     // toggle turn
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
+    g_pos.toPlay = !g_pos.toPlay * 8;
+    g_pos.notToPlay = !g_pos.notToPlay * 8;
 }

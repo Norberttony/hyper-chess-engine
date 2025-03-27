@@ -31,7 +31,7 @@ void orderMoves(Move* moves, int count, int depth)
         int captScore = isCapt * isCaptValue;
 
         int killScore = killerValue * (killer1 == m || killer2 == m);
-        int historyScore = historyValues[toPlay == black][fromSq][toSq];
+        int historyScore = historyValues[g_pos.toPlay == black][fromSq][toSq];
 
         int quietScore = !isCapt * (historyScore + killScore);
 
@@ -88,5 +88,5 @@ void updateHistory(int from, int to, int bonus)
     }
 
     // apply the history gravity formula, which gives smaller bonuses if the history move was expected
-    historyValues[toPlay == black][from][to] += bonus - historyValues[toPlay == black][from][to] * abs(bonus) / MAX_HISTORY;
+    historyValues[g_pos.toPlay == black][from][to] += bonus - historyValues[g_pos.toPlay == black][from][to] * abs(bonus) / MAX_HISTORY;
 }

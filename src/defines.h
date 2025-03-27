@@ -28,22 +28,23 @@ enum
     king
 };
 
-extern int toPlay;
-extern int notToPlay;
-extern int halfmove;
-extern int materialScore[2];
+typedef struct Position
+{
+    U64 boards[16];
+    int* pieceList;
+    int toPlay;
+    int notToPlay;
+    int halfmove;
+    int materialScore[2];
+} Position;
 
-extern U64 position[16];
+extern Position g_pos;
 
 extern const char pieceFEN[];
 
 extern const char StartingFEN[];
 
 extern const char* squareNames[];
-
-// 8 squares above and 8 squares below as extra padding
-extern int pieceListStore[80];
-extern int* pieceList;
 
 // 7 pieces on each side (so 14) on any of the 64 squares, which side to play
 // the additional 64 squares at the beginning are to not have to make bounds check when searching

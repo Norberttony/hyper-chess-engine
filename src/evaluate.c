@@ -19,12 +19,12 @@ enum
 // does not actually work for king or straddler.
 static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int reverseSide, int pieceType)
 {
-    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
 
     int mobility = 0;
     U64 totalBoard = ctx->totalBoard;
 
-    U64 myBoard = position[side + pieceType] & ~ctx->infl[(enemy + reverseSide) & 1];
+    U64 myBoard = g_pos.boards[side + pieceType] & ~ctx->infl[(enemy + reverseSide) & 1];
     while (myBoard)
     {
         int sq = pop_lsb(myBoard);
@@ -45,7 +45,7 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
 // immobilized material and penalties for badly-positioned immobilized pieces
 static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
 {
-    int side = !reverseSide * toPlay + reverseSide * notToPlay;
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
     int notSide = !side * 8;
 
     int mineValue = (mine + reverseSide) & 0x1;
@@ -57,27 +57,27 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
 
     int evaluation = 0;
 
-    U64 enemyChamInfl = ctx->immobilizers[mineValue] * ((myInfl & position[notSide + chameleon]) > 0);
+    U64 enemyChamInfl = ctx->immobilizers[mineValue] * ((myInfl & g_pos.boards[notSide + chameleon]) > 0);
 
-    U64 myImmMaterial = position[side] & (enemyInfl | enemyChamInfl);
-    int enemQ = (position[notSide + retractor] & ~myInfl) > 0;
-    int enemR = (position[notSide + coordinator] & ~myInfl) > 0;
+    U64 myImmMaterial = g_pos.boards[side] & (enemyInfl | enemyChamInfl);
+    int enemQ = (g_pos.boards[notSide + retractor] & ~myInfl) > 0;
+    int enemR = (g_pos.boards[notSide + coordinator] & ~myInfl) > 0;
     int myHalfRank = perspective * 3 + ((perspective + 1) >> 1);
 
-    int enemCoordSq = pop_lsb(position[notSide + coordinator]);
+    int enemCoordSq = pop_lsb(g_pos.boards[notSide + coordinator]);
     U64 enemCoordinatorMoves = (enemR * get_queen_attacks(enemCoordSq, totalBoard)) & ~totalBoard;
     U64 enemCoordinatorXray = enemR * get_queen_attacks(enemCoordSq, 0ULL);
 
-    int enemRetrSq = pop_lsb(position[notSide + retractor]);
+    int enemRetrSq = pop_lsb(g_pos.boards[notSide + retractor]);
     U64 enemRetractorMoves = (enemQ * get_queen_attacks(enemRetrSq, totalBoard)) & ~totalBoard;
     U64 enemRetractorXray = enemQ * get_queen_attacks(enemRetrSq, 0ULL);
 
-    int enemyKingSq = pop_lsb(position[notSide + king]);
+    int enemyKingSq = pop_lsb(g_pos.boards[notSide + king]);
 
     while (myImmMaterial)
     {
         int sq = pop_lsb(myImmMaterial);
-        int piece = pieceList[sq];
+        int piece = g_pos.pieceList[sq];
 
         // finds three forward squares of piece, and determines if they are on the opponent's side of the territory.
         // The first three forward squares are most likely to be in the opponent's territory, AND are most vulnerable to a retractor.
@@ -155,22 +155,25 @@ static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext*
 
 int evaluate()
 {
-    U64 enemyImmobilizer = position[notToPlay + immobilizer];
+    int toPlay = g_pos.toPlay;
+    int notToPlay = g_pos.notToPlay;
+
+    U64 enemyImmobilizer = g_pos.boards[g_pos.notToPlay + immobilizer];
     int enemyImmSq = pop_lsb(enemyImmobilizer);
     U64 enemyInfl = (enemyImmobilizer > 0) * kingMoves[enemyImmSq];
 
-    U64 myImmobilizer = position[toPlay + immobilizer];
+    U64 myImmobilizer = g_pos.boards[g_pos.toPlay + immobilizer];
     int myImmSq = pop_lsb(myImmobilizer);
     U64 myInfl = (myImmobilizer > 0) * kingMoves[myImmSq];
 
     // if immobilizer is immobilized, then it shouldn't be evaluated highly
-    int myImmImm = (myInfl & (position[notToPlay + chameleon] | position[notToPlay + immobilizer])) > 0;
-    int enemyImmImm = (enemyInfl & (position[toPlay + chameleon] | position[toPlay + immobilizer])) > 0;
+    int myImmImm = (myInfl & (g_pos.boards[notToPlay + chameleon] | g_pos.boards[notToPlay + immobilizer])) > 0;
+    int enemyImmImm = (enemyInfl & (g_pos.boards[toPlay + chameleon] | g_pos.boards[toPlay + immobilizer])) > 0;
 
 
     struct EvalContext ctx =
     {
-        .totalBoard = position[white] | position[black],
+        .totalBoard = g_pos.boards[white] | g_pos.boards[black],
         .immobilizers =
         {
             myImmobilizer, enemyImmobilizer
@@ -192,7 +195,7 @@ int evaluate()
     int evaluation = 0;
 
     // count mobility
-    U64 totalBoard = position[toPlay] | position[notToPlay];
+    U64 totalBoard = g_pos.boards[toPlay] | g_pos.boards[notToPlay];
     for (int i = 2; i <= 6; i++)
     {
         evaluation += evalMobility(&ctx, 0, i);
@@ -211,7 +214,7 @@ int evaluate()
     evaluation -= evalImmDist(&ctx, 1, -perspective);
 
     // whoever has more material MUST be winning (not necessarily but y'know)
-    return evaluation + perspective * (materialScore[0] - materialScore[1]);
+    return evaluation + perspective * (g_pos.materialScore[0] - g_pos.materialScore[1]);
 }
 
 int moveCaptureValue(Move m)

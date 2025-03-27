@@ -231,6 +231,10 @@ int chooseMoveBlind(int startSq, int endSq)
 
 int isAttackingKing(void)
 {
+    U64* position = g_pos.boards;
+    int toPlay = g_pos.toPlay;
+    int notToPlay = g_pos.notToPlay;
+
     // get squares that enemy immobilizer is not influencing
     U64 enemImm = position[notToPlay + immobilizer];
     U64 notImmInfl = ~(kingMoves[pop_lsb(enemImm)] * (enemImm > 0));
@@ -309,16 +313,16 @@ int isAttackingKing(void)
 int isCheckmate()
 {
     // toggle turn
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
+    g_pos.toPlay = !g_pos.toPlay * 8;
+    g_pos.notToPlay = !g_pos.notToPlay * 8;
 
     // make sure king is actually attacked
     // if not, then it cannot be checkmate.
     int isAttacked = isAttackingKing();
 
     // toggle turn back
-    toPlay = !toPlay * 8;
-    notToPlay = !notToPlay * 8;
+    g_pos.toPlay = !g_pos.toPlay * 8;
+    g_pos.notToPlay = !g_pos.notToPlay * 8;
 
     if (!isAttacked)
     {
@@ -344,11 +348,11 @@ int isCheckmate()
 
 int isSquareControlled(int stp, int targetSq, int pieceType)
 {
-    U64 myImm = position[!stp * 8 + immobilizer];
+    U64 myImm = g_pos.boards[!stp * 8 + immobilizer];
     U64 notImmInfl = ~((myImm > 0) * kingMoves[pop_lsb(myImm)]);
 
     // looking for checking patterns often relies on the targetSq bit being turned on.
-    U64 totalBoard = position[white] | position[black] | (1ULL << targetSq);
+    U64 totalBoard = g_pos.boards[white] | g_pos.boards[black] | (1ULL << targetSq);
 
     if (isSquareControlledByStraddler(stp, targetSq, notImmInfl, totalBoard, pieceType == straddler))
     {
@@ -376,7 +380,7 @@ int isSquareControlled(int stp, int targetSq, int pieceType)
 
 int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
 {
-    U64 straddlerBoard = position[stp + straddler] | (inclCham * position[stp + chameleon]);
+    U64 straddlerBoard = g_pos.boards[stp + straddler] | (inclCham * g_pos.boards[stp + chameleon]);
     U64 activeStraddlerBoard = straddlerBoard & notImmInfl;
     U64 sqBoard = 1ULL << sq;
 
@@ -417,12 +421,12 @@ int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoar
 
 int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
 {
-    U64 retractorBoard = position[stp + retractor] & notImmInfl;
+    U64 retractorBoard = g_pos.boards[stp + retractor] & notImmInfl;
     int retractorSq = pop_lsb(retractorBoard);
 
     if (inclCham)
     {
-        U64 chamBoard = position[stp + chameleon] & notImmInfl;
+        U64 chamBoard = g_pos.boards[stp + chameleon] & notImmInfl;
         U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         return
@@ -437,7 +441,7 @@ int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoar
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
 {
     // check springer checks
-    U64 springerBoard = position[stp + springer] & notImmInfl;
+    U64 springerBoard = g_pos.boards[stp + springer] & notImmInfl;
     U64 springer2Board = (springerBoard - 1) & springerBoard;
 
     // springer 1
@@ -467,7 +471,7 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
 
     if (inclCham && !isSpringerCheck)
     {
-        U64 chamBoard = position[stp + chameleon] & notImmInfl;
+        U64 chamBoard = g_pos.boards[stp + chameleon] & notImmInfl;
         U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         // chameleon 1
@@ -496,10 +500,10 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
 
 int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
 {
-    U64 kingBoard = position[stp + king] & notImmInfl;
-    U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~position[stp]);
+    U64 kingBoard = g_pos.boards[stp + king] & notImmInfl;
+    U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~g_pos.boards[stp]);
 
-    U64 coordPieceBoard = position[stp + coordinator];
+    U64 coordPieceBoard = g_pos.boards[stp + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
     U64 coordBoard = 0ULL;
 
@@ -513,7 +517,7 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
     if (inclCham)
     {
-        U64 chamBoard = position[stp + chameleon] & notImmInfl;
+        U64 chamBoard = g_pos.boards[stp + chameleon] & notImmInfl;
         U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         int cham1Sq = pop_lsb(chamBoard);
@@ -544,8 +548,8 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
 int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard)
 {
-    U64 kingBoard = position[stp + king] & notImmInfl;
-    U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~position[stp]);
+    U64 kingBoard = g_pos.boards[stp + king] & notImmInfl;
+    U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~g_pos.boards[stp]);
 
     return (kingMovesBoard & (1ULL << sq)) > 0;
 }

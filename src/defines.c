@@ -1,7 +1,17 @@
 
 #include "defines.h"
 
-U64 position[16];
+// 8 squares above and 8 squares below as extra padding
+int pieceListStore[80];
+
+Position g_pos =
+{
+    .toPlay = white,
+    .notToPlay = black,
+    .materialScore = { 0 },
+    .halfmove = 0,
+    .pieceList = pieceListStore + 8
+};
 
 const char pieceFEN[] = ".PQNRUBK.pqnrubk";
 const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
@@ -17,13 +27,6 @@ const char* squareNames[] =
     "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
 };
-
-int materialScore[2] = { 0 };
-int toPlay = white;
-int notToPlay = black;
-int halfmove = 0;
-int pieceListStore[80];
-int* pieceList = pieceListStore + 8;
 
 U64 zobristHashes[ZOBRIST_HASH_COUNT];
 U64 zobristHash = 0;
@@ -64,7 +67,7 @@ void prettyPrintBoard()
                 }
 
                 // bit test
-                if (position[p] & (1ULL << s))
+                if (g_pos.boards[p] & (1ULL << s))
                 {
                     if (!isEmpty)
                     {
@@ -91,7 +94,7 @@ void prettyPrintBoard()
     // file names
     puts("     a   b   c   d   e   f   g   h");
 
-    printf("It is %s to play\n", toPlay == white ? "white": "black");
+    printf("It is %s to play\n", g_pos.toPlay == white ? "white": "black");
 
     printf("%llu\n", zobristHash);
 }
@@ -101,13 +104,13 @@ int loadFEN(const char* fen)
     // clear all boards
     for (int i = 0; i < 16; i++)
     {
-        position[i] = 0ULL;
+        g_pos.boards[i] = 0ULL;
     }
 
     // clear piece list
     for (int s = 0; s < 64; s++)
     {
-        pieceList[s] = 0;
+        g_pos.pieceList[s] = 0;
     }
 
     // clear repeat table
@@ -117,8 +120,8 @@ int loadFEN(const char* fen)
     }
 
     // clear scores
-    materialScore[0] = 0;
-    materialScore[1] = 0;
+    g_pos.materialScore[0] = 0;
+    g_pos.materialScore[1] = 0;
 
     // clear zobrist hash
     zobristHash = 0ULL;
@@ -153,15 +156,15 @@ int loadFEN(const char* fen)
 
             // add the piece to the board
             int offset = isupper(fen[i]) ? white : black;
-            position[val + offset] |= 1ULL << sq;
+            g_pos.boards[val + offset] |= 1ULL << sq;
 
             // do this on the occupancy board as well
-            position[offset] |= 1ULL << sq;
+            g_pos.boards[offset] |= 1ULL << sq;
 
             // set piece list
-            pieceList[sq] = val;
+            g_pos.pieceList[sq] = val;
 
-            materialScore[offset == black] += PSQT(val, offset, sq);
+            g_pos.materialScore[offset == black] += PSQT(val, offset, sq);
 
             // update zobrist hash
             zobristHash ^= get_zobrist_hash(sq, val, isupper(fen[i]));
@@ -183,14 +186,14 @@ int loadFEN(const char* fen)
     // determine who it is to play
     if (fen[i] == 'w')
     {
-        toPlay = white;
-        notToPlay = black;
+        g_pos.toPlay = white;
+        g_pos.notToPlay = black;
         zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
     }
     else if (fen[i] == 'b')
     {
-        toPlay = black;
-        notToPlay = white;
+        g_pos.toPlay = black;
+        g_pos.notToPlay = white;
     }
     else
     {
@@ -205,11 +208,11 @@ int loadFEN(const char* fen)
     // determine halfmove counter
     if (fen[i] == '-')
     {
-        halfmove = 0;
+        g_pos.halfmove = 0;
     }
     else if (isdigit(fen[i]))
     {
-        halfmove = 2 * (int)(fen[i] - '0');
+        g_pos.halfmove = 2 * (int)(fen[i] - '0');
     }
     else
     {
@@ -234,7 +237,7 @@ char* getFEN()
             int sq = f + r * 8;
 
             // add piece onto the board
-            if (pieceList[sq])
+            if (g_pos.pieceList[sq])
             {
                 if (empty > 0)
                 {
@@ -242,8 +245,8 @@ char* getFEN()
                     empty = 0;
                 }
 
-                char pieceChar = pieceFEN[pieceList[sq]];
-                if (position[black] & (1ULL << sq))
+                char pieceChar = pieceFEN[g_pos.pieceList[sq]];
+                if (g_pos.boards[black] & (1ULL << sq))
                 {
                     pieceChar = tolower(pieceChar);
                 }
@@ -264,7 +267,7 @@ char* getFEN()
 
     fen[index++] = ' ';
 
-    if (toPlay == white)
+    if (g_pos.toPlay == white)
     {
         fen[index++] = 'w';
     }
@@ -308,7 +311,7 @@ void printPieceList()
         {
             int s = f + r * 8;
 
-            printf("%c ", pieceFEN[pieceList[s]]);
+            printf("%c ", pieceFEN[g_pos.pieceList[s]]);
         }
 
         // next rank

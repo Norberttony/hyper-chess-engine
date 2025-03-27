@@ -74,7 +74,7 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
-    printf("info string root-eval %d\n", (toPlay == white ? 1 : -1) * evaluate());
+    printf("info string root-eval %d\n", (g_pos.toPlay == white ? 1 : -1) * evaluate());
     while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;

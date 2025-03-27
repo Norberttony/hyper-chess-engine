@@ -83,11 +83,11 @@ void printEval()
         int eval = entry->eval;
         if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
         {
-            printf("mate %+d ", (toPlay == black ? -1 : 1) * (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
+            printf("mate %+d ", (g_pos.toPlay == black ? -1 : 1) * (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
         }
         else
         {
-            printf("cp %+d", (toPlay == black ? -1 : 1) * eval);
+            printf("cp %+d", (g_pos.toPlay == black ? -1 : 1) * eval);
         }
     }
     else
