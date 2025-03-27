@@ -10,7 +10,8 @@ Position g_pos =
     .notToPlay = black,
     .materialScore = { 0 },
     .halfmove = 0,
-    .pieceList = pieceListStore + 8
+    .pieceList = pieceListStore + 8,
+    .zobristHash = 0ULL
 };
 
 const char pieceFEN[] = ".PQNRUBK.pqnrubk";
@@ -29,7 +30,6 @@ const char* squareNames[] =
 };
 
 U64 zobristHashes[ZOBRIST_HASH_COUNT];
-U64 zobristHash = 0;
 
 U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
@@ -96,7 +96,7 @@ void prettyPrintBoard()
 
     printf("It is %s to play\n", g_pos.toPlay == white ? "white": "black");
 
-    printf("%llu\n", zobristHash);
+    printf("%llu\n", g_pos.zobristHash);
 }
 
 int loadFEN(const char* fen)
@@ -124,7 +124,7 @@ int loadFEN(const char* fen)
     g_pos.materialScore[1] = 0;
 
     // clear zobrist hash
-    zobristHash = 0ULL;
+    g_pos.zobristHash = 0ULL;
 
     // interpret board string
     int i;
@@ -167,7 +167,7 @@ int loadFEN(const char* fen)
             g_pos.materialScore[offset == black] += PSQT(val, offset, sq);
 
             // update zobrist hash
-            zobristHash ^= get_zobrist_hash(sq, val, isupper(fen[i]));
+            g_pos.zobristHash ^= get_zobrist_hash(sq, val, isupper(fen[i]));
 
             // next square!
             f++;
@@ -188,7 +188,7 @@ int loadFEN(const char* fen)
     {
         g_pos.toPlay = white;
         g_pos.notToPlay = black;
-        zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
+        g_pos.zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
     }
     else if (fen[i] == 'b')
     {
@@ -336,7 +336,7 @@ int getThreefoldFlag()
     int repeats = 0;
     for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
     {
-        repeats += repeatTable[j] == zobristHash;
+        repeats += repeatTable[j] == g_pos.zobristHash;
     }
 
     return repeats >= 2;

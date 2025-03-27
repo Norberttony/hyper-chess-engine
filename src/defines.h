@@ -36,6 +36,7 @@ typedef struct Position
     int notToPlay;
     int halfmove;
     int materialScore[2];
+    U64 zobristHash;
 } Position;
 
 extern Position g_pos;
@@ -52,7 +53,6 @@ extern const char* squareNames[];
 #define ZOBRIST_HASH_COUNT (64 + 64 * 14 + 1)
 
 extern U64 zobristHashes[ZOBRIST_HASH_COUNT];
-extern U64 zobristHash;
 
 #define REPEAT_TABLE_ENTRIES 32
 extern U64 repeatTable[REPEAT_TABLE_ENTRIES];

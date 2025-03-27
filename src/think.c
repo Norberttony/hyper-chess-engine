@@ -67,7 +67,7 @@ Move startThink(void)
     stopThinking = 0;
     orderFirst = 0;
 
-    U64 myHash = zobristHash;
+    U64 myHash = g_pos.zobristHash;
 
     int totalNodesVisited = 0;
 
@@ -98,7 +98,7 @@ Move startThink(void)
 
     printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);
 
-    if (myHash != zobristHash)
+    if (myHash != g_pos.zobristHash)
     {
         puts("PANIC! HASH ERROR!");
     }

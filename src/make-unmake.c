@@ -264,10 +264,10 @@ void makeMove(Move m)
     zobristHashUpdate ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
 
     // apply zobrist hash updates
-    zobristHash ^= zobristHashUpdate;
+    g_pos.zobristHash ^= zobristHashUpdate;
 
     // add to repeat table
-    repeatTable[repeatTableIndex++] = zobristHash;
+    repeatTable[repeatTableIndex++] = g_pos.zobristHash;
     repeatTableIndex -= REPEAT_TABLE_ENTRIES * (repeatTableIndex == REPEAT_TABLE_ENTRIES);
 
     // update halfmove counter
@@ -533,13 +533,13 @@ void unmakeMove(Move m)
             break;
     }
 
-    zobristHash ^= zobristHashUpdate;
+    g_pos.zobristHash ^= zobristHashUpdate;
 }
 
 void makeNullMove()
 {
     // toggle turn on zobrist hash
-    zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
+    g_pos.zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];
 
     // toggle turn
     g_pos.toPlay = !g_pos.toPlay * 8;

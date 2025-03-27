@@ -10,17 +10,17 @@ int TT_writes = 0;
 
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
-    int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (depthEntry->depth >= myDepth && depthEntry->zobristHash == zobristHash && depthEntry->nodeType == TT_EXACT)
+    if (depthEntry->depth >= myDepth && depthEntry->zobristHash == g_pos.zobristHash && depthEntry->nodeType == TT_EXACT)
     {
         return depthEntry;
     }
-    else if (alwaysEntry->depth >= myDepth && alwaysEntry->zobristHash == zobristHash && alwaysEntry->nodeType == TT_EXACT)
+    else if (alwaysEntry->depth >= myDepth && alwaysEntry->zobristHash == g_pos.zobristHash && alwaysEntry->nodeType == TT_EXACT)
     {
         return alwaysEntry;
     }
@@ -31,18 +31,18 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 
 struct TranspositionEntry* getTranspositionTableEntry(void)
 {
-    int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (depthEntry->zobristHash == zobristHash)
+    if (depthEntry->zobristHash == g_pos.zobristHash)
     {
         TT_hits++;
         return depthEntry;
     }
-    else if (alwaysEntry->zobristHash == zobristHash)
+    else if (alwaysEntry->zobristHash == g_pos.zobristHash)
     {
         TT_hits++;
         return alwaysEntry;
@@ -60,18 +60,18 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
         return;
     }
 
-    int index = (int)(zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
 
     // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
     // TT_writes++;
 
     // always replace any entry here
-    transpositionTable[index][1] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
+    transpositionTable[index][1] = (struct TranspositionEntry){ g_pos.zobristHash, depth, eval, bestMove, nodeType }; 
 
     // only replace if the depth is better
     if (transpositionTable[index][0].depth < depth)
     {
-        transpositionTable[index][0] = (struct TranspositionEntry){ zobristHash, depth, eval, bestMove, nodeType }; 
+        transpositionTable[index][0] = (struct TranspositionEntry){ g_pos.zobristHash, depth, eval, bestMove, nodeType }; 
     }
 }
 
