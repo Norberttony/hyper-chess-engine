@@ -37,6 +37,6 @@ int checkGameOver();
 
 void askForLAN(void);
 
-void loadLAN(char*);
+void loadLAN(char* lan);
 
 #endif

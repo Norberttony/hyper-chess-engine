@@ -4,6 +4,11 @@
 #define INPUT_BUFFER 5000
 
 
+void uciOk(void);
+void parseGo(char* line);
+void parsePos(char* line);
+
+
 void uciLoop(void)
 {
     setbuf(stdin, NULL);
@@ -197,7 +202,7 @@ void parsePos(char* line)
     // determine what FEN to load
     if (!strncmp(&line[idx], "startpos", 8))
     {
-        initStartPos();
+        loadFEN(StartingFEN);
         idx += 9;
     }
     else if (!strncmp(&line[idx], "fen", 3))
@@ -225,17 +230,6 @@ void parsePos(char* line)
     {
         idx += 6;
         loadLAN(&line[idx]);
-    }
-}
-
-void initStartPos(void)
-{
-    loadFEN(StartingFEN);
-    
-    // clear repeat table
-    for (int i = 0; i < REPEAT_TABLE_ENTRIES; i++)
-    {
-        repeatTable[i] = 0;
     }
 }
 

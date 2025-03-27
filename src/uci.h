@@ -19,11 +19,10 @@
 #include "game-analysis.h"
 
 
-void initStartPos(void);
-void parsePos(char* line);
-void parseGo(char* line);
-void uciOk(void);
+// starts waiting for user input
 void uciLoop(void);
+
+// reads the input buffer to see if the engine should pause what it is doing and consider user input
 void readInput(void);
 
 #endif
