@@ -22,7 +22,7 @@ static const U64 not_a_file = 18374403900871474942ULL;
 static const U64 not_h_file =  9187201950435737471ULL;
 
 
-void populateRanksAndFiles()
+void populateRanksAndFiles(void)
 {
     for (int i = 0; i < 8; i++)
     {
@@ -82,7 +82,7 @@ U64 genDeathSquares2(int sq1, int sq2)
     return ranks[r2] & files[f1];
 }
 
-void populateDeathSquares()
+void populateDeathSquares(void)
 {
     for (int s1 = 0; s1 < 64; s1++)
     {
@@ -123,7 +123,7 @@ U64 genKingMoves(int sqIndex)
     return attacks;
 }
 
-void populateKingMoves()
+void populateKingMoves(void)
 {
     for (int s = 0; s < 64; s++)
     {
@@ -222,7 +222,7 @@ U64 genSpringerLeap(int springerSq, int enemySq)
     return 0ULL;
 }
 
-void populateSpringerLeaps()
+void populateSpringerLeaps(void)
 {
     for (int s = 0; s < 64; s++)
     {
@@ -308,7 +308,7 @@ U64 genSpringerCapture(int start, int end)
     return 0ULL;
 }
 
-void populateSpringerCaptures()
+void populateSpringerCaptures(void)
 {
     for (int s = 0; s < 64; s++)
     {
@@ -360,7 +360,7 @@ U64 genRetractorCapture(int startSq, int enemySq)
     return captures;
 }
 
-void populateRetractorCaptures()
+void populateRetractorCaptures(void)
 {
     for (int s = 0; s < 64; s++)
     {

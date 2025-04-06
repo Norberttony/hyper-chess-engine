@@ -27,6 +27,6 @@ typedef struct TestSuitePosition pos;
 
 // runs all of the positions in the test suite.
 // returns 0 on failure and 1 on success
-int runTestSuite();
+int runTestSuite(void);
 
 #endif

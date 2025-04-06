@@ -428,7 +428,7 @@ pos positions[NUM_TEST_SUITE_POSITIONS] = {
 	}
 };
 
-int runTestSuite()
+int runTestSuite(void)
 {
     int nodes = 0; // so yeah. it's not "move count." it's the number of leaf nodes. oops.
 

@@ -310,7 +310,7 @@ int isAttackingKing(void)
     return position[notToPlay + king] & attacked || isCheck || isSpringerCheck || isRetractorCheck || isStraddlerCheck;
 }
 
-int isCheckmate()
+int isCheckmate(void)
 {
     // toggle turn
     g_pos.toPlay = !g_pos.toPlay * 8;

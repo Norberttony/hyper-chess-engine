@@ -43,7 +43,7 @@ void playGame(int mySide)
     }
 }
 
-void askForFEN()
+void askForFEN(void)
 {
     // prompt user for FEN
     puts("Paste in the FEN:");
@@ -60,7 +60,7 @@ void askForFEN()
     }
 }
 
-int askForSide()
+int askForSide(void)
 {
     // prompt user for which side they will play
     puts("Which side do you want to play? (w/b)");
@@ -81,7 +81,7 @@ int askForSide()
     return sideInput == 'w' ? black : white;
 }
 
-int* askForMove()
+int* askForMove(void)
 {
     int* squares = (int*) malloc(2 * sizeof(int));
 
@@ -136,7 +136,7 @@ void analyzeGame(int depth)
     }
 }
 
-int checkGameOver()
+int checkGameOver(void)
 {
     // yeah, a bit of a bad way to check for game-ending situations. oh well...
     Move movelist[MAX_MOVES];

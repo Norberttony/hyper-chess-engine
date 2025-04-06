@@ -18,7 +18,7 @@
 #include "game-analysis.h"
 
 // initializes the move generator
-void initMoveGen();
+void initMoveGen(void);
 
 EMSCRIPTEN_KEEPALIVE
 int main(void)
@@ -49,7 +49,7 @@ void loadFENWasm(char* fen)
     loadFEN(fen);
 }
 
-void initMoveGen()
+void initMoveGen(void)
 {
     // Initialization!
     generateZobristHashes();

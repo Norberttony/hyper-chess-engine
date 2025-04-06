@@ -18,15 +18,15 @@ int rookSmallest[64];
 int bishopSmallest[64];
 
 // populates the rookMasks array
-void genRookMasks();
-void genBishopMasks();
+void genRookMasks(void);
+void genBishopMasks(void);
 
 // returns a random U64 number assuming that RAND_MAX is the largest 32 bit integer
-U64 randomU64();
+U64 randomU64(void);
 
 int testMagicNumber(int s, U64 number, int isBishop);
 
-void displayTableStats();
+void displayTableStats(void);
 
 int main()
 {
@@ -174,7 +174,7 @@ int testMagicNumber(int s, U64 number, int isBishop)
     return success;
 }
 
-void displayTableStats()
+void displayTableStats(void)
 {
     // get the smallest board index necessary
     int smallestR = MAX_BOARD_INDEX;
@@ -197,7 +197,7 @@ void displayTableStats()
     if (validR == 64)
     {
         printf("Rook table size:\n");
-        printf("%d bytes\n", (smallestR + 1) * 64 * sizeof(U64));
+        printf("%llu bytes\n", (smallestR + 1) * 64 * sizeof(U64));
     }
     else
     {
@@ -206,7 +206,7 @@ void displayTableStats()
     if (validB == 64)
     {
         printf("Bishop table size:\n");
-        printf("%d bytes\n", (smallestB + 1) * 64 * sizeof(U64));
+        printf("%llu bytes\n", (smallestB + 1) * 64 * sizeof(U64));
     }
     else
     {
@@ -231,9 +231,8 @@ void displayTableStats()
     printf("};\n");
 }
 
-void genRookMasks()
+void genRookMasks(void)
 {
-    
     for (int s = 0; s < 64; s++)
     {
         // rank and file of square
@@ -270,9 +269,8 @@ void genRookMasks()
     }
 }
 
-void genBishopMasks()
+void genBishopMasks(void)
 {
-    
     for (int s = 0; s < 64; s++)
     {
         // rank and file of square

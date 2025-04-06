@@ -9,6 +9,6 @@ void makeMove(Move);
 void unmakeMove(Move);
 
 // used to pass (or "unpass") a turn
-void makeNullMove();
+void makeNullMove(void);
 
 #endif

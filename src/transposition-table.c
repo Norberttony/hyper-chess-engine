@@ -81,7 +81,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     }
 }
 
-void printEval()
+void printEval(void)
 {
     struct TranspositionEntry* entry = getTranspositionTableEntryPV(0);
     if (entry)

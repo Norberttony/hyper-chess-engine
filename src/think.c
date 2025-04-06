@@ -30,7 +30,7 @@ int nodeOccurrence[4] = { 0 };
 
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
-void determineThinkAllowance()
+void determineThinkAllowance(void)
 {
     if (!(thinkingTime < 0 || (getCurrentTime() - thinkStart) < thinkingTime))
     {

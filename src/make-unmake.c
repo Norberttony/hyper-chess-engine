@@ -536,7 +536,7 @@ void unmakeMove(Move m)
     g_pos.zobristHash ^= zobristHashUpdate;
 }
 
-void makeNullMove()
+void makeNullMove(void)
 {
     // toggle turn on zobrist hash
     g_pos.zobristHash ^= zobristHashes[ZOBRIST_HASH_COUNT - 1];

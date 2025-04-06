@@ -153,7 +153,7 @@ static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext*
     return (myImmobilizer > 0) * myImmImm * -immDistPenalties[(perspective == 1) * 7 + -perspective * get_rank(myImmSq)];
 }
 
-int evaluate()
+int evaluate(void)
 {
     int toPlay = g_pos.toPlay;
     int notToPlay = g_pos.notToPlay;
