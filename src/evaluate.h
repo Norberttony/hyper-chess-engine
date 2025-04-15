@@ -11,6 +11,9 @@
 #define imm_dist_penalty(sq) (20 * (sq >> 3))
 
 
+extern int EVAL_DBG_PRINT;
+
+
 // greedy evaluation that counts material based on piece values
 int evaluate(void);
 

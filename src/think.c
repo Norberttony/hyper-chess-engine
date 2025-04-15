@@ -74,7 +74,11 @@ Move startThink(void)
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
+#ifdef DEBUG
+    EVAL_DBG_PRINT = 1;
     printf("info string root-eval %d\n", (g_pos.toPlay == white ? 1 : -1) * evaluate());
+    EVAL_DBG_PRINT = 0;
+#endif
     while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;

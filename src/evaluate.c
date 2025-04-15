@@ -14,6 +14,8 @@ enum
     mine, enemy
 };
 
+int EVAL_DBG_PRINT = 0;
+
 
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
@@ -74,6 +76,13 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
 
     int enemyKingSq = pop_lsb(g_pos.boards[notSide + king]);
 
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("Consider immobilized pieces from %d perspective\n", perspective);
+    }
+#endif
+
     while (myImmMaterial)
     {
         int sq = pop_lsb(myImmMaterial);
@@ -97,13 +106,29 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
                     2 * (get_file(enemyKingSq) == get_file(sq));
 
         // bonus based on how far away retractor or coordinator are to capture this piece.
-        evaluation -= (PSQT(piece, side, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
+        int captDistBonus = (PSQT(piece, side, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
+        evaluation -= captDistBonus;
 
         // flat bonus for piece being unable to move.
-        evaluation -= immBonus[piece];
+        int flatBonus = immBonus[piece];
+        evaluation -= flatBonus;
+
+#ifdef DEBUG
+        if (EVAL_DBG_PRINT)
+        {
+            printf("Piece %c: penalty of %d + %d = %d\n", pieceFEN[piece], captDistBonus, flatBonus, captDistBonus + flatBonus);
+        }
+#endif
 
         myImmMaterial &= myImmMaterial - 1;
     }
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        puts("");
+    }
+#endif
 
     return evaluation;
 }
@@ -153,7 +178,7 @@ static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext*
     return (myImmobilizer > 0) * myImmImm * -immDistPenalties[(perspective == 1) * 7 + -perspective * get_rank(myImmSq)];
 }
 
-int evaluate()
+int evaluate(void)
 {
     int toPlay = g_pos.toPlay;
     int notToPlay = g_pos.notToPlay;
@@ -196,22 +221,44 @@ int evaluate()
 
     // count mobility
     U64 totalBoard = g_pos.boards[toPlay] | g_pos.boards[notToPlay];
+    int mobilityA = 0;
+    int mobilityB = 0;
     for (int i = 2; i <= 6; i++)
     {
-        evaluation += evalMobility(&ctx, 0, i);
-        evaluation -= evalMobility(&ctx, 1, i);
+        mobilityA += evalMobility(&ctx, 0, i);
+        mobilityB += evalMobility(&ctx, 1, i);
     }
+    evaluation += mobilityA - mobilityB;
     
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
 
-    evaluation += evalImmPieces(&ctx, 0, perspective);
-    evaluation -= evalImmPieces(&ctx, 1, -perspective);
+    int immPiecesA = evalImmPieces(&ctx, 0, perspective);
+    int immPiecesB = evalImmPieces(&ctx, 1, -perspective);
+    evaluation += immPiecesA - immPiecesB;
 
-    evaluation += evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
-    evaluation -= evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
+    int immLoSA = evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
+    int immLoSB = evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
+    evaluation += immLoSA - immLoSB;
 
-    evaluation += evalImmDist(&ctx, 0, perspective);
-    evaluation -= evalImmDist(&ctx, 1, -perspective);
+    int immDistA = evalImmDist(&ctx, 0, perspective);
+    int immDistB = evalImmDist(&ctx, 1, -perspective);
+    evaluation += immDistA - immDistB;
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        int materialA = g_pos.materialScore[perspective == 1 ? 0 : 1];
+        int materialB = g_pos.materialScore[perspective == 1 ? 1 : 0];
+
+        puts("Evaluation Scores:");
+        printf("Mobility:\t\t\t%d - %d = %d\n", mobilityA, mobilityB, mobilityA - mobilityB);
+        printf("Immobilized pieces:\t\t%d - %d = %d\n", immPiecesA, immPiecesB, immPiecesA - immPiecesB);
+        printf("Immobilizer line of sights:\t%d - %d = %d\n", immLoSA, immLoSB, immLoSA - immLoSB);
+        printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
+        printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
+        puts("");
+    }
+#endif
 
     // whoever has more material MUST be winning (not necessarily but y'know)
     return evaluation + perspective * (g_pos.materialScore[0] - g_pos.materialScore[1]);
