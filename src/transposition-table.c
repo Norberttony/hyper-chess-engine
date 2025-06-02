@@ -1,7 +1,7 @@
 
 #include "transposition-table.h"
 
-struct TranspositionEntry transpositionTable[TRANSPOSITION_TABLE_ENTRIES][2];
+struct TranspositionEntry transpositionTable[TT_ENTRIES / 2][2];
 
 int TT_misses = 0;
 int TT_hits = 0;
@@ -13,9 +13,10 @@ const int TT_depthMask = 0x1FC;
 const int TT_evalSignMask = 0x200;
 const int TT_evalValueMask = 0xFFFFFC00;
 
+
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
-    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
@@ -33,10 +34,9 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
     return NULL;
 }
 
-
 struct TranspositionEntry* getTranspositionTableEntry(void)
 {
-    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
@@ -44,16 +44,16 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
     // note: this does not prevent search instability.
     if (depthEntry->zobristHash == g_pos.zobristHash)
     {
-        TT_hits++;
+        // TT_hits++;
         return depthEntry;
     }
     else if (alwaysEntry->zobristHash == g_pos.zobristHash)
     {
-        TT_hits++;
+        // TT_hits++;
         return alwaysEntry;
     }
 
-    TT_misses++;
+    // TT_misses++;
 
     return NULL;
 }
@@ -65,7 +65,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
         return;
     }
 
-    int index = (int)(g_pos.zobristHash % TRANSPOSITION_TABLE_ENTRIES);
+    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
 
     // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
     // TT_writes++;
@@ -81,7 +81,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     }
 }
 
-void printEval()
+void printEval(void)
 {
     struct TranspositionEntry* entry = getTranspositionTableEntryPV(0);
     if (entry)
@@ -111,7 +111,7 @@ void printPrincipalVariation(int depth)
         return;
     }
 
-    // get entry from transposition table
+    // get PV entry from transposition table
     struct TranspositionEntry* entry = getTranspositionTableEntryPV(depth);
 
     if (entry && entry->bestMove)

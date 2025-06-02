@@ -65,7 +65,7 @@ void uciLoop(void)
         }
         else if (!strncmp(line, "clear hash", 10))
         {
-            memset(transpositionTable, 0, sizeof(struct TranspositionEntry) * 2 * TRANSPOSITION_TABLE_ENTRIES);
+            memset(transpositionTable, 0, sizeof(transpositionTable));
         }
         else if (!strncmp(line, "readfile", 8))
         {

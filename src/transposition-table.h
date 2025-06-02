@@ -9,10 +9,12 @@
 #include <string.h>
 
 #ifdef WEB
-#define TRANSPOSITION_TABLE_ENTRIES 1349947
+#define TT_SIZE_MB 64
 #else
-#define TRANSPOSITION_TABLE_ENTRIES 26999963
+#define TT_SIZE_MB 128
 #endif
+
+#define TT_ENTRIES TT_SIZE_MB * 1000000 / sizeof(struct TranspositionEntry)
 
 #define TT_EXACT 1
 #define TT_LOWER 2
@@ -47,14 +49,19 @@ extern const int TT_evalSignMask;
 extern const int TT_evalValueMask;
 
 // [0] is replace by depth and [1] is always replace
-extern struct TranspositionEntry transpositionTable[TRANSPOSITION_TABLE_ENTRIES][2];
+extern struct TranspositionEntry transpositionTable[TT_ENTRIES / 2][2];
 
+// returns either a TT entry that contains the first move of the PV or NULL if there is no such entry
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
+
+// returns either a TT entry that contains cached data about the position's evaluation or NULL if
+// there is no such entry.
 struct TranspositionEntry* getTranspositionTableEntry(void);
+
 void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
 
-// returns the evaluation of the position based on the transposition table
-void printEval();
+// prints the evaluation of the position based on the TT
+void printEval(void);
 
 // prints the sequence of moves that is considered best play.
 void printPrincipalVariation(int depth);
