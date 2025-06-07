@@ -20,6 +20,8 @@ int cutoffThird = 0;
 int cutoffAvg = 0;
 int cutoffRemaining = 0;
 int cutoffRemainingAvg = 0;
+int pvsResearch[MAX_DEPTH] = { 0 };
+int pvsNoResearch[MAX_DEPTH] = { 0 };
 #endif
 
 Move currBestMove = 0;
@@ -84,7 +86,7 @@ Move startThink(void)
         nodesVisited = 0;
 
         currDepth = depth;
-        think(depth, INT_MIN + 1, INT_MAX - 1);
+        think(depth, INT_MIN + 1, INT_MAX - 1, 1);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
@@ -108,6 +110,11 @@ Move startThink(void)
     }
 
 #ifdef DEBUG
+    puts("Node occurrences");
+    printf("Upper: %d\n", nodeOccurrence[TT_UPPER]);
+    printf("Lower: %d\n", nodeOccurrence[TT_LOWER]);
+    printf("Exact: %d\n", nodeOccurrence[TT_EXACT]);
+
     int cutoffs = nodeOccurrence[TT_UPPER];
     printf("# of cut-offs: %d\n", cutoffs);
     printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
@@ -116,12 +123,18 @@ Move startThink(void)
     printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
     printf("Cut-off in remaining moves (after hash, killers, captures): %d (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
     printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
+
+    puts("PVS Researches...");
+    for (int i = 0; i < depth; i++)
+    {
+        printf("Depth %d - %d minus %d\n", i, pvsResearch[i], pvsNoResearch[i]);
+    }
 #endif
 
     return currBestMove;
 }
 
-int think(int depth, int alpha, int beta)
+int think(int depth, int alpha, int beta, int isPv)
 {
     nodesVisited++;
 
@@ -228,7 +241,37 @@ int think(int depth, int alpha, int beta)
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha);
+            // PVS search. Since we really trust our first move (based on move ordering), we'll
+            // search the rest of the moves with a null window around alpha which will produce
+            // more cut-offs.
+            // The trade-off is that we have to research with a full window if the null window is
+            // broken.
+            // With some testing it turns out that the first move at lower depths (lower down the
+            // tree) cannot be trusted!
+            if ((!isPv || i > 0) && depth > 1)
+            {
+                eval = -think(depth - 1, -alpha - 1, -alpha, 0);
+                if (eval > alpha && eval < beta)
+                {
+#ifdef DEBUG
+                    pvsResearch[depth]++;
+#endif
+                    eval = -think(depth - 1, -beta, -alpha, 0);
+                }
+#ifdef DEBUG
+                else
+                {
+                    pvsNoResearch[depth]++;
+                }
+#endif
+            }
+            else
+            {
+#ifdef DEBUG
+                pvsResearch[depth]++;
+#endif
+                eval = -think(depth - 1, -beta, -alpha, isPv);
+            }
         }
         unmakeMove(m);
 

@@ -20,7 +20,7 @@ extern int maxDepth;
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.
 // returns the evaluation of the position.
-int think(int depth, int alpha, int beta);
+int think(int depth, int alpha, int beta, int isPv);
 
 // performs a min-max alpha-beta search up to the given depth and returns the best move.
 Move getBestMove(int depth);
