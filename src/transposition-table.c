@@ -1,7 +1,7 @@
 
 #include "transposition-table.h"
 
-struct TranspositionEntry transpositionTable[TT_ENTRIES / 2][2];
+struct TranspositionEntry transpositionTable[TT_ENTRIES / 2][2] = { 0 };
 
 int TT_misses = 0;
 int TT_hits = 0;

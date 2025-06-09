@@ -7,6 +7,7 @@ int orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
 int nodesVisited = 0;
+int qNodesVisited = 0;
 
 int thinkingTime = -1;
 int thinkStart = -1;
@@ -70,6 +71,7 @@ Move startThink(void)
     U64 myHash = g_pos.zobristHash;
 
     int totalNodesVisited = 0;
+    int totalQNodesVisited = 0;
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
@@ -82,6 +84,7 @@ Move startThink(void)
     while (!stopThinking && depth <= maxDepth)
     {
         nodesVisited = 0;
+        qNodesVisited = 0;
 
         currDepth = depth;
         think(depth, INT_MIN + 1, INT_MAX - 1);
@@ -91,6 +94,7 @@ Move startThink(void)
         orderFirst = currBestMove;
 
         totalNodesVisited += nodesVisited;
+        totalQNodesVisited += qNodesVisited;
 
         printf("info score ");
         printEval();
@@ -109,6 +113,8 @@ Move startThink(void)
 
 #ifdef DEBUG
     int cutoffs = nodeOccurrence[TT_UPPER];
+    printf("Total nodes: %d\n", totalNodesVisited);
+    printf("Quiescent search nodes: %d\n", totalQNodesVisited);
     printf("# of cut-offs: %d\n", cutoffs);
     printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
     printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
@@ -128,6 +134,16 @@ int think(int depth, int alpha, int beta)
     if ((nodesVisited & 2047) == 0)
     {
         determineThinkAllowance();
+    }
+
+    // check for three fold repetition and checkmate
+    if (isCheckmate())
+    {
+        return -(MAX_SCORE - (currDepth - depth) - 1);
+    }
+    else if (currDepth != depth && getThreefoldFlag())
+    {
+        return 0;
     }
 
     int nodeType = TT_LOWER;
@@ -180,9 +196,10 @@ int think(int depth, int alpha, int beta)
     Move movelist[MAX_MOVES];
     int size = generateMoves((Move*)movelist, 0);
 
+    // check for stalemate
     if (size == 0)
     {
-        return 0; // no moves! don't try sorting
+        return 0;
     }
 
 #ifdef DEBUG
@@ -213,23 +230,8 @@ int think(int depth, int alpha, int beta)
         }
         hasLegalMoves = 1;
 
-        int eval;
+        int eval = -think(depth - 1, -beta, -alpha);
 
-        // check for three fold repetition
-        int threefold = getThreefoldFlag();
-
-        if (isCheckmate())
-        {
-            eval = MAX_SCORE - (currDepth - depth) - 1;
-        }
-        else if (threefold)
-        {
-            eval = 0;
-        }
-        else
-        {
-            eval = -think(depth - 1, -beta, -alpha);
-        }
         unmakeMove(m);
 
         // make sure we are still allowed to think.
@@ -314,7 +316,9 @@ int think(int depth, int alpha, int beta)
         return 0;
     }
 
+#ifdef DEBUG
     nodeOccurrence[nodeType]++;
+#endif
 
     // save this entry in the transposition table
 #ifdef USE_TRANSPOSITION_TABLE
@@ -329,6 +333,9 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 {
     // leaf node is ignored in count of qNodes visited
     nodesVisited += !accessTT;
+#ifdef DEBUG
+    qNodesVisited += !accessTT;
+#endif
     
     if ((nodesVisited & 2047) == 0)
     {
