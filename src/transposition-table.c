@@ -1,7 +1,7 @@
 
 #include "transposition-table.h"
 
-struct TranspositionEntry transpositionTable[TT_ENTRIES / 2][2] = { 0 };
+struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][2] = { 0 };
 
 int TT_misses = 0;
 int TT_hits = 0;
@@ -13,10 +13,13 @@ const int TT_depthMask = 0x1FC;
 const int TT_evalSignMask = 0x200;
 const int TT_evalValueMask = 0xFFFFFC00;
 
+// by default set the TT size to 32MB
+int TT_entries = TT_GET_NUMBER_OF_ENTRIES(32);
+
 
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
-    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
+    int index = (int)(g_pos.zobristHash % TT_entries);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
@@ -36,7 +39,7 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 
 struct TranspositionEntry* getTranspositionTableEntry(void)
 {
-    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
+    int index = (int)(g_pos.zobristHash % TT_entries);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
@@ -65,7 +68,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
         return;
     }
 
-    int index = (int)(g_pos.zobristHash % (TT_ENTRIES / 2));
+    int index = (int)(g_pos.zobristHash % TT_entries);
 
     // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
     // TT_writes++;
@@ -123,4 +126,21 @@ void printPrincipalVariation(int depth)
         printPrincipalVariation(depth - 1);
         unmakeMove(entry->bestMove);
     }
+}
+
+#ifdef WEB
+// web version might want to set TT size.
+EMSCRIPTEN_KEEPALIVE
+#endif
+void setTranspositionTableSize(int mb)
+{
+    if (mb > MAX_TT_SIZE_MB)
+    {
+        mb = MAX_TT_SIZE_MB;
+    }
+    else if (mb < 1)
+    {
+        mb = 1;
+    }
+    TT_entries = TT_GET_NUMBER_OF_ENTRIES(mb);
 }
