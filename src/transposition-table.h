@@ -14,7 +14,7 @@
 #define TT_SIZE_MB 128
 #endif
 
-#define TT_ENTRIES TT_SIZE_MB * 1000000 / sizeof(struct TranspositionEntry)
+#define TT_ENTRIES (TT_SIZE_MB * 1000000 / sizeof(struct TranspositionEntry))
 
 #define TT_EXACT 1
 #define TT_LOWER 2

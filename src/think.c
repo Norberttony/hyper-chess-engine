@@ -14,6 +14,10 @@ int thinkStart = -1;
 int stopThinking = 0;
 int currDepth = 0;
 
+// search flags
+const uint_fast8_t IS_PV_FLAG = 0x1;
+const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
+
 #ifdef DEBUG
 int cutoffFirst = 0;
 int cutoffSecond = 0;
@@ -87,7 +91,7 @@ Move startThink(void)
         qNodesVisited = 0;
 
         currDepth = depth;
-        think(depth, INT_MIN + 1, INT_MAX - 1);
+        think(depth, INT_MIN + 1, INT_MAX - 1, IS_PV_FLAG);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
@@ -127,7 +131,7 @@ Move startThink(void)
     return currBestMove;
 }
 
-int think(int depth, int alpha, int beta)
+int think(int depth, int alpha, int beta, uint_fast8_t flags)
 {
     nodesVisited++;
 
@@ -139,7 +143,7 @@ int think(int depth, int alpha, int beta)
     // check for three fold repetition and checkmate
     if (isCheckmate())
     {
-        return -(MAX_SCORE - (currDepth - depth) - 1);
+        return -(MAX_SCORE - (currDepth - depth));
     }
     else if (currDepth != depth && getThreefoldFlag())
     {
@@ -148,12 +152,14 @@ int think(int depth, int alpha, int beta)
 
     int nodeType = TT_LOWER;
 
+    int isNullMovePruning = flags & IS_NULL_MOVE_PRUNING_FLAG;
+
     int isFromTT = 0;
 
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
-    if (currDepth != depth && depth >= TT_MIN_DEPTH)
+    if (!isNullMovePruning && currDepth != depth && depth >= TT_MIN_DEPTH)
     {
         struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
@@ -193,6 +199,26 @@ int think(int depth, int alpha, int beta)
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
+    // before generating moves, give the opponent a free move.
+    // If we exceed beta, this would mean that my position is so good that the opponent's free move
+    // didn't really help them and we can hit a beta cut off.
+    int nullDepth = depth - 1 - NULL_MOVE_R;
+    if (!isNullMovePruning && nullDepth >= 0)
+    {
+        makeNullMove();
+        int isInCheck = isAttackingKing();
+        if (!isInCheck)
+        {
+            int nullEval = -think(nullDepth, -beta, -beta + 1, flags | IS_NULL_MOVE_PRUNING_FLAG);
+            if (nullEval >= beta)
+            {
+                makeNullMove();
+                return beta;
+            }
+        }
+        makeNullMove();
+    }
+
     Move movelist[MAX_MOVES];
     int size = generateMoves((Move*)movelist, 0);
 
@@ -230,7 +256,7 @@ int think(int depth, int alpha, int beta)
         }
         hasLegalMoves = 1;
 
-        int eval = -think(depth - 1, -beta, -alpha);
+        int eval = -think(depth - 1, -beta, -alpha, flags);
 
         unmakeMove(m);
 
@@ -247,7 +273,10 @@ int think(int depth, int alpha, int beta)
         {
             // store the move that caused the cut off
 #ifdef USE_TRANSPOSITION_TABLE
-            writeToTranspositionTable(depth, beta, m, TT_UPPER);
+            if (!isNullMovePruning)
+            {
+                writeToTranspositionTable(depth, beta, m, TT_UPPER);
+            }
 #endif
 
 #ifdef DEBUG
@@ -298,6 +327,7 @@ int think(int depth, int alpha, int beta)
             nodeType = TT_EXACT;
             alpha = eval;
             bestMove = m;
+            flags |= IS_PV_FLAG;
 
             // set current best move in search only if this is the root node.
             if (depth == currDepth)
@@ -322,7 +352,10 @@ int think(int depth, int alpha, int beta)
 
     // save this entry in the transposition table
 #ifdef USE_TRANSPOSITION_TABLE
-    writeToTranspositionTable(depth, alpha, bestMove, nodeType);
+    if (!isNullMovePruning)
+    {
+        writeToTranspositionTable(depth, alpha, bestMove, nodeType);
+    }
 #endif
 
     // return best evaluation

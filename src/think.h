@@ -10,6 +10,9 @@
 
 #define USE_TRANSPOSITION_TABLE
 
+// the amount of moves to reduce
+#define NULL_MOVE_R 3
+
 
 extern int thinkingTime;
 extern int thinkStart;
@@ -20,7 +23,7 @@ extern int maxDepth;
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.
 // returns the evaluation of the position.
-int think(int depth, int alpha, int beta);
+int think(int depth, int alpha, int beta, uint_fast8_t flags);
 
 // performs a min-max alpha-beta search up to the given depth and returns the best move.
 Move getBestMove(int depth);
