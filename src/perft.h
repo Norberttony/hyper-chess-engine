@@ -20,9 +20,9 @@ struct MoveCounter countMoves(int depth);
 struct MoveCounter divide(int depth);
 
 // this is insanely temporary. for testing/debugging purposes.
-int isMoveLegal(Move);
+int isMoveLegal(Move move);
 
-int countCaptures(Move);
+int countCaptures(Move move);
 
 int chooseMove(int startSq, int endSq);
 
@@ -34,7 +34,7 @@ int chooseMoveBlind(int startSq, int endSq);
 int isAttackingKing(void);
 
 // just played a move. is it checkmate?
-int isCheckmate();
+int isCheckmate(void);
 
 // returns the piece type if the square is controlled by the side to play, and 0 if it is not.
 int isSquareControlled(int stp, int sq, int pieceType);

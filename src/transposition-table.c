@@ -128,10 +128,6 @@ void printPrincipalVariation(int depth)
     }
 }
 
-#ifdef WEB
-// web version might want to set TT size.
-EMSCRIPTEN_KEEPALIVE
-#endif
 void setTranspositionTableSize(int mb)
 {
     if (mb > MAX_TT_SIZE_MB)

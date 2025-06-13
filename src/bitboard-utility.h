@@ -34,6 +34,6 @@ enum
 
 void printBitboard(U64 bitboard);
 
-U64 randomU64();
+U64 randomU64(void);
 
 #endif

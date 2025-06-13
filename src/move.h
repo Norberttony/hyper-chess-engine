@@ -67,7 +67,7 @@ extern const U64 straddlerBounds[];
 
 // pass in pointer to array, which is then populated with the pseudo-legal moves.
 // returns the number of moves
-int generateMoves(Move*, int capturesOnly);
+int generateMoves(Move* list, int capturesOnly);
 
 int generateStraddlerMoves(int sq, U64 moves, Move* movelist);
 
@@ -88,11 +88,11 @@ int generateRetractorMoves(int sq, U64 moves, Move* movelist);
 
 int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnly);
 
-int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64, U64, U64, U64, int capturesOnly);
+int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straUp, U64 straLeft, U64 straRight, U64 straDown, int capturesOnly);
 int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int capturesOnly);
 int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist);
 
-void printMove(Move);
-void prettyPrintMove(Move);
+void printMove(Move move);
+void prettyPrintMove(Move move);
 
 #endif
