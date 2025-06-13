@@ -24,37 +24,37 @@ extern U64 retractorCaptures[64][64];
 
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
-void populateRanksAndFiles();
+void populateRanksAndFiles(void);
 
 // sq1 and sq2 are locations of king/coordinator, doesn't matter which is which.
 U64 genDeathSquares1(int sq1, int sq2);
 U64 genDeathSquares2(int sq1, int sq2);
 
 // populates deathSquares lookup table
-void populateDeathSquares();
+void populateDeathSquares(void);
 
 // generates moves for a king
 U64 genKingMoves(int sqIndex);
 
 // populates king move lookup table
-void populateKingMoves();
+void populateKingMoves(void);
 
 // generates the valid leap given a springer and an enemy piece (springerLeap)
 U64 genSpringerLeap(int springerSq, int enemySq);
 
 // populates springer leap lookup table
-void populateSpringerLeaps();
+void populateSpringerLeaps(void);
 
 // generates valid capture given a springer and an enemy piece (springerCapture)
 U64 genSpringerCapture(int startSq, int endSq);
 
 // populates springer capture lookup table
-void populateSpringerCaptures();
+void populateSpringerCaptures(void);
 
 // generates valid capture given a retractor and an enemy piece (retractorCapture)
 U64 genRetractorCapture(int startSq, int enemySq);
 
 // populates retractor capture lookup table
-void populateRetractorCaptures();
+void populateRetractorCaptures(void);
 
 #endif

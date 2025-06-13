@@ -35,7 +35,7 @@ int nodeOccurrence[4] = { 0 };
 
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
-void determineThinkAllowance()
+void determineThinkAllowance(void)
 {
     if (!(thinkingTime < 0 || (getCurrentTime() - thinkStart) < thinkingTime))
     {
@@ -75,7 +75,9 @@ Move startThink(void)
     U64 myHash = g_pos.zobristHash;
 
     int totalNodesVisited = 0;
+#ifdef DEBUG
     int totalQNodesVisited = 0;
+#endif
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
@@ -98,7 +100,9 @@ Move startThink(void)
         orderFirst = currBestMove;
 
         totalNodesVisited += nodesVisited;
+#ifdef DEBUG
         totalQNodesVisited += qNodesVisited;
+#endif
 
         printf("info score ");
         printEval();

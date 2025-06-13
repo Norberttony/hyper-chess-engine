@@ -96,6 +96,32 @@ void uciLoop(void)
         {
             prettyPrintBoard();
         }
+        else if (!strncmp(line, "setoption ", 10))
+        {
+            // set line to all lowercase and remove any repeated spaces
+            char cleaned[INPUT_BUFFER];
+            int j = 0;
+            char prev = 'a';
+            for (int i = 0; ; i++)
+            {
+                if (line[i] == ' ' && prev == ' ')
+                {
+                    continue;
+                }
+                cleaned[j++] = tolower(line[i]);
+                if (line[i] == '\0')
+                {
+                    break;
+                }
+            }
+
+            // read the name, and based on that, the value.
+            if (!strncmp(cleaned + 10, "name hash value ", 16))
+            {
+                int mb = atoi(cleaned + 26);
+                setTranspositionTableSize(mb);
+            }
+        }
         if (stopThinking == -1)
         {
             break;
@@ -112,6 +138,7 @@ void uciOk(void)
 {
     puts("id name Hyper Active");
     puts("id author Norbert Krajewski");
+    printf("option name Hash type spin min 1 max %d\n", MAX_TT_SIZE_MB);
     puts("uciok");
 }
 

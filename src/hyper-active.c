@@ -18,7 +18,7 @@
 #include "uci.h"
 
 // initializes the move generator
-void initMoveGen();
+void initMoveGen(void);
 
 
 int main(void)
@@ -36,7 +36,7 @@ int main(void)
     return 0;
 }
 
-void initMoveGen()
+void initMoveGen(void)
 {
     // Initialization!
     generateZobristHashes();

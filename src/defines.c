@@ -35,12 +35,12 @@ U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
 
 
-void printBoardLine()
+void printBoardLine(void)
 {
     puts("   +---+---+---+---+---+---+---+---+");
 }
 
-void prettyPrintBoard()
+void prettyPrintBoard(void)
 {
     printBoardLine();
     
@@ -224,7 +224,7 @@ int loadFEN(const char* fen)
     return 1;
 }
 
-char* getFEN()
+char* getFEN(void)
 {
     char* fen = (char*)malloc(sizeof(char) * 2000);
     int index = 0;
@@ -301,7 +301,7 @@ int convertFENToValue(const char v)
     return 0;
 }
 
-void printPieceList()
+void printPieceList(void)
 {
     puts("Piece list:");
     for (int r = 0; r < 8; r++)
@@ -322,7 +322,7 @@ void printPieceList()
     puts("    a b c d e f g h");
 }
 
-void generateZobristHashes()
+void generateZobristHashes(void)
 {
     srand(5465875);
     for (int i = 0; i < ZOBRIST_HASH_COUNT; i++)
@@ -331,7 +331,7 @@ void generateZobristHashes()
     }
 }
 
-int getThreefoldFlag()
+int getThreefoldFlag(void)
 {
     int repeats = 0;
     for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)

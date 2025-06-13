@@ -65,7 +65,7 @@ extern int repeatTableIndex;
 
 
 // prints all positions onto one board with FEN symbols
-void prettyPrintBoard();
+void prettyPrintBoard(void);
 
 // expects fen to be three space-separated items:
 // - the FEN of the position
@@ -76,17 +76,17 @@ void prettyPrintBoard();
 int loadFEN(const char* fen);
 
 // returns the FEN
-char* getFEN();
+char* getFEN(void);
 
 // converts the given piece FEN to its corresponding value
 int convertFENToValue(const char v);
 
-void printPieceList();
+void printPieceList(void);
 
 // generates zobrist hashes
-void generateZobristHashes();
+void generateZobristHashes(void);
 
 // returns 1 if the threefold flag is activated and 0 otherwise
-int getThreefoldFlag();
+int getThreefoldFlag(void);
 
 #endif

@@ -28,7 +28,7 @@ void printBitboard(U64 bitboard)
     printf("%llu\n\n", bitboard);
 }
 
-U64 randomU64()
+U64 randomU64(void)
 {
     return ((U64)(rand() & 0xFFFF) << 48) | ((U64)(rand() & 0xFFFF) << 32) | ((U64)(rand() & 0xFFFF) << 16) | (U64)(rand() & 0xFFFF);
 }
