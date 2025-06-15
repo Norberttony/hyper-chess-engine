@@ -207,12 +207,16 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them and we can hit a beta cut off.
     int nullDepth = depth - 1 - NULL_MOVE_R;
-    if (!isNullMovePruning && nullDepth >= 0)
+    if (!isNullMovePruning)
     {
         makeNullMove();
         int isInCheck = isAttackingKing();
         if (!isInCheck)
         {
+            if (nullDepth < 0)
+            {
+                nullDepth = 0;
+            }
             int nullEval = -think(nullDepth, -beta, -beta + 1, flags | IS_NULL_MOVE_PRUNING_FLAG);
             if (nullEval >= beta)
             {
