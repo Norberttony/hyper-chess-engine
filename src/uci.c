@@ -302,7 +302,12 @@ void readInput(void)
 #endif
 #ifdef WEB
     // Allow any browser events to catch up and handle I/O
-    emscripten_sleep(100);
+    static int emscriptenSleepCounts = 0;
+    if (emscriptenSleepCounts++ >= 1000)
+    {
+        emscripten_sleep(1);
+        emscriptenSleepCounts = 0;
+    }
 #endif
 }
 

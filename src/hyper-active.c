@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef WEB
+#include <emscripten.h>
+#endif
 
 // move generation
 #include "bitboard-utility.h"
@@ -19,6 +22,9 @@
 void initMoveGen(void);
 
 
+#ifdef WEB
+EMSCRIPTEN_KEEPALIVE
+#endif
 int main(void)
 {
     initMoveGen();
