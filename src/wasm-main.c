@@ -14,6 +14,8 @@
 #include "move.h"
 #include "perft.h"
 #include "test-suite.h"
+#include "think.h"
+#include "transposition-table.h"
 
 
 // initializes the move generator
