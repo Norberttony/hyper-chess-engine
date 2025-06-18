@@ -16,6 +16,31 @@ enum
 
 int EVAL_DBG_PRINT = 0;
 
+// Q weakness: sq1 sq2 sq3
+// R weakness: rnk kng
+// N weakness: ln1 ln2 ln3 ln4
+// P weakness: ln1 ln2 blocked?
+// K weakness: none for now lol
+// B weakness: none for now lol
+// TOTAL PENALTY:
+
+static inline __attribute__((always_inline)) int evalQWeakness(struct EvalContext *ctx, int reverseSide, int piece, int sq)
+{
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
+    int notSide = !side * 8;
+
+    // there is no Q weakness without a Q
+    if (!g_pos.boards[notSide + retractor])
+    {
+        return 0;
+    }
+
+    int mineValue = (mine + reverseSide) & 0x1;
+    int enemyValue = (enemy + reverseSide) & 0x1;
+
+    // fetch the 3 forward mobilized squares of the piece
+    // determine penalty based on count
+}
 
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
@@ -88,6 +113,8 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
         int sq = pop_lsb(myImmMaterial);
         int piece = g_pos.pieceList[sq];
 
+        int qWeakness = evalQWeakness(ctx, reverseSide, piece, sq);
+
         // finds three forward squares of piece, and determines if they are on the opponent's side of the territory.
         // The first three forward squares are most likely to be in the opponent's territory, AND are most vulnerable to a retractor.
         int qRank = get_rank(sq) - perspective;
@@ -141,8 +168,8 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     int myImmImm = ctx->immImm[mineValue];
 
     // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
-    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
+    int testUpDn = (myImmobilizer & ranks[0] | myImmobilizer & ranks[7]) > 0;
+    int testLtRt = (myImmobilizer & files[7] | myImmobilizer & files[0]) > 0;
     int onlyTest = testUpDn - testLtRt;
 
     // count lines of sight for the immobilizer
