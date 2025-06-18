@@ -12,7 +12,7 @@ all:
 	./$(MAIN_NAME)
 
 web:
-	emcc $(CFLAGS) src/wasm-main.c $(MAIN_SRCS) -DWEB -o bin/hyper-active.js -s NO_EXIT_RUNTIME=1 -s EXPORTED_RUNTIME_METHODS=[ccall]
+	emcc $(CFLAGS) src/wasm-main.c $(MAIN_SRCS) -DWEB -o bin/hyper-active.js -s NO_EXIT_RUNTIME=1 -s ASYNCIFY=1 -s EXPORTED_RUNTIME_METHODS=[ccall]
 
 debug:
 	$(CC) $(CFLAGS) -DDEBUG src/hyper-active.c $(MAIN_SRCS) -g -o $(MAIN_NAME)

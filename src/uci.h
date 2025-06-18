@@ -13,6 +13,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#ifdef WEB
+#include <emscripten.h>
+#endif
 
 #include "think.h"
 #include "defines.h"

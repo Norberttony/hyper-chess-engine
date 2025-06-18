@@ -22,6 +22,12 @@ void uciLoop(void)
     while (1)
     {
         fflush(stdout);
+
+#ifdef WEB
+        // Allow browser to catch up
+        emscripten_sleep(100);
+#endif
+
         // according to UCI, every command must end with a line break.
         if (!fgets(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
         {
@@ -293,6 +299,10 @@ void readInput(void)
             }
         }
     }
+#endif
+#ifdef WEB
+    // Allow any browser events to catch up and handle I/O
+    emscripten_sleep(100);
 #endif
 }
 
