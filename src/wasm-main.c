@@ -15,7 +15,6 @@
 #include "perft.h"
 #include "test-suite.h"
 
-#include "game-analysis.h"
 
 // initializes the move generator
 void initMoveGen(void);

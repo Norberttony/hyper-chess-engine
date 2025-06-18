@@ -48,5 +48,7 @@ The search also makes use of transposition tables with 64-bit unsigned integer Z
 
 Zobrist hashes stored in a circular buffer are also used for identifying when threefold repetitions occur.
 
+The engine has an implementation of Null Move Pruning (NMP). During search, the engine gives the opponent an extra move at reduced depth and a null window search. If our position is so good that the search exceeds beta anyway, then we can say that we've achieved a beta cut-off. It should be noted that NMP should not be done when we are currently in check (we can't pass our turn) or we are in zugswang (where we would actually prefer to pass our turn to keep our advantage but the rules don't allow it). Currently, the implementation does not have any zugswang checks, as there are no promotion rules in Hyper Chess.
+
 ### Evaluation
-Using bitwise manipulation on bitboards provides a quick and easy way of extracting features out of the position. For instance, the engine identifies immobilized pieces using `kingMoves\[immSq\] & position[opposingSide]`. The engine also makes use of incremental evaluation techniques, such as maintaining a material and piece square table value instead of recalculating it every time.
+Using bitwise manipulation on bitboards provides a quick and easy way of extracting features out of the position. For instance, the engine identifies immobilized pieces using `kingMoves[immSq] & position[opposingSide]`. The engine also makes use of incremental evaluation techniques, such as maintaining a material and piece square table value instead of recalculating it every time.

@@ -13,8 +13,6 @@
 #include "move.h"
 #include "perft.h"
 #include "test-suite.h"
-
-#include "game-analysis.h"
 #include "uci.h"
 
 // initializes the move generator

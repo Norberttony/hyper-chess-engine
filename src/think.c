@@ -197,7 +197,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        return thinkCaptures(alpha, beta, 1);
+        return thinkCaptures(alpha, beta, !isNullMovePruning);
     }
 
     orderFirstAttempts += isFromTT;

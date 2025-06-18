@@ -295,3 +295,21 @@ void readInput(void)
     }
 #endif
 }
+
+void loadLAN(char* str)
+{
+    for (int i = 0; str[i] != '\0' && str[i + 1] != '\0'; i += 5)
+    {
+        // get coordinates of from square and to square
+        int fromF = str[i] - 'a';
+        int fromR = 7 - (str[i + 1] - '1');
+
+        int toF = str[i + 2] - 'a';
+        int toR = 7 - (str[i + 3] - '1');
+
+        int fromSq = fromR * 8 + fromF;
+        int toSq = toR * 8 + toF;
+
+        chooseMove(fromSq, toSq);
+    }
+}

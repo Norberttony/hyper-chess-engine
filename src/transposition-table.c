@@ -92,11 +92,11 @@ void printEval(void)
         int eval = TT_getEval(entry->flags);
         if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
         {
-            printf("mate %+d ", (g_pos.toPlay == black ? -1 : 1) * (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
+            printf("mate %+d ", (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
         }
         else
         {
-            printf("cp %+d", (g_pos.toPlay == black ? -1 : 1) * eval);
+            printf("cp %+d", eval);
         }
     }
     else
