@@ -1,7 +1,6 @@
 #ifndef UTILS_HEADER
 #define UTILS_HEADER
 
-// WEB gets no libraries
 #ifndef WEB
 
 // _WIN32 needs different libraries than Unix
@@ -14,6 +13,10 @@
 #include "unistd.h"
 #include "string.h"
 #endif
+
+#else
+// web libraries
+#include <emscripten.h>
 
 #endif
 

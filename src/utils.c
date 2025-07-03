@@ -23,9 +23,24 @@ int getCurrentTime(void)
 // Modified the windows version to only listen to keyboard down events.
 int inputIsWaiting(void)
 {
-    // temporary solution, currently WEB does not search infinitely
 #ifdef WEB
-    return 0;
+    // since this emscripten code is significantly slower than the windows/linux build, there's an
+    // extra delay here.
+    static int web_additional_delay = 0;
+    if (++web_additional_delay < 100)
+    {
+        return 0;
+    }
+    web_additional_delay = 0;
+
+    // allow browser to catch up
+    emscripten_sleep(1);
+
+    // check if browser added any new inputs
+    int v = EM_ASM_INT({
+        return channel.input != "" ? 1 : 0;
+    });
+    return v;
 #else
 
 #ifndef _WIN32

@@ -29,6 +29,21 @@ void uciLoop(void)
 #endif
 
         // according to UCI, every command must end with a line break.
+#ifdef WEB
+        char* toCopy = (char*)EM_ASM_PTR({
+            return channel.C_readline();
+        });
+        if (toCopy[0] == '\n')
+        {
+            free(toCopy);
+            continue;
+        }
+        for (int i = 0; i == 0 || toCopy[i - 1] != '\0'; i++)
+        {
+            line[i] = toCopy[i];
+        }
+        free(toCopy);
+#else
         if (!fgets(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
         {
             if (inputFile != stdin)
@@ -38,6 +53,7 @@ void uciLoop(void)
             }
             continue;
         }
+#endif
 
         if (inputFile != stdin)
         {
@@ -301,12 +317,17 @@ void readInput(void)
     }
 #endif
 #ifdef WEB
-    // Allow any browser events to catch up and handle I/O
-    static int emscriptenSleepCounts = 0;
-    if (emscriptenSleepCounts++ >= 1000)
+    if (inputIsWaiting())
     {
-        emscripten_sleep(1);
-        emscriptenSleepCounts = 0;
+        int stop = EM_ASM_INT({
+            const shouldStop = channel.input.startsWith("stop\n");
+            channel.dropline();
+            return shouldStop ? 1 : 0;
+        });
+        if (stop)
+        {
+            stopThinking = 1;
+        }
     }
 #endif
 }
