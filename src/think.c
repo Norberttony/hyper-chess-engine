@@ -14,6 +14,13 @@ int thinkStart = -1;
 int stopThinking = 0;
 int currDepth = 0;
 
+// The aspiration window half sizes to try before doing the full window search.
+// Ensure that this array always ends in MAX_SCORE
+int aspirWindowHSizes[] =
+{
+    100, 200, 400, 800, 1600, MAX_SCORE
+};
+
 // search flags
 const uint_fast8_t IS_PV_FLAG = 0x1;
 const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
@@ -79,6 +86,12 @@ Move startThink(void)
     int totalQNodesVisited = 0;
 #endif
 
+    // aspiration window index
+    int aIndex = 0;
+    int bIndex = 0;
+    int alpha = -MAX_SCORE;
+    int beta = MAX_SCORE;
+
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
     int depth = 0;
@@ -93,7 +106,36 @@ Move startThink(void)
         qNodesVisited = 0;
 
         currDepth = depth;
-        think(depth, INT_MIN + 1, INT_MAX - 1, IS_PV_FLAG);
+        printf("(%d, %d)\n", alpha, beta);
+        int eval = think(depth, alpha, beta, IS_PV_FLAG);
+
+        // the score broke out of the window and we have to search again with a wider window.
+        if (eval >= beta)
+        {
+            int winSize = aspirWindowHSizes[++bIndex];
+            if (winSize == MAX_SCORE)
+            {
+                beta = MAX_SCORE;
+            }
+            else
+            {
+                beta += winSize - aspirWindowHSizes[bIndex - 1];
+            }
+            continue;
+        }
+        else if (eval <= alpha)
+        {
+            int winSize = aspirWindowHSizes[++aIndex];
+            if (winSize == MAX_SCORE)
+            {
+                alpha = -MAX_SCORE;
+            }
+            else
+            {
+                alpha -= winSize - aspirWindowHSizes[aIndex - 1];
+            }
+            continue;
+        }
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
@@ -103,6 +145,20 @@ Move startThink(void)
 #ifdef DEBUG
         totalQNodesVisited += qNodesVisited;
 #endif
+
+        if (depth > 4)
+        {
+            int center = eval;
+            // slight side-to-move bonus
+            if (depth % 2 == 1)
+            {
+                center -= 8;
+            }
+            aIndex = 0;
+            bIndex = 0;
+            alpha = center - aspirWindowHSizes[aIndex];
+            beta = center + aspirWindowHSizes[bIndex];
+        }
 
         printf("info score ");
         printEval();
@@ -244,7 +300,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     orderMoves(movelist, size, depth);
 
     // have at least a move before time runs out
-    if (depth == currDepth)
+    if (depth == 1 && depth == currDepth)
     {
         currBestMove = movelist[0];
     }

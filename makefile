@@ -12,7 +12,7 @@ all:
 	./$(NAME)
 
 web:
-	emcc $(CFLAGS) $(SRCS) -DWEB -o $(NAME).js -s NO_EXIT_RUNTIME=1 -s ASYNCIFY=1 -s EXPORTED_RUNTIME_METHODS=[ccall,FS] -s WASM=1
+	emcc $(CFLAGS) $(SRCS) -DWEB -o $(NAME).js -s NO_EXIT_RUNTIME=1 -s ASYNCIFY=1 -s EXPORTED_RUNTIME_METHODS=[ccall,FS] -s WASM=1 -s ASSERTIONS=1
 
 debug:
 	$(CC) $(CFLAGS) $(SRCS) -DDEBUG -g -o $(NAME)
