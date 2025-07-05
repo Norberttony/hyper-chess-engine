@@ -17,19 +17,40 @@ const int TT_evalValueMask = 0xFFFFFC00;
 int TT_entries = TT_GET_NUMBER_OF_ENTRIES(32);
 
 
+// Courtesy of https://www.talkchess.com/forum/viewtopic.php?t=60264
+// Returns the hash of the position, sometimes factoring in the fifty move rule
+static inline __attribute__((always_inline)) U64 getTranspositionHash(void)
+{
+    U64 hash = g_pos.zobristHash;
+
+    int hm = g_pos.state->halfmove;
+    if (hm >= DRAW_MOVE_RULE - ZOBRIST_HASH_COUNT_HALFMOVE)
+    {
+        if (hm > DRAW_MOVE_RULE)
+        {
+            hm = DRAW_MOVE_RULE;
+        }
+        hash ^= zobristHashes_halfmoves[hm - (DRAW_MOVE_RULE - ZOBRIST_HASH_COUNT_HALFMOVE)];
+    }
+
+    return hash;
+}
+
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 {
-    int index = (int)(g_pos.zobristHash % TT_entries);
+    U64 hash = getTranspositionHash();
+
+    int index = (int)(hash % TT_entries);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (TT_getDepth(depthEntry->flags) >= myDepth && depthEntry->zobristHash == g_pos.zobristHash && TT_getNodeType(depthEntry->flags) == TT_EXACT)
+    if (TT_getDepth(depthEntry->flags) >= myDepth && depthEntry->zobristHash == hash && TT_getNodeType(depthEntry->flags) == TT_EXACT)
     {
         return depthEntry;
     }
-    else if (TT_getDepth(alwaysEntry->flags) >= myDepth && alwaysEntry->zobristHash == g_pos.zobristHash && TT_getNodeType(alwaysEntry->flags) == TT_EXACT)
+    else if (TT_getDepth(alwaysEntry->flags) >= myDepth && alwaysEntry->zobristHash == hash && TT_getNodeType(alwaysEntry->flags) == TT_EXACT)
     {
         return alwaysEntry;
     }
@@ -39,18 +60,20 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth)
 
 struct TranspositionEntry* getTranspositionTableEntry(void)
 {
-    int index = (int)(g_pos.zobristHash % TT_entries);
+    U64 hash = getTranspositionHash();
+
+    int index = (int)(hash % TT_entries);
     struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
     struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
-    if (depthEntry->zobristHash == g_pos.zobristHash)
+    if (depthEntry->zobristHash == hash)
     {
         // TT_hits++;
         return depthEntry;
     }
-    else if (alwaysEntry->zobristHash == g_pos.zobristHash)
+    else if (alwaysEntry->zobristHash == hash)
     {
         // TT_hits++;
         return alwaysEntry;
@@ -68,19 +91,21 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
         return;
     }
 
-    int index = (int)(g_pos.zobristHash % TT_entries);
+    U64 hash = getTranspositionHash();
+
+    int index = (int)(hash % TT_entries);
 
     // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
     // TT_writes++;
 
     // always replace any entry here
     uint32_t flags = ((uint32_t)abs(eval) << 10) | ((eval < 0) << 9) | (depth << 2) | nodeType;
-    transpositionTable[index][1] = (struct TranspositionEntry){ g_pos.zobristHash, bestMove, flags }; 
+    transpositionTable[index][1] = (struct TranspositionEntry){ hash, bestMove, flags }; 
 
     // only replace if the depth is better
     if (TT_getDepth(transpositionTable[index][0].flags) < depth)
     {
-        transpositionTable[index][0] = (struct TranspositionEntry){ g_pos.zobristHash, bestMove, flags }; 
+        transpositionTable[index][0] = (struct TranspositionEntry){ hash, bestMove, flags }; 
     }
 }
 

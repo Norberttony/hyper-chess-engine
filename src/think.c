@@ -149,7 +149,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     {
         return -(MAX_SCORE - (currDepth - depth));
     }
-    else if (currDepth != depth && getThreefoldFlag())
+    else if (currDepth != depth && getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE)
     {
         return 0;
     }

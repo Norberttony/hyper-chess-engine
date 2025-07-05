@@ -266,7 +266,7 @@ void parsePos(char* line)
         {
             fen[idx - startIdx] = line[idx];
             spaces += line[idx] == ' ';
-            if (spaces == 3)
+            if (spaces == 4)
             {
                 break;
             }

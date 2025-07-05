@@ -7,6 +7,12 @@
 #include "evaluate-defines.h"
 #include "bitboard-utility.h"
 
+
+// determines "x-move-rule" which is "draw in x noncapturing moves"
+#define DRAW_MOVE_RULE 100
+
+// 30 capturable pieces that each extend the fifty move rule by 100 additional halfmoves.
+#define MAX_GAME_LENGTH (DRAW_MOVE_RULE * 30)
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 
 // whose side it is to play
@@ -28,18 +34,26 @@ enum
     king
 };
 
+typedef struct PositionState
+{
+    int halfmove;
+} PositionState;
+
 typedef struct Position
 {
     U64 boards[16];
     int* pieceList;
     int toPlay;
     int notToPlay;
-    int halfmove;
+    int fullmove;
     int materialScore[2];
     U64 zobristHash;
+    PositionState* state;
 } Position;
 
 extern Position g_pos;
+
+extern PositionState g_states[MAX_GAME_LENGTH];
 
 extern const char pieceFEN[];
 
@@ -51,8 +65,11 @@ extern const char* squareNames[];
 // the additional 64 squares at the beginning are to not have to make bounds check when searching
 // for the zobrist hash of a particular piece.
 #define ZOBRIST_HASH_COUNT (64 + 64 * 14 + 1)
+#define ZOBRIST_HASH_COUNT_HALFMOVE 20
+
 
 extern U64 zobristHashes[ZOBRIST_HASH_COUNT];
+extern U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
 
 #define REPEAT_TABLE_ENTRIES 32
 extern U64 repeatTable[REPEAT_TABLE_ENTRIES];
@@ -76,7 +93,7 @@ void prettyPrintBoard(void);
 int loadFEN(const char* fen);
 
 // returns the FEN
-char* getFEN(void);
+int getFEN(char* fen, int bufsize);
 
 // converts the given piece FEN to its corresponding value
 int convertFENToValue(const char v);

@@ -270,8 +270,10 @@ void makeMove(Move m)
     repeatTable[repeatTableIndex++] = g_pos.zobristHash;
     repeatTableIndex -= REPEAT_TABLE_ENTRIES * (repeatTableIndex == REPEAT_TABLE_ENTRIES);
 
-    // update halfmove counter
-    g_pos.halfmove++;
+    // update move counters
+    g_pos.state++;
+    g_pos.state->halfmove = !is_move_capt(m) * ((g_pos.state - 1)->halfmove + 1);
+    g_pos.fullmove += g_pos.toPlay == white;
 }
 
 void unmakeMove(Move m)
@@ -289,8 +291,9 @@ void unmakeMove(Move m)
     int coordinateSq;
     U64 zobristHashUpdate = 0ULL;
 
-    // update halfmove counter
-    g_pos.halfmove--;
+    // update move counters
+    g_pos.state--;
+    g_pos.fullmove -= g_pos.toPlay == white;
 
     // remove from repeat table
     repeatTableIndex += REPEAT_TABLE_ENTRIES * (repeatTableIndex == 0);

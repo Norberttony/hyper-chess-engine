@@ -1,6 +1,8 @@
 
 #include "defines.h"
 
+PositionState g_states[MAX_GAME_LENGTH];
+
 // 8 squares above and 8 squares below as extra padding
 int pieceListStore[80];
 
@@ -9,13 +11,14 @@ Position g_pos =
     .toPlay = white,
     .notToPlay = black,
     .materialScore = { 0 },
-    .halfmove = 0,
+    .fullmove = 0,
     .pieceList = pieceListStore + 8,
-    .zobristHash = 0ULL
+    .zobristHash = 0ULL,
+    .state = g_states
 };
 
 const char pieceFEN[] = ".PQNRUBK.pqnrubk";
-const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 1";
+const char StartingFEN[] = "unbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNU w 0 1";
 
 const char* squareNames[] =
 {
@@ -30,6 +33,7 @@ const char* squareNames[] =
 };
 
 U64 zobristHashes[ZOBRIST_HASH_COUNT];
+U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
 
 U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
@@ -97,6 +101,17 @@ void prettyPrintBoard(void)
     printf("It is %s to play\n", g_pos.toPlay == white ? "white": "black");
 
     printf("%llu\n", g_pos.zobristHash);
+
+    char fen[5000];
+    int failure = getFEN(fen, 5000);
+    if (failure)
+    {
+        puts("FEN: failed to get FEN");
+    }
+    else
+    {
+        printf("FEN: %s\n", fen);
+    }
 }
 
 int loadFEN(const char* fen)
@@ -125,6 +140,10 @@ int loadFEN(const char* fen)
 
     // clear zobrist hash
     g_pos.zobristHash = 0ULL;
+
+    // reset history
+    g_pos.state = g_states;
+    g_pos.state->halfmove = 0;
 
     // interpret board string
     int i;
@@ -208,27 +227,77 @@ int loadFEN(const char* fen)
     // determine halfmove counter
     if (fen[i] == '-')
     {
-        g_pos.halfmove = 0;
-    }
-    else if (isdigit(fen[i]))
-    {
-        g_pos.halfmove = 2 * (int)(fen[i] - '0');
+        g_pos.state->halfmove = 0;
     }
     else
     {
-        // this must be an invalid character.
-        printf("Invalid character in FEN string %s when parsing full move counter; could not recognize '%c'\n", fen, fen[i]);
-        return 0;
+        g_pos.state->halfmove = atoi(fen + i);
+    }
+
+    // look for a space
+    while (fen[i] != ' ')
+    {
+        if (fen[i] == '\0')
+        {
+            puts("FEN is missing a fullmove counter");
+            return 0;
+        }
+        i++;
+    }
+
+    // skip over the space
+    i++;
+
+    // determine fullmove counter
+    if (fen[i] == '-')
+    {
+        g_pos.fullmove = 0;
+    }
+    else
+    {
+        g_pos.fullmove = atoi(fen + i);
     }
 
     return 1;
 }
 
-char* getFEN(void)
+int writeIntegerIntoString(int val, int bufferSize, char* str)
 {
-    char* fen = (char*)malloc(sizeof(char) * 2000);
+    int sign = val < 0;
+    int digits = 0;
+    int copy = val;
+    do
+    {
+        digits++;
+    }
+    while (copy /= 10);
+
+    if (digits + sign >= bufferSize)
+    {
+        puts("Could not write integer to string");
+        return 0;
+    }
+    else
+    {
+        int idx = 0;
+        if (sign)
+        {
+            str[idx++] = '-';
+        }
+        do
+        {
+            str[digits + sign - ++idx] = '0' + (val % 10);
+        }
+        while (val /= 10);
+        return idx;
+    }
+}
+
+int getFEN(char* fen, int bufsize)
+{
     int index = 0;
 
+    // set the piece configuration
     for (int r = 0; r < 8; r++)
     {
         int empty = 0;
@@ -242,6 +311,10 @@ char* getFEN(void)
                 if (empty > 0)
                 {
                     fen[index++] = '0' + empty;
+                    if (index == bufsize)
+                    {
+                        return -1;
+                    }
                     empty = 0;
                 }
 
@@ -251,6 +324,10 @@ char* getFEN(void)
                     pieceChar = tolower(pieceChar);
                 }
                 fen[index++] = pieceChar;
+                if (index == bufsize)
+                {
+                    return -1;
+                }
             }
             else
             {
@@ -260,28 +337,64 @@ char* getFEN(void)
         if (empty > 0)
         {
             fen[index++] = '0' + empty;
+            if (index == bufsize)
+            {
+                return -1;
+            }
         }
         if (r < 7)
+        {
             fen[index++] = '/';
+            if (index == bufsize)
+            {
+                return -1;
+            }
+        }
+    }
+
+    if (index + 3 >= bufsize)
+    {
+        return -1;
     }
 
     fen[index++] = ' ';
 
-    if (g_pos.toPlay == white)
+    // set side to play
+    fen[index++] = g_pos.toPlay == white ? 'w' : 'b';
+
+    fen[index++] = ' ';
+
+    // set half move counter
+    index += writeIntegerIntoString(g_pos.state->halfmove, bufsize - index, fen + index);
+
+    if (index == bufsize)
     {
-        fen[index++] = 'w';
-    }
-    else
-    {
-        fen[index++] = 'b';
+        return -1;
     }
 
     fen[index++] = ' ';
 
-    fen[index++] = '-';
+    if (index == bufsize)
+    {
+        return -1;
+    }
+
+    // set full move counter
+    index += writeIntegerIntoString(g_pos.fullmove, bufsize - index, fen + index);
+
+    if (index == bufsize)
+    {
+        return -1;
+    }
+
     fen[index++] = '\0';
+    
+    if (index == bufsize)
+    {
+        return -1;
+    }
 
-    return fen;
+    return 0;
 }
 
 int convertFENToValue(const char v)
@@ -328,6 +441,10 @@ void generateZobristHashes(void)
     for (int i = 0; i < ZOBRIST_HASH_COUNT; i++)
     {
         zobristHashes[i] = randomU64();
+    }
+    for (int i = 0; i < ZOBRIST_HASH_COUNT_HALFMOVE + 1; i++)
+    {
+        zobristHashes_halfmoves[i] = randomU64();
     }
 }
 
