@@ -95,6 +95,17 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
 
     int index = (int)(hash % TT_entries);
 
+    // adjust mate scores in the TT
+    int ply = g_searchParams.height;
+    if (eval >= MATE_SCORE)
+    {
+        eval += ply;
+    }
+    else if (eval <= -MATE_SCORE)
+    {
+        eval -= ply;
+    }
+
     // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
     // TT_writes++;
 

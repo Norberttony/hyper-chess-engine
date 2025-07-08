@@ -9,10 +9,14 @@ int orderFirstSuccess = 0;
 int nodesVisited = 0;
 int qNodesVisited = 0;
 
-int thinkingTime = -1;
-int thinkStart = -1;
-int stopThinking = 0;
-int currDepth = 0;
+SearchParams g_searchParams =
+{
+    .thinkingTime = -1,
+    .thinkStart = -1,
+    .stopThinking = 0,
+    .maxDepth = -1,
+    .height = 0
+};
 
 // search flags
 const uint_fast8_t IS_PV_FLAG = 0x1;
@@ -29,35 +33,36 @@ int cutoffRemainingAvg = 0;
 
 Move currBestMove = 0;
 
-int maxDepth = -1;
-
 int nodeOccurrence[4] = { 0 };
 
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
 void determineThinkAllowance(void)
 {
-    if (!(thinkingTime < 0 || (getCurrentTime() - thinkStart) < thinkingTime))
+    SearchParams *s = &g_searchParams;
+    if (!(s->thinkingTime < 0 || (getCurrentTime() - s->thinkStart) < s->thinkingTime))
     {
-        stopThinking = 1;
+        s->stopThinking = 1;
     }
     readInput();
 }
 
 Move thinkFor(int ms)
 {
-    thinkStart = getCurrentTime();
-    thinkingTime = ms;
-    maxDepth = MAX_DEPTH;
+    SearchParams *s = &g_searchParams;
+    s->thinkStart = getCurrentTime();
+    s->thinkingTime = ms;
+    s->maxDepth = MAX_DEPTH;
 
     return startThink();
 }
 
 Move getBestMove(int depth)
 {
-    thinkStart = getCurrentTime();
-    thinkingTime = -1;
-    maxDepth = depth;
+    SearchParams *s = &g_searchParams;
+    s->thinkStart = getCurrentTime();
+    s->thinkingTime = -1;
+    s->maxDepth = depth;
 
     return startThink();
 }
@@ -68,8 +73,10 @@ Move getBestMove(int depth)
 // - thinkingTime: must be set
 Move startThink(void)
 {
+    SearchParams *s = &g_searchParams;
+
     // thinking is back on schedule
-    stopThinking = 0;
+    s->stopThinking = 0;
     orderFirst = 0;
 
     U64 myHash = g_pos.zobristHash;
@@ -87,12 +94,11 @@ Move startThink(void)
     printf("info string root-eval %d\n", (g_pos.toPlay == white ? 1 : -1) * evaluate());
     EVAL_DBG_PRINT = 0;
 #endif
-    while (!stopThinking && depth <= maxDepth)
+    while (!s->stopThinking && depth <= s->maxDepth)
     {
         nodesVisited = 0;
         qNodesVisited = 0;
 
-        currDepth = depth;
         think(depth, INT_MIN + 1, INT_MAX - 1, IS_PV_FLAG);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
@@ -106,7 +112,7 @@ Move startThink(void)
 
         printf("info score ");
         printEval();
-        printf(" depth %d nodes %d time %d pv ", depth, totalNodesVisited, getCurrentTime() - thinkStart);
+        printf(" depth %d nodes %d time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
         printPrincipalVariation(depth);
         puts("");
         depth++;
@@ -138,6 +144,8 @@ Move startThink(void)
 int think(int depth, int alpha, int beta, uint_fast8_t flags)
 {
     nodesVisited++;
+    int isRoot = g_searchParams.height == 0;
+    int distToRoot = g_searchParams.height;
 
     if ((nodesVisited & 2047) == 0)
     {
@@ -147,9 +155,9 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // check for three fold repetition and checkmate
     if (isCheckmate())
     {
-        return -(MAX_SCORE - (currDepth - depth));
+        return -(MAX_SCORE - distToRoot);
     }
-    else if (currDepth != depth && getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE)
+    else if (!isRoot && getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE)
     {
         return 0;
     }
@@ -163,7 +171,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
-    if (!isNullMovePruning && currDepth != depth && depth >= TT_MIN_DEPTH)
+    if (!isNullMovePruning && !isRoot && depth >= TT_MIN_DEPTH)
     {
         struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
@@ -176,7 +184,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 if (savedNodeType == TT_EXACT)
                 {
                     // determine upper bound for mate score
-                    return savedVal - (savedVal >= MATE_SCORE) * (currDepth - depth + 1) + (savedVal <= -MATE_SCORE) * (currDepth - depth + 1);
+                    return savedVal - (savedVal >= MATE_SCORE) * (distToRoot + 1) + (savedVal <= -MATE_SCORE) * (distToRoot + 1);
                 }
                 else if (savedNodeType == TT_LOWER && alpha >= savedVal)
                 {
@@ -217,7 +225,9 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             {
                 nullDepth = 0;
             }
+            g_searchParams.height++;
             int nullEval = -think(nullDepth, -beta, -beta + 1, flags | IS_NULL_MOVE_PRUNING_FLAG);
+            g_searchParams.height--;
             if (nullEval >= beta)
             {
                 makeNullMove();
@@ -244,7 +254,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     orderMoves(movelist, size, depth);
 
     // have at least a move before time runs out
-    if (depth == currDepth)
+    if (isRoot)
     {
         currBestMove = movelist[0];
     }
@@ -264,12 +274,14 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         }
         hasLegalMoves = 1;
 
+        g_searchParams.height++;
         int eval = -think(depth - 1, -beta, -alpha, flags);
+        g_searchParams.height--;
 
         unmakeMove(m);
 
         // make sure we are still allowed to think.
-        if (stopThinking)
+        if (g_searchParams.stopThinking)
         {
             return beta;
         }
@@ -338,7 +350,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             flags |= IS_PV_FLAG;
 
             // set current best move in search only if this is the root node.
-            if (depth == currDepth)
+            if (isRoot)
             {
                 currBestMove = m;
             }
@@ -425,11 +437,13 @@ int thinkCaptures(int alpha, int beta, int accessTT)
             continue;
         }
 
+        g_searchParams.height++;
         int eval = -thinkCaptures(-beta, -alpha, 0);
+        g_searchParams.height--;
 
         unmakeMove(m);
 
-        if (stopThinking)
+        if (g_searchParams.stopThinking)
         {
             return beta;
         }

@@ -14,10 +14,7 @@
 #define NULL_MOVE_R 3
 
 
-extern int thinkingTime;
-extern int thinkStart;
-extern int stopThinking;
-extern int maxDepth;
+extern SearchParams g_searchParams;
 
 
 // performs a min-max alpha-beta search from the current position to the given depth.

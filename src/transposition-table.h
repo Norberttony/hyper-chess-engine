@@ -50,6 +50,9 @@ extern const int TT_depthMask;
 extern const int TT_evalSignMask;
 extern const int TT_evalValueMask;
 
+// forward declaration.
+extern SearchParams g_searchParams;
+
 // [0] is replace by depth and [1] is always replace
 extern struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][2];
 

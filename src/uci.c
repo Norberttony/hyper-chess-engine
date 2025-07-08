@@ -78,7 +78,7 @@ void uciLoop(void)
         }
         else if (!strncmp(line, "quit", 4))
         {
-            stopThinking = -1;
+            g_searchParams.stopThinking = -1;
             break;
         }
         else if (!strncmp(line, "uci", 3))
@@ -144,7 +144,7 @@ void uciLoop(void)
                 setTranspositionTableSize(mb);
             }
         }
-        if (stopThinking == -1)
+        if (g_searchParams.stopThinking == -1)
         {
             break;
         }
@@ -211,8 +211,9 @@ void parseGo(char* line)
     // interpret the commands
 
     // think infinitely by default
-    thinkStart = getCurrentTime();
-    thinkingTime = -1;
+    SearchParams *s = &g_searchParams;
+    s->thinkStart = getCurrentTime();
+    s->thinkingTime = -1;
 
     if (moveTime != -1)
     {
@@ -228,16 +229,16 @@ void parseGo(char* line)
         {
             time = 0;
         }
-        thinkingTime = time + inc;
+        s->thinkingTime = time + inc;
     }
 
     if (depth == -1)
     {
-        maxDepth = MAX_DEPTH;
+        s->maxDepth = MAX_DEPTH;
     }
     else
     {
-        maxDepth = depth;
+        s->maxDepth = depth;
     }
 
     startThink();
@@ -311,7 +312,7 @@ void readInput(void)
         {
             if (!strncmp(input, "quit", 4) || !strncmp(input, "stop", 4))
             {
-                stopThinking = 1;
+                g_searchParams.stopThinking = 1;
             }
         }
     }
@@ -326,7 +327,7 @@ void readInput(void)
         });
         if (stop)
         {
-            stopThinking = 1;
+            g_searchParams.stopThinking = 1;
         }
     }
 #endif

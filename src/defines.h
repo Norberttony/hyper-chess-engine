@@ -51,6 +51,15 @@ typedef struct Position
     PositionState* state;
 } Position;
 
+typedef struct SearchParams
+{
+    int thinkingTime;
+    int thinkStart;
+    int stopThinking;
+    int maxDepth;
+    int height;
+} SearchParams;
+
 extern Position g_pos;
 
 extern PositionState g_states[MAX_GAME_LENGTH];
