@@ -2,12 +2,12 @@
 #include "think.h"
 
 // how often the order first (from TT) performs
-int orderFirstAttempts = 0;
-int orderFirstSuccess = 0;
+U64 orderFirstAttempts = 0;
+U64 orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
-int nodesVisited = 0;
-int qNodesVisited = 0;
+U64 nodesVisited = 0;
+U64 qNodesVisited = 0;
 
 SearchParams g_searchParams =
 {
@@ -23,17 +23,17 @@ const uint_fast8_t IS_PV_FLAG = 0x1;
 const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
 #ifdef DEBUG
-int cutoffFirst = 0;
-int cutoffSecond = 0;
-int cutoffThird = 0;
-int cutoffAvg = 0;
-int cutoffRemaining = 0;
-int cutoffRemainingAvg = 0;
+U64 cutoffFirst = 0;
+U64 cutoffSecond = 0;
+U64 cutoffThird = 0;
+U64 cutoffAvg = 0;
+U64 cutoffRemaining = 0;
+U64 cutoffRemainingAvg = 0;
 #endif
 
 Move currBestMove = 0;
 
-int nodeOccurrence[4] = { 0 };
+U64 nodeOccurrence[4] = { 0 };
 
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
@@ -81,9 +81,9 @@ Move startThink(void)
 
     U64 myHash = g_pos.zobristHash;
 
-    int totalNodesVisited = 0;
+    U64 totalNodesVisited = 0ULL;
 #ifdef DEBUG
-    int totalQNodesVisited = 0;
+    U64 totalQNodesVisited = 0ULL;
 #endif
 
     // perform "iterative deepening"
@@ -96,10 +96,10 @@ Move startThink(void)
 #endif
     while (!s->stopThinking && depth <= s->maxDepth)
     {
-        nodesVisited = 0;
-        qNodesVisited = 0;
+        nodesVisited = 0ULL;
+        qNodesVisited = 0ULL;
 
-        think(depth, INT_MIN + 1, INT_MAX - 1, IS_PV_FLAG);
+        think(depth, -MAX_SCORE, MAX_SCORE, IS_PV_FLAG);
 
         // since this is the best move at this depth, it should cause massive cut offs at the next
         // level. A bit of a history heuristic :)
@@ -112,7 +112,7 @@ Move startThink(void)
 
         printf("info score ");
         printEval();
-        printf(" depth %d nodes %d time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
+        printf(" depth %d nodes %lld time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
         printPrincipalVariation(depth);
         puts("");
         depth++;
@@ -126,15 +126,15 @@ Move startThink(void)
     }
 
 #ifdef DEBUG
-    int cutoffs = nodeOccurrence[TT_UPPER];
-    printf("Total nodes: %d\n", totalNodesVisited);
-    printf("Quiescent search nodes: %d\n", totalQNodesVisited);
-    printf("# of cut-offs: %d\n", cutoffs);
+    U64 cutoffs = nodeOccurrence[TT_UPPER];
+    printf("Total nodes: %lld\n", totalNodesVisited);
+    printf("Of those, quiescent search nodes: %lld\n", totalQNodesVisited);
+    printf("# of cut-offs: %lld\n", cutoffs);
     printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
     printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
     printf("Third move cut-off: %lf%%\n", 100 * (double)cutoffThird / cutoffs);
     printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
-    printf("Cut-off in remaining moves (after hash, killers, captures): %d (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
+    printf("Cut-off in remaining moves (after hash, killers, captures): %lld (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
     printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
 #endif
 
@@ -147,7 +147,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     int isRoot = g_searchParams.height == 0;
     int distToRoot = g_searchParams.height;
 
-    if ((nodesVisited & 2047) == 0)
+    if ((nodesVisited & 2047ULL) == 0ULL)
     {
         determineThinkAllowance();
     }
@@ -262,6 +262,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 
     int hasLegalMoves = 0;
 
+#ifdef DEBUG
+    int mIdx = 0;
+#endif
+
     Move bestMove = 0;
     for (int i = 0; i < size; i++)
     {
@@ -280,6 +284,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             flags &= ~IS_PV_FLAG;
         }
         hasLegalMoves = 1;
+
+#ifdef DEBUG
+        // keep track of move index to avoid factoring in illegal moves as part of the list
+        // this is used for cutoff statistics later.
+        mIdx++;
+#endif
 
         g_searchParams.height++;
         int eval = -think(depth - 1, -beta, -alpha, flags);
@@ -309,15 +319,15 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #ifdef DEBUG
             nodeOccurrence[TT_UPPER]++;
             
-            cutoffFirst += i == 0;
-            cutoffSecond += i == 1;
-            cutoffThird += i == 3;
-            cutoffAvg += i + 1;
+            cutoffFirst += mIdx == 0;
+            cutoffSecond += mIdx == 1;
+            cutoffThird += mIdx == 3;
+            cutoffAvg += mIdx + 1;
 
             if (m != orderedFirst && !is_move_capt(m) && killer_move(depth, 0) != m && killer_move(depth, 1) != m)
             {
                 cutoffRemaining++;
-                cutoffRemainingAvg += i;
+                cutoffRemainingAvg += mIdx;
             }
 #endif
 
@@ -396,7 +406,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
     qNodesVisited += !accessTT;
 #endif
     
-    if ((nodesVisited & 2047) == 0)
+    if ((nodesVisited & 2047ULL) == 0ULL)
     {
         determineThinkAllowance();
     }

@@ -283,8 +283,7 @@ int isAttackingKing(void)
     U64 coordPieceBoard = position[toPlay + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
     U64 coordBoard = ((coordPieceBoard & notImmInfl) > 0) * (
-        get_rook_attacks(coordSq, totalBoard) |
-        get_bishop_attacks(coordSq, totalBoard)
+        get_queen_attacks(coordSq, totalBoard)
     ) & ~totalBoard;
 
     U64 targetKingFile = files[get_file(targetKingSq)];
@@ -450,8 +449,7 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
     if (springerBoard && springerLeaps[springer1Sq][sq] & ~totalBoard)
     {
         springer1Attack = (
-            get_rook_attacks(springer1Sq, totalBoard) |
-            get_bishop_attacks(springer1Sq, totalBoard)
+            get_queen_attacks(springer1Sq, totalBoard)
         ) & (1ULL << sq);
     }
 
@@ -462,8 +460,7 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
     {
         // springer 2
         springer2Attack = (
-            get_rook_attacks(springer2Sq, totalBoard) |
-            get_bishop_attacks(springer2Sq, totalBoard)
+            get_queen_attacks(springer2Sq, totalBoard)
         ) & (1ULL << sq);
     }
 
@@ -477,15 +474,13 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
         // chameleon 1
         int cham1Sq = pop_lsb(chamBoard);
         U64 cham1Attack = (chamBoard > 0) * (
-            get_rook_attacks(cham1Sq, totalBoard) |
-            get_bishop_attacks(cham1Sq, totalBoard)
+            get_queen_attacks(cham1Sq, totalBoard)
         ) & (1ULL << sq);
 
         // chameleon 2
         int cham2Sq = pop_lsb(cham2Board);
         U64 cham2Attack = (cham2Board > 0) * (
-            get_rook_attacks(cham2Sq, totalBoard) |
-            get_bishop_attacks(cham2Sq, totalBoard)
+            get_queen_attacks(cham2Sq, totalBoard)
         ) & (1ULL << sq);
 
         return
@@ -509,10 +504,7 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
     if (coordPieceBoard & notImmInfl && (files[get_file(sq)] | ranks[get_rank(sq)]) & kingMovesBoard)
     {   
-        coordBoard = (
-            get_rook_attacks(coordSq, totalBoard) |
-            get_bishop_attacks(coordSq, totalBoard)
-        ) & ~totalBoard;
+        coordBoard = (get_queen_attacks(coordSq, totalBoard)) & ~totalBoard;
     }
 
     if (inclCham)
@@ -523,15 +515,9 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
         int cham1Sq = pop_lsb(chamBoard);
         int cham2Sq = pop_lsb(cham2Board);
 
-        coordBoard |= (chamBoard > 0) * (
-            get_rook_attacks(cham1Sq, totalBoard) |
-            get_bishop_attacks(cham1Sq, totalBoard)
-        ) & ~totalBoard;
+        coordBoard |= (chamBoard > 0) * (get_queen_attacks(cham1Sq, totalBoard)) & ~totalBoard;
 
-        coordBoard |= (cham2Board > 0) * (
-            get_rook_attacks(cham2Sq, totalBoard) |
-            get_bishop_attacks(cham2Sq, totalBoard)
-        ) & ~totalBoard;
+        coordBoard |= (cham2Board > 0) * (get_queen_attacks(cham2Sq, totalBoard)) & ~totalBoard;
     }
 
     U64 sqFile = files[get_file(sq)];
