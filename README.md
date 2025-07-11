@@ -76,6 +76,7 @@ Below is a quick list of some of the evaluation heuristics the engine calculates
 - How prone immobilized pieces are to being captured
 - The mobility (number of pseudo-legal moves excluding straddlers and the king)
 - The number of lines of attack against an immobilized immobilizer
+
 In fact, all three of these heuristics require the use of bitboards.
 
 Piece square tables (PSQT) are used to give a bonus/penalty to the current placement of pieces. These tables act as a guideline for the engine when it cannot see far enough to see the long-term impacts of its arbitrary piece configuration.

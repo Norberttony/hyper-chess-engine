@@ -165,6 +165,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     int nodeType = TT_LOWER;
 
     int isNullMovePruning = flags & IS_NULL_MOVE_PRUNING_FLAG;
+    int isPV = flags & IS_PV_FLAG;
 
     int isFromTT = 0;
 
@@ -215,7 +216,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them and we can hit a beta cut off.
     int nullDepth = depth - 1 - NULL_MOVE_R;
-    if (!isNullMovePruning)
+    if (!isPV && !isNullMovePruning)
     {
         makeNullMove();
         int isInCheck = isAttackingKing();
@@ -271,6 +272,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         {
             unmakeMove(m);
             continue;
+        }
+        // If this is not the first move OR parent node is not PV, we exclude the PV flag from the
+        // rest of the child nodes
+        if (hasLegalMoves)
+        {
+            flags &= ~IS_PV_FLAG;
         }
         hasLegalMoves = 1;
 
@@ -347,7 +354,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             nodeType = TT_EXACT;
             alpha = eval;
             bestMove = m;
-            flags |= IS_PV_FLAG;
 
             // set current best move in search only if this is the root node.
             if (isRoot)
