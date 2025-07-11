@@ -3,21 +3,27 @@
 
 #include "bitboard-utility.h"
 
-extern U64 rookMagics[64];
-extern U64 rookMasks[64];
-extern int rookMaskBitCount[64];
-extern U64 rookAttacks[102400];
-extern U64 *rookRefs[64];
 
-extern U64 bishopMagics[64];
-extern U64 bishopMasks[64];
-extern int bishopMaskBitCount[64];
-extern U64 bishopAttacks[5248];
-extern U64* bishopRefs[64];
-
-#define get_rook_attacks(sq, blockers) *(rookRefs[sq] + (((rookMasks[sq] & blockers) * rookMagics[sq]) >> (64 - rookMaskBitCount[sq])))
-#define get_bishop_attacks(sq, blockers) *(bishopRefs[sq] + (((bishopMasks[sq] & blockers) * bishopMagics[sq]) >> (64 - bishopMaskBitCount[sq])))
+#define get_rook_attacks(sq, blockers)   *(rookEntries[sq].ref + (((rookEntries[sq].mask & blockers) * rookEntries[sq].magic) >> (64 - rookEntries[sq].maskBitCount)))
+#define get_bishop_attacks(sq, blockers) *(bishopEntries[sq].ref + (((bishopEntries[sq].mask & blockers) * bishopEntries[sq].magic) >> (64 - bishopEntries[sq].maskBitCount)))
 #define get_queen_attacks(sq, blockers) (get_rook_attacks(sq, blockers) | get_bishop_attacks(sq, blockers))
+
+
+// to minimize cache misses for fetching attacks on a square, any magic relating to a square has
+// been grouped together in a struct
+typedef struct MagicSqEntry
+{
+    U64 magic;
+    U64 mask;
+    U64* ref;
+    int maskBitCount;
+} MagicSqEntry;
+
+extern MagicSqEntry rookEntries[64];
+extern MagicSqEntry bishopEntries[64];
+
+extern U64 rookAttacks[102400];
+extern U64 bishopAttacks[5248];
 
 
 void initMagicBitboards(int isBishop);

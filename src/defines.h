@@ -46,6 +46,7 @@ typedef struct Position
     int toPlay;
     int notToPlay;
     int fullmove;
+    // [0] accesses white's material score and [1] accesses black's material score.
     int materialScore[2];
     U64 zobristHash;
     PositionState* state;

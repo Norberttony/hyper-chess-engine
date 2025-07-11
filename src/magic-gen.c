@@ -38,21 +38,24 @@ int main(void)
     // initialize smallest
     for (int s = 0; s < 64; s++)
     {
+        MagicSqEntry* rEntry = rookEntries + s;
+        MagicSqEntry* bEntry = bishopEntries + s;
+
         rookSmallest[s] = MAX_BOARD_INDEX;
         bishopSmallest[s] = MAX_BOARD_INDEX;
-        if (rookMagics[s])
+        if (rEntry->magic)
         {
             // populates rookSmallest but... is kind of inefficient maybe? eh.
-            if (!testMagicNumber(s, rookMagics[s], 0))
+            if (!testMagicNumber(s, rEntry->magic, 0))
             {
-                rookMagics[s] = 0ULL; // invalid magic!!
+                rEntry->magic = 0ULL; // invalid magic!!
             }
         }
-        if (bishopMagics[s])
+        if (bEntry->magic)
         {
-            if (!testMagicNumber(s, bishopMagics[s], 1))
+            if (!testMagicNumber(s, bEntry->magic, 1))
             {
-                bishopMagics[s] = 0ULL; // invalid magic!!
+                bEntry->magic = 0ULL; // invalid magic!!
             }
         }
     }
@@ -68,14 +71,17 @@ int main(void)
     {
         for (int sq = 0; sq < 64; sq++)
         {
+            MagicSqEntry* rEntry = rookEntries + sq;
+            MagicSqEntry* bEntry = bishopEntries + sq;
+
             U64 toTest = randomU64() & randomU64() & randomU64();
 
-            if (!bishopMagics[sq])
+            if (!bEntry->magic)
             {
                 testMagicNumber(sq, toTest, 1);
             }
 
-            if (!rookMagics[sq])
+            if (!rEntry->magic)
             {
                 testMagicNumber(sq, toTest, 0);
             }
@@ -95,7 +101,9 @@ int testMagicNumber(int s, U64 number, int isBishop)
     // https://stackoverflow.com/questions/9146395/reset-c-int-array-to-zero-the-fastest-way
     memset(testAttacks, 0, sizeof(testAttacks));
 
-    U64 maxDefenders = isBishop ? bishopMasks[s] : rookMasks[s];
+    MagicSqEntry* entry = isBishop ? bishopEntries + s : rookEntries + s;
+
+    U64 maxDefenders = entry->mask;
 
     // get all of the bit indexes on defender mask
     int bitIndexes[20] = {0};
@@ -156,15 +164,14 @@ int testMagicNumber(int s, U64 number, int isBishop)
     if (success)
     {
         printf("New ");
+        entry->magic = number;
         if (isBishop)
         {
-            bishopMagics[s] = number;
             bishopSmallest[s] = smallest;
             printf("bishop ");
         }
         else
         {
-            rookMagics[s] = number;
             rookSmallest[s] = smallest;
             printf("rook ");
         }
@@ -191,13 +198,13 @@ void displayTableStats(void)
         {
             smallestB = bishopSmallest[s];
         }
-        validR += rookMagics[s] > 0;
-        validB += bishopMagics[s] > 0;
+        validR += rookEntries[s].magic > 0;
+        validB += bishopEntries[s].magic > 0;
     }
     if (validR == 64)
     {
         printf("Rook table size:\n");
-        printf("%d bytes\n", (smallestR + 1) * 64 * sizeof(U64));
+        printf("%lld bytes\n", (smallestR + 1) * 64 * sizeof(U64));
     }
     else
     {
@@ -206,7 +213,7 @@ void displayTableStats(void)
     if (validB == 64)
     {
         printf("Bishop table size:\n");
-        printf("%d bytes\n", (smallestB + 1) * 64 * sizeof(U64));
+        printf("%lld bytes\n", (smallestB + 1) * 64 * sizeof(U64));
     }
     else
     {
@@ -218,7 +225,7 @@ void displayTableStats(void)
     printf("{\n");
     for (int i = 0; i < 64; i++)
     {
-        printf("\t%lluULL,\n", rookMagics[i]);
+        printf("\t%lluULL,\n", rookEntries[i].magic);
     }
     printf("};\n");
 
@@ -226,7 +233,7 @@ void displayTableStats(void)
     printf("{\n");
     for (int i = 0; i < 64; i++)
     {
-        printf("\t%lluULL,\n", bishopMagics[i]);
+        printf("\t%lluULL,\n", bishopEntries[i].magic);
     }
     printf("};\n");
 }
@@ -266,7 +273,7 @@ void genRookMasks(void)
         mask ^= 1ULL << s;
 
         // generate attacks and send them to the lookup table
-        rookMasks[s] = mask;
+        rookEntries[s].mask = mask;
     }
 }
 
@@ -305,6 +312,6 @@ void genBishopMasks(void)
         mask ^= 1ULL << s;
 
         // generate attacks and send them to the lookup table
-        bishopMasks[s] = mask;
+        rookEntries[s].mask = mask;
     }
 }
