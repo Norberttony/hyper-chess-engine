@@ -30,7 +30,7 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
     while (myBoard)
     {
         int sq = pop_lsb(myBoard);
-        U64 moveBoard = (get_rook_attacks(sq, totalBoard) | get_bishop_attacks(sq, totalBoard)) & ~totalBoard;
+        U64 moveBoard = get_queen_attacks(sq, totalBoard) & ~totalBoard;
 
         while (moveBoard)
         {

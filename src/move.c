@@ -128,10 +128,7 @@ int generateMoves(Move *movelist, int capturesOnly)
         // now generate immobilizer moves
         U64 immBoard = position[toPlay + immobilizer] & notImmInfl & ~chamInfl;
         int sq = pop_lsb(immBoard);
-        U64 moves = (immBoard > 0) * (
-            get_rook_attacks(sq, totalBoard) |
-            get_bishop_attacks(sq, totalBoard)
-        ) & ~totalBoard;
+        U64 moves = (immBoard > 0) * (get_queen_attacks(sq, totalBoard)) & ~totalBoard;
         size += generateImmobilizerMoves(sq, moves, &movelist[size]);
     }
 
@@ -140,10 +137,7 @@ int generateMoves(Move *movelist, int capturesOnly)
     if (coordBoard)
     {
         int sq = pop_lsb(coordBoard);
-        U64 moves = (coordBoard > 0) * (
-            get_rook_attacks(sq, totalBoard) |
-            get_bishop_attacks(sq, totalBoard)
-        ) & ~totalBoard;
+        U64 moves = (coordBoard > 0) * (get_queen_attacks(sq, totalBoard)) & ~totalBoard;
 
         int kingSq = pop_lsb(position[toPlay + king]);
         U64 kingFile = files[get_file(kingSq)] & position[notToPlay];
@@ -186,9 +180,7 @@ int generateMoves(Move *movelist, int capturesOnly)
         int sq = pop_lsb(springers);
 
         // generate moves
-        U64 moves =
-            get_rook_attacks(sq, totalBoard) |
-            get_bishop_attacks(sq, totalBoard);
+        U64 moves = get_queen_attacks(sq, totalBoard);
 
         if (!capturesOnly)
         {
@@ -204,10 +196,7 @@ int generateMoves(Move *movelist, int capturesOnly)
     if (retractorBoard)
     {
         int sq = pop_lsb(retractorBoard);
-        U64 moves = (retractorBoard > 0) * (
-            get_rook_attacks(sq, totalBoard) |
-            get_bishop_attacks(sq, totalBoard)
-        );
+        U64 moves = (retractorBoard > 0) * (get_queen_attacks(sq, totalBoard));
 
         if (!capturesOnly)
         {
