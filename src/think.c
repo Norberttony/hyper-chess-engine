@@ -7,7 +7,9 @@ U64 orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
 U64 nodesVisited = 0;
+#ifdef DEBUG
 U64 qNodesVisited = 0;
+#endif
 
 SearchParams g_searchParams =
 {
@@ -23,12 +25,14 @@ const uint_fast8_t IS_PV_FLAG = 0x1;
 const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
 #ifdef DEBUG
-U64 cutoffFirst = 0;
-U64 cutoffSecond = 0;
-U64 cutoffThird = 0;
-U64 cutoffAvg = 0;
-U64 cutoffRemaining = 0;
-U64 cutoffRemainingAvg = 0;
+U64 cumulativeNodesVisited = 0ULL;
+U64 cumulativeQNodesVisited = 0ULL;
+U64 cutoffFirst = 0ULL;
+U64 cutoffSecond = 0ULL;
+U64 cutoffThird = 0ULL;
+U64 cutoffAvg = 0ULL;
+U64 cutoffRemaining = 0ULL;
+U64 cutoffRemainingAvg = 0ULL;
 #endif
 
 Move currBestMove = 0;
@@ -78,17 +82,15 @@ Move startThink(void)
     // thinking is back on schedule
     s->stopThinking = 0;
     orderFirst = 0;
+    currBestMove = 0;
 
     U64 myHash = g_pos.zobristHash;
 
     U64 totalNodesVisited = 0ULL;
-#ifdef DEBUG
-    U64 totalQNodesVisited = 0ULL;
-#endif
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
-    int depth = 0;
+    int depth = 1;
 #ifdef DEBUG
     EVAL_DBG_PRINT = 1;
     printf("info string root-eval %d\n", (g_pos.toPlay == white ? 1 : -1) * evaluate());
@@ -97,21 +99,33 @@ Move startThink(void)
     while (!s->stopThinking && depth <= s->maxDepth)
     {
         nodesVisited = 0ULL;
+#ifdef DEBUG
         qNodesVisited = 0ULL;
+#endif
 
-        think(depth, -MAX_SCORE, MAX_SCORE, IS_PV_FLAG);
+        int eval = think(depth, -MAX_SCORE, MAX_SCORE, IS_PV_FLAG);
 
-        // since this is the best move at this depth, it should cause massive cut offs at the next
-        // level. A bit of a history heuristic :)
+        // handling checkmate (or stalemate) at the root
+        if (depth > 0 && nodesVisited == 1ULL)
+        {
+            printf("info score ");
+            printEval(eval);
+            puts(" depth 0");
+            break;
+        }
+
+        // since this is the best move at this depth, it will be ordered first (as it's likely
+        // still the first move of the PV).
         orderFirst = currBestMove;
 
         totalNodesVisited += nodesVisited;
 #ifdef DEBUG
-        totalQNodesVisited += qNodesVisited;
+        cumulativeNodesVisited += totalNodesVisited;
+        cumulativeQNodesVisited += qNodesVisited;
 #endif
 
         printf("info score ");
-        printEval();
+        printEval_TT();
         printf(" depth %d nodes %lld time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
         printPrincipalVariation(depth);
         puts("");
@@ -127,8 +141,9 @@ Move startThink(void)
 
 #ifdef DEBUG
     U64 cutoffs = nodeOccurrence[TT_UPPER];
-    printf("Total nodes: %lld\n", totalNodesVisited);
-    printf("Of those, quiescent search nodes: %lld\n", totalQNodesVisited);
+    puts("\nCumulative Stats");
+    printf("Nodes visited: %lld\n", cumulativeNodesVisited);
+    printf("QNodes visited: %lld\n", cumulativeQNodesVisited);
     printf("# of cut-offs: %lld\n", cutoffs);
     printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
     printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
@@ -136,6 +151,7 @@ Move startThink(void)
     printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
     printf("Cut-off in remaining moves (after hash, killers, captures): %lld (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
     printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
+    puts("");
 #endif
 
     return currBestMove;
@@ -157,7 +173,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     {
         return -(MAX_SCORE - distToRoot);
     }
-    else if (!isRoot && getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE)
+    else if (!isRoot && (getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE))
     {
         return 0;
     }
@@ -185,7 +201,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 if (savedNodeType == TT_EXACT)
                 {
                     // determine upper bound for mate score
-                    return savedVal - (savedVal >= MATE_SCORE) * (distToRoot + 1) + (savedVal <= -MATE_SCORE) * (distToRoot + 1);
+                    return savedVal - (savedVal >= MATE_SCORE) * distToRoot + (savedVal <= -MATE_SCORE) * distToRoot;
                 }
                 else if (savedNodeType == TT_LOWER && alpha >= savedVal)
                 {
@@ -319,10 +335,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #ifdef DEBUG
             nodeOccurrence[TT_UPPER]++;
             
-            cutoffFirst += mIdx == 0;
-            cutoffSecond += mIdx == 1;
+            cutoffFirst += mIdx == 1;
+            cutoffSecond += mIdx == 2;
             cutoffThird += mIdx == 3;
-            cutoffAvg += mIdx + 1;
+            cutoffAvg += mIdx;
 
             if (m != orderedFirst && !is_move_capt(m) && killer_move(depth, 0) != m && killer_move(depth, 1) != m)
             {
@@ -400,10 +416,11 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 
 int thinkCaptures(int alpha, int beta, int accessTT)
 {
-    // leaf node is ignored in count of qNodes visited
+    // avoids counting leaf nodes (as they have already been counted by the parent node)
     nodesVisited += !accessTT;
+
 #ifdef DEBUG
-    qNodesVisited += !accessTT;
+    qNodesVisited++;
 #endif
     
     if ((nodesVisited & 2047ULL) == 0ULL)
