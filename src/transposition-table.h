@@ -65,8 +65,11 @@ struct TranspositionEntry* getTranspositionTableEntry(void);
 
 void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
 
+// prints the given eval in a specific format
+void printEval(int eval);
+
 // prints the evaluation of the position based on the TT
-void printEval(void);
+void printEval_TT(void);
 
 // prints the sequence of moves that is considered best play.
 void printPrincipalVariation(int depth);

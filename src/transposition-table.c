@@ -120,24 +120,28 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     }
 }
 
-void printEval(void)
+void printEval(int eval)
+{
+    if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
+    {
+        printf("mate %+d", (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
+    }
+    else
+    {
+        printf("cp %+d", eval);
+    }
+}
+
+void printEval_TT(void)
 {
     struct TranspositionEntry* entry = getTranspositionTableEntryPV(0);
     if (entry)
     {
-        int eval = TT_getEval(entry->flags);
-        if (eval >= MATE_SCORE || eval <= -MATE_SCORE)
-        {
-            printf("mate %+d ", (eval < 0 ? -1 : 1) * extract_mate_score(abs(eval)));
-        }
-        else
-        {
-            printf("cp %+d", eval);
-        }
+        printEval(TT_getEval(entry->flags));
     }
     else
     {
-        printf("(--) ");
+        printf("(--)");
     }
 }
 
