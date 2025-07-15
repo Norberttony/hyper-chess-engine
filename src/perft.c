@@ -213,35 +213,28 @@ int isAttackingKing(void)
     U64* position = g_pos.boards;
     int toPlay = g_pos.toPlay;
     int notToPlay = g_pos.notToPlay;
+    U64 targetKing = position[notToPlay + king];
+    int targetKingSq = pop_lsb(targetKing);
 
     // get squares that enemy immobilizer is not influencing
     U64 enemImm = position[notToPlay + immobilizer];
     U64 notImmInfl = ~(kingMoves[pop_lsb(enemImm)] * (enemImm > 0));
 
-    // make sure chameleons aren't nearby...
-    // they aren't programmed to take the king directly
-    U64 attacked = 0ULL;
-    U64 chameleons = position[toPlay + chameleon] & notImmInfl;
-    while (chameleons)
+    // make sure chameleons and king aren't nearby...
+    U64 manAttackers = (position[toPlay + king] | position[toPlay + chameleon]) & notImmInfl;
+    if (manAttackers & kingMoves[targetKingSq])
     {
-        attacked |= kingMoves[pop_lsb(chameleons)];
-        chameleons &= chameleons - 1;
+        return 1;
     }
 
     // but also consider checks that come from death squares.
     // specifically, coordinator AND (king/chameleon) death squares.
     U64 totalBoard = position[white] | position[black];
-
-    U64 targetKing = position[notToPlay + king];
-    int targetKingSq = pop_lsb(targetKing);
     U64 kingBoard = position[toPlay + king];
     int kingSq = pop_lsb(kingBoard);
     U64 king1Board = ((kingBoard & notImmInfl) > 0) * (kingMoves[kingSq] & ~position[toPlay]);
 
-    // of course, the king can take an immobilized king.
-    attacked |= (kingMoves[kingSq] & ~position[toPlay]) * ((kingBoard & notImmInfl) > 0);
-
-    // coordinator AND chameleon(king)-coordinator checks!
+    // coordinator AND (chameleon/king)-coordinator checks!
     // board with (at most) two unimmobilized chameleons
     U64 chamBoard = position[toPlay + chameleon] & notImmInfl;
     // board with (at most) one unimmobilized chameleon
@@ -279,13 +272,27 @@ int isAttackingKing(void)
         coordFile * (coordPieceBoard > 0) == targetKingFile && kingAndChamKingMoves & targetKingRank ||
         coordRank * (coordPieceBoard > 0) == targetKingRank && kingAndChamKingMoves & targetKingFile;
 
-    int isSpringerCheck = isSquareControlledBySpringer(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
+    if (isCheck)
+    {
+        return 1;
+    }
 
-    int isRetractorCheck = isSquareControlledByRetractor(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
+    if (isSquareControlledBySpringer(toPlay, targetKingSq, notImmInfl, totalBoard, 0))
+    {
+        return 1;
+    }
 
-    int isStraddlerCheck = isSquareControlledByStraddler(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
+    if (isSquareControlledByRetractor(toPlay, targetKingSq, notImmInfl, totalBoard, 0))
+    {
+        return 1;
+    }
 
-    return position[notToPlay + king] & attacked || isCheck || isSpringerCheck || isRetractorCheck || isStraddlerCheck;
+    if (isSquareControlledByStraddler(toPlay, targetKingSq, notImmInfl, totalBoard, 0))
+    {
+        return 1;
+    }
+
+    return 0;
 }
 
 int isCheckmate(void)
@@ -418,58 +425,22 @@ int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoar
 
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
 {
-    // check springer checks
-    U64 springerBoard = g_pos.boards[stp + springer] & notImmInfl;
-    U64 springer2Board = (springerBoard - 1) & springerBoard;
+    // all springers currently facing this square (potentially threatening capture)
+    U64 springers = g_pos.boards[stp + springer] & notImmInfl;
+    U64 chameleons = (g_pos.boards[stp + chameleon] & notImmInfl) * (inclCham != 0);
+    U64 facingSpringers = get_queen_attacks(sq, totalBoard) & (springers | chameleons);
 
-    // springer 1
-    int springer1Sq = pop_lsb(springerBoard);
-    U64 springer1Attack = 0ULL;
-    if (springerBoard && springerLeaps[springer1Sq][sq] & ~totalBoard)
+    while (facingSpringers)
     {
-        springer1Attack = (
-            get_queen_attacks(springer1Sq, totalBoard)
-        ) & (1ULL << sq);
+        int springerSq = pop_lsb(facingSpringers);
+        if (springerLeaps[springerSq][sq] & ~totalBoard)
+        {
+            return 1;
+        }
+        facingSpringers &= facingSpringers - 1;
     }
 
-    // springer 2
-    int springer2Sq = pop_lsb(springer2Board);
-    U64 springer2Attack = 0ULL;
-    if (springer2Board && springerLeaps[springer2Sq][sq] & ~totalBoard)
-    {
-        // springer 2
-        springer2Attack = (
-            get_queen_attacks(springer2Sq, totalBoard)
-        ) & (1ULL << sq);
-    }
-
-    int isSpringerCheck = springer1Attack || springer2Attack;
-
-    if (inclCham && !isSpringerCheck)
-    {
-        U64 chamBoard = g_pos.boards[stp + chameleon] & notImmInfl;
-        U64 cham2Board = (chamBoard - 1) & chamBoard;
-
-        // chameleon 1
-        int cham1Sq = pop_lsb(chamBoard);
-        U64 cham1Attack = (chamBoard > 0) * (
-            get_queen_attacks(cham1Sq, totalBoard)
-        ) & (1ULL << sq);
-
-        // chameleon 2
-        int cham2Sq = pop_lsb(cham2Board);
-        U64 cham2Attack = (cham2Board > 0) * (
-            get_queen_attacks(cham2Sq, totalBoard)
-        ) & (1ULL << sq);
-
-        return
-            // cham 1
-            cham1Attack && springerLeaps[cham1Sq][sq] & ~totalBoard ||
-            // cham 2
-            cham2Attack && springerLeaps[cham2Sq][sq] & ~totalBoard;
-    }
-
-    return isSpringerCheck;
+    return 0;
 }
 
 int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
