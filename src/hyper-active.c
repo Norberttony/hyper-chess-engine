@@ -15,7 +15,6 @@
 #include "defines.h"
 #include "move.h"
 #include "perft.h"
-#include "test-suite.h"
 #include "uci.h"
 
 // initializes the move generator

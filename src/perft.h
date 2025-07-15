@@ -1,23 +1,24 @@
 #ifndef PERFT_HEADER
 #define PERFT_HEADER
 
+#include "defines.h"
 #include "move.h"
 #include "make-unmake.h"
 
 // general debug utilities that tend to be focused on counting the number of moves from the current
 // position to a certain depth.
 
-struct MoveCounter
+typedef struct MoveCounter
 {
-    int moves;
-    int captureMoves;
-    int pieceCaptures;
-    int checkmates;
-};
+    U64 moves;
+    U64 captureMoves;
+    U64 pieceCaptures;
+    U64 checkmates;
+} MoveCounter;
 
 // returns the number of moves at the given depth
-struct MoveCounter countMoves(int depth);
-struct MoveCounter divide(int depth);
+MoveCounter countMoves(int depth, Move prevMove);
+MoveCounter divide(int depth, Move prevMove);
 
 // this is insanely temporary. for testing/debugging purposes.
 int isMoveLegal(Move move);

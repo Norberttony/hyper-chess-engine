@@ -20,6 +20,7 @@
 #include "think.h"
 #include "defines.h"
 #include "perft.h"
+#include "test-suite.h"
 
 
 // starts waiting for user input

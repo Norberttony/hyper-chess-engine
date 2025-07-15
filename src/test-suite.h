@@ -7,7 +7,7 @@
 #include "defines.h"
 #include "perft.h"
 
-#define NUM_TEST_SUITE_POSITIONS 52
+#define NUM_TEST_SUITE_POSITIONS 49
 
 struct TestSuitePosition
 {
@@ -15,10 +15,10 @@ struct TestSuitePosition
     const char* fen;
 
     // these 4 have an index of depth
-    int moveCounts[20];
-    int captureMoves[20];
-    int pieceCaptures[20];
-    int checkmates[20];
+    U64 moveCounts[20];
+    U64 captureMoves[20];
+    U64 pieceCaptures[20];
+    U64 checkmates[20];
 };
 
 // shorthand

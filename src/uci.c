@@ -89,6 +89,10 @@ void uciLoop(void)
         {
             memset(transpositionTable, 0, sizeof(transpositionTable));
         }
+        else if (!strncmp(line, "runtestsuite", 12))
+        {
+            runTestSuite();
+        }
         else if (!strncmp(line, "readfile", 8))
         {
             if (inputFile != stdin)
@@ -176,6 +180,13 @@ void parseGo(char* line)
 
     // match various parameters given by the user
     char* matchAt = NULL;
+
+    if ((matchAt = strstr(line, "perft")))
+    {
+        puts("Move | Node count | Capture nodes | Pieces captured | Checkmates");
+        divide(atoi(matchAt + 6), 0);
+        return;
+    }
 
     if ((matchAt = strstr(line, "depth")))
     {

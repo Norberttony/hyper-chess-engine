@@ -1,24 +1,28 @@
 
 #include "perft.h"
 
-struct MoveCounter divide(int depth)
+
+void printMoveCounter(MoveCounter c)
+{
+    printf("%lld %lld %lld %lld\n", c.moves, c.captureMoves, c.pieceCaptures, c.checkmates);
+}
+
+MoveCounter divide(int depth, Move prevMove)
 {
     if (depth == 0)
     {
-        struct MoveCounter counter = { 1, 0, 0, 0 };
-        return counter;
+        return (MoveCounter){
+            1, 0, 0, 0
+        };
     }
 
     Move moves[MAX_MOVES];
     int size = generateMoves((Move*)moves, 0);
 
-    if (size == 0)
+    MoveCounter counter =
     {
-        struct MoveCounter counter = { 1, 0, 0, 0 };
-        return counter;
-    }
-
-    struct MoveCounter counter = { 0, 0, 0, 0 };
+        0, 0, 0, 0
+    };
 
     for (int i = 0; i < size; i++)
     {
@@ -31,18 +35,7 @@ struct MoveCounter divide(int depth)
 
         makeMove(move);
 
-        int checkmate = isCheckmate();
-
-        // create a counter for this move specifically
-        struct MoveCounter temp = { 1, 0, 0, 0 };
-        if (checkmate)
-        {
-            temp.checkmates++;
-        }
-        else
-        {
-            temp = countMoves(depth - 1);
-        }
+        MoveCounter temp = countMoves(depth - 1, move);
 
         // add stats from the temp counter
         counter.moves           += temp.moves;
@@ -50,43 +43,48 @@ struct MoveCounter divide(int depth)
         counter.pieceCaptures   += temp.pieceCaptures;
         counter.checkmates      += temp.checkmates;
 
-        if (is_move_capt(move))
-        {
-            counter.captureMoves++;
-        }
-        
-        int captureCount = countCaptures(move);
-        counter.pieceCaptures += captureCount;
-
         // purpose of divide is to print the top level move and its move count
-        printf("%s%s %d %d %d %d\n", squareNames[get_from(move)], squareNames[get_to(move)], temp.moves, temp.captureMoves, temp.pieceCaptures, temp.checkmates);
+        const char* from = squareNames[get_from(move)];
+        const char* to = squareNames[get_to(move)];
+        printf("%s%s ", from, to);
+        printMoveCounter(temp);
 
         // restore board state
         unmakeMove(move);
     }
 
+    printf("\nTotal: ");
+    printMoveCounter(counter);
+
     return counter;
 }
 
-struct MoveCounter countMoves(int depth)
+MoveCounter countMoves(int depth, Move prevMove)
 {
     if (depth == 0)
     {
-        struct MoveCounter counter = { 1, 0, 0, 0 };
-        return counter;
+        if (!prevMove)
+        {
+            return (MoveCounter){
+                1, 0, 0, 0
+            };
+        }
+        return (MoveCounter){
+            1,
+            is_move_capt(prevMove),
+            countCaptures(prevMove),
+            isCheckmate()
+        };
     }
 
     Move moves[MAX_MOVES];
     int size = generateMoves((Move*)moves, 0);
 
-    if (size == 0)
-    {
-        struct MoveCounter counter = { 1, 0, 0, 0 };
-        return counter;
-    }
-
     // create a counter and a temp for holding countMoves's return
-    struct MoveCounter counter = { 0, 0, 0, 0 };
+    MoveCounter counter =
+    {
+        0, 0, 0, 0
+    };
 
     for (int i = 0; i < size; i++)
     {
@@ -99,32 +97,13 @@ struct MoveCounter countMoves(int depth)
 
         makeMove(move);
 
-        int checkmate = isCheckmate();
-
-        // create a counter for this move specifically
-        struct MoveCounter temp = { 1, 0, 0, 0 };
-        if (checkmate)
-        {
-            temp.checkmates++;
-        }
-        else
-        {
-            temp = countMoves(depth - 1);
-        }
+        MoveCounter temp = countMoves(depth - 1, move);
 
         // add stats from the temp counter
         counter.moves           += temp.moves;
         counter.captureMoves    += temp.captureMoves;
         counter.pieceCaptures   += temp.pieceCaptures;
         counter.checkmates      += temp.checkmates;
-
-        // check with capture mask
-        if (is_move_capt(move))
-        {
-            counter.captureMoves++;
-        }
-        
-        counter.pieceCaptures += countCaptures(move);
 
         unmakeMove(move);
     }

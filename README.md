@@ -30,6 +30,8 @@ Here is a list of some of the available advanced commands:
 - `isready`: engine should respond with `readyok`
 - `clear hash`: clears the engine's transposition tables
 - `readfile {path}`: starts reading commands from the given file, with a caveat: any line containing only a line break will make the engine stop reading the file.
+- `go perft {depth}`: the engine will perform a "perft" test. Perft tests are usually for debugging purposes, and generate the total number of leaf nodes in the move tree (ignoring fifty move rule and threefold).
+- `runtestsuite`: runs the built-in test suite, which is used to verify the engine's move generator (but also can be a rough benchmark).
 
 ## Design
 The engine can be broken up into four main components: board representation, move generation, search, and evaluation. Here is a quick overview of the engine's features:
