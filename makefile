@@ -1,45 +1,61 @@
-CC=gcc
-CFLAGS=-Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=c11
-WEBCFLAGS=-Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=gnu23
+CC := gcc
+CFLAGS := -Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=c11 -flto
+WEBCC := emcc
+WEBCFLAGS := -Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=gnu23
 
-.PHONY: magic-gen
-.PHONY: de-bruijn-gen
+WEB_OBJ_DIR := web-obj
+OBJ_DIR := obj
+SRC_DIR := src
 
-SRCS := src/hyper-active.c \
-		src/bitboard-utility.c \
-		src/defines.c \
-		src/magic-bitboards.c \
-		src/move.c \
-		src/perft.c \
-		src/look-up-tables.c \
-		src/test-suite.c \
-		src/evaluate.c \
-		src/transposition-table.c \
-		src/move-ordering.c \
-		src/think.c \
-		src/make-unmake.c \
-		src/evaluate-defines.c \
-		src/uci.c \
-		src/utils.c
+# build a list of src files (SRCS), obj files (OBJS), and the target name.
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) 
+WEB_OBJS := $(SRCS:$(SRC_DIR)/%.c=$(WEB_OBJ_DIR)/%.o)
 NAME := bin/hyper-active
 
-all:
-	$(CC) $(CFLAGS) $(SRCS) -o $(NAME)
-	./$(NAME)
+.PHONY: magic-gen de-bruijn-gen run all debug web clean profile
 
-web:
-	emcc $(WEBCFLAGS) $(SRCS) -DWEB -o $(NAME).js \
+# default build, a binary executable.
+all: $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+
+debug: CFLAGS += -DDEBUG -g
+debug: all
+
+profile-debug: CFLAGS += -DDEBUG -g
+profile-debug: profile
+
+$(OBJS): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) -c $(CFLAGS) $^ -o $@
+
+profile:
+	$(CC) $(CFLAGS) -fprofile-generate $(SRCS) -o $(NAME)
+	./$(NAME) < bench.txt
+	$(CC) $(CFLAGS) -fprofile-use $(SRCS) -o $(NAME)
+	rm -f bin/*.gcda
+
+# web build
+web: $(WEB_OBJS)
+	$(WEBCC) $(WEBCFLAGS) $(WEB_OBJS) -DWEB -o $(NAME).js \
 		-s NO_EXIT_RUNTIME=1 \
 		-s ASYNCIFY=1 \
 		-s EXPORTED_RUNTIME_METHODS=[ccall,stringToNewUTF8] \
 		-s WASM=1
 
-debug:
-	$(CC) $(CFLAGS) $(SRCS) -DDEBUG -g -o $(NAME)
-	./$(NAME)
+$(WEB_OBJS): $(WEB_OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(WEBCC) -c $(WEBCFLAGS) $^ -o $@
+
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(WEB_OBJS)
+	rm -f $(NAME)
+	rm -f $(NAME).js
+	rm -f $(NAME).wasm
+	rm -f bin/*.gcda
 
 magic-gen:
-	$(CC) $(CFLAGS) src/magic-gen.c src/bitboard-utility.c src/magic-bitboards.c -o bin/magic-gen
+	$(CC) $(CFLAGS) magic-gen/magic-gen.c $(SRC_DIR)/bitboard-utility.c $(SRC_DIR)/magic-bitboards.c -o bin/magic-gen
 	./bin/magic-gen
 
 de-bruijn-gen:

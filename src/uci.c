@@ -88,6 +88,8 @@ void uciLoop(void)
         else if (!strncmp(line, "clear hash", 10))
         {
             memset(transpositionTable, 0, sizeof(transpositionTable));
+            memset(historyValues, 0, sizeof(historyValues));
+            memset(killerMoves, 0, sizeof(killerMoves));
         }
         else if (!strncmp(line, "runtestsuite", 12))
         {

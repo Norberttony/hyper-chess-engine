@@ -27,6 +27,7 @@ const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 #ifdef DEBUG
 U64 cumulativeNodesVisited = 0ULL;
 U64 cumulativeQNodesVisited = 0ULL;
+U64 cumulativeTime = 0ULL;
 U64 cutoffFirst = 0ULL;
 U64 cutoffSecond = 0ULL;
 U64 cutoffThird = 0ULL;
@@ -132,6 +133,9 @@ Move startThink(void)
         depth++;
     }
 
+#ifdef DEBUG
+    cumulativeTime += (U64)(getCurrentTime() - s->thinkStart);
+#endif
     printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);
 
     if (myHash != g_pos.zobristHash)
@@ -144,6 +148,8 @@ Move startThink(void)
     puts("\nCumulative Stats");
     printf("Nodes visited: %lld\n", cumulativeNodesVisited);
     printf("QNodes visited: %lld\n", cumulativeQNodesVisited);
+    printf("Nodes per second: %lf\n", (double)cumulativeNodesVisited * 1000 / cumulativeTime);
+    printf("Total execution time (in ms): %lld\n", cumulativeTime);
     printf("# of cut-offs: %lld\n", cutoffs);
     printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
     printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
@@ -151,6 +157,9 @@ Move startThink(void)
     printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
     printf("Cut-off in remaining moves (after hash, killers, captures): %lld (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
     printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
+    printf("All nodes: %lld\n", nodeOccurrence[TT_LOWER]);
+    printf("Cut nodes: %lld\n", nodeOccurrence[TT_UPPER]);
+    printf("PV nodes: %lld\n", nodeOccurrence[TT_EXACT]);
     puts("");
 #endif
 
@@ -283,6 +292,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
     Move bestMove = 0;
+    int lastCaptIdx = -1;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -300,6 +310,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             flags &= ~IS_PV_FLAG;
         }
         hasLegalMoves = 1;
+        lastCaptIdx += is_move_capt(m);
 
 #ifdef DEBUG
         // keep track of move index to avoid factoring in illegal moves as part of the list
@@ -340,7 +351,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             cutoffThird += mIdx == 3;
             cutoffAvg += mIdx;
 
-            if (m != orderedFirst && !is_move_capt(m) && killer_move(depth, 0) != m && killer_move(depth, 1) != m)
+            Move* killers = &killer_move(g_searchParams.height, 0);
+            int isKiller = killers[0] == m || killers[1] == m;
+
+            if (m != orderedFirst && !is_move_capt(m) && !isKiller)
             {
                 cutoffRemaining++;
                 cutoffRemainingAvg += mIdx;
@@ -353,6 +367,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             // for moves that do not capture...
             if (!is_move_capt(m))
             {
+
                 // update history moves
                 int bonus = 600 * depth * depth;
 
@@ -362,13 +377,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 // provide the desired cut-off. (history maluses)
                 // this gives unpromising moves a negative score
                 int malusBonus = -bonus;
-                for (int j = 0; j < i; j++)
+                for (int j = lastCaptIdx + 1; j < i; j++)
                 {
                     Move mj = movelist[j];
-                    if (!is_move_capt(mj))
-                    {
-                        updateHistory(get_from(mj), get_to(mj), malusBonus);
-                    }
+                    updateHistory(get_from(mj), get_to(mj), malusBonus);
                 }
             }
 

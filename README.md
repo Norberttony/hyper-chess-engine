@@ -9,7 +9,9 @@ The [linked website](https://www.carusos.org/Hyperchess/hyperchess.html) provide
 Note: the liberty to not implement draw by material was taken.
 
 ## Build
-This project requires a GNU compiler that supports the C11 standard and can be run using the `gcc` command, and the ability to run makefiles. Running `make` in the project directory will build the executable `bin/hyper-active.exe`. The makefile has been configured to automatically run the executable after building it. This has been tested to work on Windows and Linux.
+This project requires a GNU compiler that supports the C11 standard and can be run using the `gcc` command, and the ability to run makefiles. Running `make` in the project directory will build the executable `bin/hyper-active.exe`. The makefile has been configured to automatically run the executable after building it. This has been tested to work on Windows with MSYS2 and Linux.
+
+Running `make profile` will use PGO in order to create an executable specially optimized for the platform it is running on. This may take several minutes depending on the device. There is also a `make profile-debug` option which will spit out cumulative statistics, while also using PGO.
 
 Running `make web` in the project directory will build a web assembly version of the engine that exposes some of the engine's functionality to the web browser, generating `bin/hyper-active.js` and `bin/hyper-active.wasm`. This build requires a separate interface to properly use.
 

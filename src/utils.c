@@ -60,7 +60,7 @@ int inputIsWaiting(void)
 
     static int init = 0, pipe;
     static HANDLE inh;
-    DWORD dw;
+    DWORD dw = 0;
 
     if (!init)
     {
@@ -76,9 +76,13 @@ int inputIsWaiting(void)
 
     if (pipe)
     {
+        // A slight modification from the copied code: when PeekNamedPipe fails then '1' is not
+        // returned. When makefile was executing the program to make the profile build, it got hung
+        // up because, probably, it is running the program without stdin (in a "detached" state)...
+        // so if PeekNamedPipe fails, 0 is returned (input is not waiting). I don't know the full
+        // effects of removing PeekNamedPipe, but functionality looks the same.
         if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL))
         {
-            return 1;
         }
         return dw;
     }

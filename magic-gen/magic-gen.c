@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "bitboard-utility.h"
-#include "magic-bitboards.h"
+#include "../src/bitboard-utility.h"
+#include "../src/magic-bitboards.h"
 
 #define MAX_BOARD_INDEX 4096
 

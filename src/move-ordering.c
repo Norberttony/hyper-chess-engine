@@ -16,8 +16,7 @@ void orderMoves(Move* moves, int count, int depth)
 {
     int scores[MAX_MOVES];
 
-    Move killer1 = killer_move(depth, 0);
-    Move killer2 = killer_move(depth, 1);
+    Move* killers = &killer_move(depth, 0);
 
     // score the moves
     for (int i = 0; i < count; i++)
@@ -26,12 +25,13 @@ void orderMoves(Move* moves, int count, int depth)
         int fromSq = get_from(m);
         int toSq = get_to(m);
         int isCapt = is_move_capt(m);
+        int stmIdx = g_pos.toPlay == black;
 
         int orderFirstScore = orderFirstValue * (m == orderFirst);
         int captScore = isCapt * isCaptValue;
 
-        int killScore = killerValue * (killer1 == m || killer2 == m);
-        int historyScore = historyValues[g_pos.toPlay == black][fromSq][toSq];
+        int killScore = (m == killers[0] || m == killers[1]) * killerValue;
+        int historyScore = historyValues[stmIdx][fromSq][toSq];
 
         int quietScore = !isCapt * (historyScore + killScore);
 

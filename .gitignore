@@ -4,4 +4,10 @@
 bin/*
 !bin/.gitkeep
 
+obj/*
+!obj/.gitkeep
+
+web-obj/*
+!web-obj/.gitkeep
+
 *.exe
