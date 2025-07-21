@@ -95,6 +95,12 @@ void uciLoop(void)
         {
             runTestSuite();
         }
+        else if (!strncmp(line, "testpins", 8))
+        {
+            prettyPrintBoard();
+            generatePins();
+            debugPrintPins();
+        }
         else if (!strncmp(line, "readfile", 8))
         {
             if (inputFile != stdin)

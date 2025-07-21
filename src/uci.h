@@ -21,6 +21,7 @@
 #include "defines.h"
 #include "perft.h"
 #include "test-suite.h"
+#include "pins.h"
 
 
 // starts waiting for user input

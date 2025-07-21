@@ -99,6 +99,42 @@ void initPins(void)
     }
 }
 
+void applyPin(U64 ib, U64 totalBoard, int pinnerSq, int kingSq, int immSq)
+{
+    U64 immInfl = kingMoves[immSq];
+    U64 pinned = ib & totalBoard;
+
+    if (!pinned)
+    {
+        // even without any pieces to block a springer check, this might not be check,
+        // maybe the attacking piece is immobilized.
+        if ((1ULL << pinnerSq) & immInfl)
+        {
+            g_pinned |= 1ULL << immSq;
+            g_pinMasks[immSq] &= ib | kingMoves[pinnerSq];
+        }
+        else
+        {
+            // ok, this must be check then.
+            g_checkMask &= ib;
+            g_immCheckMask &= ib | kingMoves[pinnerSq];
+        }
+    }
+    // ensure there is only one pinned piece
+    else if ((pinned & (pinned - 1)) == 0ULL)
+    {
+        // if we are pinning the immobilizer, it can still move around the pinner because
+        // then it's just immobilizing it.
+        if (pinned == (1ULL << immSq))
+        {
+            ib |= kingMoves[pinnerSq];
+        }
+
+        g_pinned |= pinned;
+        g_pinMasks[pop_lsb(pinned)] &= ib;
+    }
+}
+
 void generatePins(void)
 {
     // clear previous pins
@@ -115,7 +151,6 @@ void generatePins(void)
     U64 totalBoard = g_pos.boards[white] | g_pos.boards[black];
     U64 immBoard = g_pos.boards[g_pos.toPlay | immobilizer];
     int immSq = pop_lsb(immBoard);
-    U64 immInfl = kingMoves[immSq];
 
     // springer pins
     U64 sprBoard = g_pos.boards[g_pos.notToPlay | springer];
@@ -127,38 +162,7 @@ void generatePins(void)
         // if the springer can land, it means that it has the king in its line of sight.
         if (land)
         {
-            U64 ib = g_inBetween[sprSq][kingSq] | land;
-            U64 pinned = ib & totalBoard;
-
-            if (!pinned)
-            {
-                // even without any pieces to block a springer check, this might not be check,
-                // maybe the attacking piece is immobilized.
-                if ((1ULL << sprSq) & immInfl)
-                {
-                    g_pinned |= immBoard;
-                    g_pinMasks[immSq] &= ib | kingMoves[sprSq];
-                }
-                else
-                {
-                    // ok, this must be check then.
-                    g_checkMask &= ib;
-                    g_immCheckMask &= ib | kingMoves[sprSq];
-                }
-            }
-            // ensure there is only one pinned piece
-            else if ((pinned & (pinned - 1)) == 0ULL)
-            {
-                // if we are pinning the immobilizer, it can still move around the pinner because
-                // then it's just immobilizing it.
-                if (pinned == immBoard)
-                {
-                    ib |= kingMoves[sprSq];
-                }
-
-                g_pinned |= pinned;
-                g_pinMasks[pop_lsb(pinned)] &= ib;
-            }
+            applyPin(g_inBetween[sprSq][kingSq] | land, totalBoard, sprSq, kingSq, immSq);
         }
         sprBoard &= sprBoard - 1;
     }
