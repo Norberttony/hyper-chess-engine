@@ -16,6 +16,7 @@
 #include "move.h"
 #include "perft.h"
 #include "uci.h"
+#include "pins.h"
 
 // initializes the move generator
 void initMoveGen(void);
@@ -52,4 +53,5 @@ void initMoveGen(void)
     initMagicBitboards(0); // rook magic bitboards
     initMagicBitboards(1); // bishop magic bitboards
     initPSQT();
+    initPins();
 }
