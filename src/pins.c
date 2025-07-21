@@ -166,6 +166,21 @@ void generatePins(void)
         }
         sprBoard &= sprBoard - 1;
     }
+
+    // retractor pins
+    {
+        U64 retrBoard = g_pos.boards[g_pos.notToPlay | retractor];
+        int retrSq = pop_lsb(retrBoard);
+    
+        // we luck out because a retractor at sq 0 can never capture since it's in the corner.
+        // so even if the retractor does not exist (in which case retrSq = 0) we don't have to
+        // handle that separately.
+        U64 land = retractorCaptures[retrSq][kingSq];
+        if (land)
+        {
+            applyPin(land, totalBoard, retrSq, kingSq, immSq);
+        }
+    }
 }
 
 void debugPrintPins(void)
