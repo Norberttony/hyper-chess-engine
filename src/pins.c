@@ -8,6 +8,7 @@ U64 g_inBetween[64][64];
 U64 g_pinMasks[64] = { 0ULL };
 U64 g_pinned = 0ULL;
 U64 g_checkMask = __UINT64_MAX__;
+U64 g_immCheckMask = __UINT64_MAX__;
 
 
 void initPins(void)
@@ -108,4 +109,80 @@ void generatePins(void)
     }
     g_checkMask = __UINT64_MAX__;
 
+    U64 kingBoard = g_pos.boards[g_pos.toPlay | king];
+    int kingSq = pop_lsb(kingBoard);
+
+    U64 totalBoard = g_pos.boards[white] | g_pos.boards[black];
+    U64 immBoard = g_pos.boards[g_pos.toPlay | immobilizer];
+    int immSq = pop_lsb(immBoard);
+    U64 immInfl = kingMoves[immSq];
+
+    // springer pins
+    U64 sprBoard = g_pos.boards[g_pos.notToPlay | springer];
+    while (sprBoard)
+    {
+        int sprSq = pop_lsb(sprBoard);
+        U64 land = springerLeaps[sprSq][kingSq];
+
+        // if the springer can land, it means that it has the king in its line of sight.
+        if (land)
+        {
+            U64 ib = g_inBetween[sprSq][kingSq] | land;
+            U64 pinned = ib & totalBoard;
+
+            if (!pinned)
+            {
+                // even without any pieces to block a springer check, this might not be check,
+                // maybe the attacking piece is immobilized.
+                if ((1ULL << sprSq) & immInfl)
+                {
+                    g_pinned |= immBoard;
+                    g_pinMasks[immSq] &= ib | kingMoves[sprSq];
+                }
+                else
+                {
+                    // ok, this must be check then.
+                    g_checkMask &= ib;
+                    g_immCheckMask &= ib | kingMoves[sprSq];
+                }
+            }
+            // ensure there is only one pinned piece
+            else if ((pinned & (pinned - 1)) == 0ULL)
+            {
+                // if we are pinning the immobilizer, it can still move around the pinner because
+                // then it's just immobilizing it.
+                if (pinned == immBoard)
+                {
+                    ib |= kingMoves[sprSq];
+                }
+
+                g_pinned |= pinned;
+                g_pinMasks[pop_lsb(pinned)] &= ib;
+            }
+        }
+        sprBoard &= sprBoard - 1;
+    }
+}
+
+void debugPrintPins(void)
+{
+    puts("Printing debug info for pins...");
+
+    // print each of the pinned pieces
+    U64 pinned = g_pinned;
+    while (pinned)
+    {
+        int sq = pop_lsb(pinned);
+        printf("Piece on square %s is pinned according to this mask:\n", squareNames[sq]);
+        printBitboard(g_pinMasks[sq]);
+        pinned &= pinned - 1;
+    }
+
+    // print the check mask
+    puts("Because of checks (or lack thereof) each piece must abide to this check mask:");
+    printBitboard(g_checkMask);
+
+    // print the immobilizer's check mask
+    puts("Of course, the immobilizer follows a different check mask:");
+    printBitboard(g_immCheckMask);
 }

@@ -15,6 +15,7 @@
 extern U64 g_pinMasks[64];
 extern U64 g_pinned;
 extern U64 g_checkMask;
+extern U64 g_immCheckMask;
 
 
 // initializes data necessary for pins, should be run once before doing any searching.
@@ -23,5 +24,7 @@ void initPins(void);
 // generates all of the pin masks, pinned pieces, and the check mask.
 // run this before generating moves to get all of the pins for the current position.
 void generatePins(void);
+
+void debugPrintPins(void);
 
 #endif

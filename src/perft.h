@@ -37,9 +37,13 @@ int isAttackingKing(void);
 // just played a move. is it checkmate?
 int isCheckmate(void);
 
-// returns the piece type if the square is controlled by the side to play, and 0 if it is not.
+// returns the piece type if the square is controlled by the side to play, otherwise returns 0.
 int isSquareControlled(int stp, int sq, int pieceType);
 
+// A "isSquareControlledByChameleon" routine is not included because it is handled by each of these
+// functions separately when setting inclCham to 1. inclCham determines if to include chameleons
+// into the detecting-square-control. For instance, chameleons do not control ANY squares against
+// other chameleons (because they can't capture each other).
 int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
 int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);

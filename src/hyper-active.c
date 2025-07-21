@@ -31,11 +31,20 @@ int main(void)
 
     srand(time(NULL));
 
+    // quickly testing positions
+    loadFEN("8/8/3N1k2/7u/3N2n1/8/8/7K b - - 0 1");
+    prettyPrintBoard();
+    generatePins();
+    debugPrintPins();
+
+    // temporarily commented out for testing purposes
+    /*
     loadFEN(StartingFEN);
 
     uciLoop();
 
     puts("Good game!");
+    */
 
     return 0;
 }
