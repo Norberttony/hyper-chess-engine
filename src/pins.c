@@ -15,6 +15,7 @@ void initPins(void)
 {
     // clear out all pins
     g_checkMask = __UINT64_MAX__;
+    g_immCheckMask = __UINT64_MAX__;
     g_pinned = 0ULL;
     for (int s = 0; s < 64; s++)
     {
@@ -174,6 +175,22 @@ void handleCoordinatorPins(U64 danger, U64 totalBoard, int kingSq, int immSq)
     }
 }
 
+void handleChameleonPins(U64 pinners, U64 danger, U64 totalBoard, int kingSq, int immSq)
+{
+    while (pinners)
+    {
+        int pinnerSq = pop_lsb(pinners);
+        U64 pins = kingMoves[pinnerSq] & danger;
+        while (pins)
+        {
+            U64 nobit = pins & (pins - 1);
+            applyPin(pins - nobit, totalBoard, pinnerSq, kingSq, immSq);
+            pins = nobit;
+        }
+        pinners &= pinners - 1;
+    }
+}
+
 void generatePins(void)
 {
     // clear previous pins
@@ -183,6 +200,7 @@ void generatePins(void)
         g_pinned &= g_pinned - 1;
     }
     g_checkMask = __UINT64_MAX__;
+    g_immCheckMask = __UINT64_MAX__;
 
     U64 kingBoard = g_pos.boards[g_pos.toPlay | king];
     int kingSq = pop_lsb(kingBoard);
@@ -261,6 +279,28 @@ void generatePins(void)
     {
         // now the file
         handleCoordinatorPins(files[kingFile] & ~(1ULL << kingSq), totalBoard, kingSq, immSq);
+    }
+
+    // king/chameleon pins with coordinator
+    U64 tripleFile = files[kingFile] | ((files[kingFile] << 1) & ~files[0]) | ((files[kingFile] >> 1) & ~files[7]);
+    if (enemCoord & ranks[kingRank] && enemKC & tripleFile)
+    {
+        // coordinator on the rank means a king/chameleon close to the file may pin/check
+        handleChameleonPins(enemKC & tripleFile, files[kingFile] & ~(1ULL << kingSq), totalBoard, kingSq, immSq);
+    }
+    U64 tripleRank = ranks[kingRank] | (ranks[kingRank] << 8) | (ranks[kingRank] >> 8);
+    if (enemCoord & files[kingFile] && enemKC & tripleRank)
+    {
+        // coordinator on file, so check rank.
+        handleChameleonPins(enemKC & tripleRank, ranks[kingRank] & ~(1ULL << kingSq), totalBoard, kingSq, immSq);
+    }
+
+    // king/chameleon pins without coordinator
+    U64 attackers = kingMoves[kingSq] & enemKC;
+    while (attackers)
+    {
+        applyPin(0ULL, totalBoard, pop_lsb(attackers), kingSq, immSq);
+        attackers &= attackers - 1;
     }
 }
 
