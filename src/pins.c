@@ -109,8 +109,11 @@ void initPins(void)
 
 void applyPin(U64 ib, U64 totalBoard, int pinnerSq, int kingSq, int immSq)
 {
-    U64 immInfl = kingMoves[immSq];
+    U64 immInfl = immSq == -1 ? 0ULL : kingMoves[immSq];
     U64 pinned = ib & totalBoard;
+
+    int singlePinner = (pinned & (pinned - 1)) == 0ULL;
+    int isImmPinned = pinned == (1ULL << immSq);
 
     if (!pinned)
     {
@@ -128,12 +131,12 @@ void applyPin(U64 ib, U64 totalBoard, int pinnerSq, int kingSq, int immSq)
             g_immCheckMask &= ib | kingMoves[pinnerSq];
         }
     }
-    // ensure there is only one pinned piece
-    else if ((pinned & (pinned - 1)) == 0ULL)
+    // ensure there is only one pinned piece, and that the pinner is not immobilized
+    else if (singlePinner && (!(immInfl & (1ULL << pinnerSq)) || isImmPinned))
     {
         // if we are pinning the immobilizer, it can still move around the pinner because
         // then it's just immobilizing it.
-        if (pinned == (1ULL << immSq))
+        if (isImmPinned)
         {
             ib |= kingMoves[pinnerSq];
         }
@@ -173,7 +176,7 @@ void generatePins(void)
 
     U64 totalBoard = g_pos.boards[white] | g_pos.boards[black];
     U64 immBoard = g_pos.boards[g_pos.toPlay | immobilizer];
-    int immSq = pop_lsb(immBoard);
+    int immSq = immBoard == 0ULL ? -1 : pop_lsb(immBoard);
 
     // springer pins
     U64 sprBoard = g_pos.boards[g_pos.notToPlay | springer];
