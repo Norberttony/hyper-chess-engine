@@ -45,52 +45,60 @@ void initPins(void)
             {
                 // aligned by file, so shift by rank
                 U64 small = r1 < r2 ? 1ULL << s1 : 1ULL << s2;
+                int l = r1 < r2 ? r1 : r2;
+                int r = r1 < r2 ? r2 : r1;
                 small <<= 8;
-                r1++;
-                while (r1 < r2)
+                l++;
+                while (l < r)
                 {
                     inb |= small;
                     small <<= 8;
-                    r1++;
+                    l++;
                 }
             }
             else if (r1 == r2)
             {
                 // aligned by rank, so shift by file
                 U64 small = f1 < f2 ? 1ULL << s1 : 1ULL << s2;
+                int l = f1 < f2 ? f1 : f2;
+                int r = f1 < f2 ? f2 : f1;
                 small <<= 1;
-                f1++;
-                while (f1 < f2)
+                l++;
+                while (l < r)
                 {
                     inb |= small;
                     small <<= 1;
-                    f1++;
+                    l++;
                 }
             }
             else if (f2 - f1 == r2 - r1)
             {
                 // up left down right diagonal
                 U64 small = f1 < f2 ? 1ULL << s1 : 1ULL << s2;
+                int l = f1 < f2 ? f1 : f2;
+                int r = f1 < f2 ? f2 : f1;
                 small <<= 9;
-                f1++;
-                while (f1 < f2)
+                l++;
+                while (l < r)
                 {
                     inb |= small;
                     small <<= 9;
-                    f1++;
+                    l++;
                 }
             }
             else if (f1 - f2 == r2 - r1)
             {
                 // up left down right diagonal
                 U64 small = f1 < f2 ? 1ULL << s1 : 1ULL << s2;
+                int l = f1 < f2 ? f1 : f2;
+                int r = f1 < f2 ? f2 : f1;
                 small >>= 7;
-                f1++;
-                while (f1 < f2)
+                l++;
+                while (l < r)
                 {
                     inb |= small;
                     small >>= 7;
-                    f1++;
+                    l++;
                 }
             }
 
@@ -135,6 +143,21 @@ void applyPin(U64 ib, U64 totalBoard, int pinnerSq, int kingSq, int immSq)
     }
 }
 
+// handles a square (pinSq) being pinned by a straddler.
+void handleStraddlerPins(int pinSq, U64 totalBoard, int kingSq, int immSq)
+{
+    U64 pinBoard = 1ULL << pinSq;
+    U64 enem = g_pos.boards[g_pos.notToPlay];
+    U64 enemStra = g_pos.boards[g_pos.notToPlay | straddler];
+    U64 pinners = get_rook_attacks(pinSq, enem | (1ULL << kingSq)) & enemStra;
+    while (pinners)
+    {
+        int pSq = pop_lsb(pinners);
+        applyPin(pinBoard | g_inBetween[pinSq][pSq], totalBoard, pSq, kingSq, immSq);
+        pinners &= pinners - 1;
+    }
+}
+
 void generatePins(void)
 {
     // clear previous pins
@@ -168,17 +191,45 @@ void generatePins(void)
     }
 
     // retractor pins
-    {
-        U64 retrBoard = g_pos.boards[g_pos.notToPlay | retractor];
+    U64 retrBoard = g_pos.boards[g_pos.notToPlay | retractor];
+    if (kingMoves[kingSq] & retrBoard){
         int retrSq = pop_lsb(retrBoard);
     
-        // we luck out because a retractor at sq 0 can never capture since it's in the corner.
-        // so even if the retractor does not exist (in which case retrSq = 0) we don't have to
-        // handle that separately.
         U64 land = retractorCaptures[retrSq][kingSq];
         if (land)
         {
             applyPin(land, totalBoard, retrSq, kingSq, immSq);
+        }
+    }
+
+    // straddler pins
+    U64 straBoard = g_pos.boards[g_pos.notToPlay | straddler];
+    int kingFile = get_file(kingSq);
+    if (kingFile > 0 && kingFile < 7)
+    {
+        if ((kingBoard >> 1) & straBoard)
+        {
+            // check for straddler pins on the right side
+            handleStraddlerPins(kingSq + 1, totalBoard, kingSq, immSq);
+        }
+        else if ((kingBoard << 1) & straBoard)
+        {
+            // left side
+            handleStraddlerPins(kingSq - 1, totalBoard, kingSq, immSq);
+        }
+    }
+    int kingRank = get_rank(kingSq);
+    if (kingRank > 0 && kingRank < 7)
+    {
+        if ((kingBoard >> 8) & straBoard)
+        {
+            // up
+            handleStraddlerPins(kingSq + 8, totalBoard, kingSq, immSq);
+        }
+        else if ((kingBoard << 8) & straBoard)
+        {
+            // down
+            handleStraddlerPins(kingSq - 8, totalBoard, kingSq, immSq);
         }
     }
 }

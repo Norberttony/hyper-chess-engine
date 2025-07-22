@@ -17,6 +17,9 @@ extern U64 g_pinned;
 extern U64 g_checkMask;
 extern U64 g_immCheckMask;
 
+// forward declaration from move.h
+extern const U64 straddlerBounds[];
+
 
 // initializes data necessary for pins, should be run once before doing any searching.
 void initPins(void);
