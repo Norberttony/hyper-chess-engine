@@ -30,7 +30,6 @@ int main(void)
     initMoveGen();
 
     srand(time(NULL));
-    printBitboard(straddlerBounds[1]);
 
     loadFEN(StartingFEN);
 

@@ -161,6 +161,19 @@ void handleStraddlerPins(int pinSq, U64 totalBoard, int kingSq, int immSq)
     }
 }
 
+void handleCoordinatorPins(U64 danger, U64 totalBoard, int kingSq, int immSq)
+{
+    int enemCoordSq = pop_lsb(g_pos.boards[g_pos.notToPlay | coordinator]);
+    danger &= get_queen_attacks(enemCoordSq, g_pos.boards[g_pos.notToPlay]);
+    while (danger)
+    {
+        int dSq = pop_lsb(danger);
+        U64 ib = (1ULL << dSq) | g_inBetween[dSq][enemCoordSq];
+        applyPin(ib, totalBoard, enemCoordSq, kingSq, immSq);
+        danger &= danger - 1;
+    }
+}
+
 void generatePins(void)
 {
     // clear previous pins
@@ -234,6 +247,20 @@ void generatePins(void)
             // down
             handleStraddlerPins(kingSq - 8, totalBoard, kingSq, immSq);
         }
+    }
+
+    // coordinator pins
+    U64 enemCoord = g_pos.boards[g_pos.notToPlay | coordinator];
+    U64 enemKC = g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon];
+    if (enemCoord && files[kingFile] & enemKC)
+    {
+        // if coordinator can move to the king's rank, the king is captured!!
+        handleCoordinatorPins(ranks[kingRank] & ~(1ULL << kingSq), totalBoard, kingSq, immSq);
+    }
+    if (enemCoord && ranks[kingRank] & enemKC)
+    {
+        // now the file
+        handleCoordinatorPins(files[kingFile] & ~(1ULL << kingSq), totalBoard, kingSq, immSq);
     }
 }
 
