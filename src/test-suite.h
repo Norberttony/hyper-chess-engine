@@ -7,7 +7,7 @@
 #include "defines.h"
 #include "perft.h"
 
-#define NUM_TEST_SUITE_POSITIONS 49
+#define NUM_TEST_SUITE_POSITIONS 122
 
 struct TestSuitePosition
 {
