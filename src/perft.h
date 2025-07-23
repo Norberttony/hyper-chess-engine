@@ -37,7 +37,8 @@ int isAttackingKing(void);
 // just played a move. is it checkmate?
 int isCheckmate(void);
 
-// returns the piece type if the square is controlled by the side to play, otherwise returns 0.
+// returns the piece type if the square (sq) is controlled by side to play (stp)
+// otherwise returns 0.
 int isSquareControlled(int stp, int sq, int pieceType);
 
 // A "isSquareControlledByChameleon" routine is not included because it is handled by each of these

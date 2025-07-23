@@ -329,14 +329,25 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
     U64 coordBoard = g_pos.boards[toPlay + coordinator];
     int coordSq = pop_lsb(coordBoard);
 
+    U64 enemCoordBoard = g_pos.boards[notToPlay + coordinator];
+
     // king can also coordinate with the chameleon, but only against the coordinator
     U64 chamBoard = g_pos.boards[toPlay + chameleon];
     int cham1 = pop_lsb(chamBoard);
     int cham2 = pop_lsb((chamBoard - 1) & chamBoard);
 
+    U64 enemBoard = g_pos.boards[notToPlay];
+
+    // since isSquareControlled and anything else in this routine does not use pieceList, we can
+    // safely remove the king from the board. This will allow isSquareControlled to consider moves
+    // that x-ray where the king currently is.
+    U64 kingBoardCopy = g_pos.boards[toPlay | king];
+    g_pos.boards[toPlay | king] = 0ULL;
+
     while (moves)
     {
         int to = pop_lsb(moves);
+        U64 toBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | king;
 
         // capture by displacement
@@ -344,29 +355,40 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
 
         // capture by coordinator death square
         U64 deathco1 = deathSquares[coordSq][to][0] * (coordBoard > 0);
-        move |= (g_pos.pieceList[pop_lsb(deathco1)] * ((g_pos.boards[notToPlay] & deathco1) > 0)) << 18;
+        move |= (g_pos.pieceList[pop_lsb(deathco1)] * ((enemBoard & deathco1) > 0)) << 18;
 
         U64 deathco2 = deathSquares[coordSq][to][1] * (coordBoard > 0);
-        move |= (g_pos.pieceList[pop_lsb(deathco2)] * ((g_pos.boards[notToPlay] & deathco2) > 0)) << 21;
+        move |= (g_pos.pieceList[pop_lsb(deathco2)] * ((enemBoard & deathco2) > 0)) << 21;
 
         // capture an enemy coordinator by coordinating with a chameleon, only against the coordinator
         // make sure a double capture doesn't happen (coordinator-king and chameleon-king both capture same coordinator)
         U64 deathch1 = deathSquares[cham1][to][0] * (chamBoard > 0);
-        move |= (((g_pos.boards[notToPlay + coordinator] & deathch1) > 0) && (deathch1 != deathco1)) << 24;
+        move |= (((enemCoordBoard & deathch1) > 0) && (deathch1 != deathco1)) << 24;
 
         U64 deathch2 = deathSquares[cham1][to][1] * (chamBoard > 0);
-        move |= (((g_pos.boards[notToPlay + coordinator] & deathch2) > 0) && (deathch2 != deathco2)) << 25;
+        move |= (((enemCoordBoard & deathch2) > 0) && (deathch2 != deathco2)) << 25;
 
         U64 death = deathSquares[cham2][to][0] * (((chamBoard - 1) & chamBoard) > 0);
-        move |= (((g_pos.boards[notToPlay + coordinator] & death) > 0) && (death != deathco1 && death != deathch1)) << 26;
+        move |= (((enemCoordBoard & death) > 0) && (death != deathco1 && death != deathch1)) << 26;
 
         death = deathSquares[cham2][to][1] * (((chamBoard - 1) & chamBoard) > 0);
-        move |= (((g_pos.boards[notToPlay + coordinator] & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
+        move |= (((enemCoordBoard & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
 
         movelist[size] = move;
-        size += !capturesOnly || (move & move_captMask) > 0;
+        size += !capturesOnly || is_move_capt(move);
+        if (!capturesOnly && !is_move_capt(move))
+        {
+            // now, isSquareControlled is kind of poorly written... I should fix this, but for now, any
+            // king/chameleon takes by vanilla king move is not checked for when running isSquareControlled.
+            if ((g_enemKC & toBoard) || isSquareControlled(g_pos.notToPlay, to, king))
+            {
+                size--;
+            }
+        }
         moves &= moves - 1;
     }
+
+    g_pos.boards[toPlay | king] = kingBoardCopy;
 
     return size;
 }
@@ -391,12 +413,15 @@ int generateSpringerCaptures(int sq, U64 moves, Move* movelist)
 {
     int size = 0;
 
+    U64 totalBoard = g_pos.boards[white] | g_pos.boards[black];
+
     while (moves)
     {
         int capturing = pop_lsb(moves);
+        U64 land = springerLeaps[sq][capturing];
 
         // determine where the springer lands
-        int to = pop_lsb(springerLeaps[sq][capturing]);
+        int to = pop_lsb(land);
 
         Move move = (g_pos.pieceList[capturing] << 15) | (to << 9) | (sq << 3) | springer;
 
@@ -404,7 +429,7 @@ int generateSpringerCaptures(int sq, U64 moves, Move* movelist)
         moves &= moves - 1;
 
         // actually, don't count the move if it did not result in a capture
-        size -= (springerLeaps[sq][capturing] & (g_pos.boards[white] | g_pos.boards[black])) > 0 || springerLeaps[sq][capturing] == 0;
+        size -= (land & totalBoard) > 0 || land == 0;
     }
 
     return size;
@@ -430,9 +455,12 @@ int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnl
 {
     int size = 0;
 
+    U64 pinMask = get_pin_mask(sq);
+
     while (moves)
     {
         int to = pop_lsb(moves);
+        U64 toBoard = 1ULL << to;
 
         // determine where retractor lands
         int capturing = pop_lsb(retractorCaptures[sq][to]);
@@ -440,7 +468,8 @@ int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnl
         Move move = ((g_pos.pieceList[capturing] << 15) * ((g_pos.boards[g_pos.notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
 
         movelist[size] = move;
-        size += !capturesOnly || (move & move_captMask) > 0;
+        // only count quiet moves if we're generating all moves AND they obey pin masks.
+        size += is_move_capt(move) || (!capturesOnly && (pinMask & toBoard));
         moves &= moves - 1;
     }
 
@@ -452,8 +481,9 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
     int size = 0;
 
     U64 enemyCoordBoard = g_pos.boards[g_pos.notToPlay + coordinator];
-
+    U64 enemyRetractorBoard = g_pos.boards[g_pos.notToPlay + retractor];
     int kingSq = pop_lsb(g_pos.boards[g_pos.toPlay + king]);
+    U64 pinMask = get_pin_mask(sq);
 
     // extract and consider each move
     while (moves)
@@ -474,14 +504,15 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
         move |= ((straddlerDownBoard & toBoard) > 0) << 18;
 
         // also consider the possibility of this being a retractor move
-        move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
+        move |= move_cham_q_mask * ((enemyRetractorBoard & retractorCaptures[sq][to]) > 0);
 
         // coordinator moves
         move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
         movelist[size] = move;
-        size += !capturesOnly || (move & move_captMask) > 0;
+        // only count quiet moves if we're generating all moves AND they obey pin masks.
+        size += is_move_capt(move) || (!capturesOnly && (pinMask & toBoard));
         moves &= moves - 1;
     }
 
@@ -493,13 +524,14 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int captures
     int size = 0;
 
     U64 enemyCoordBoard = g_pos.boards[g_pos.notToPlay + coordinator];
-
     int kingSq = pop_lsb(g_pos.boards[g_pos.toPlay + king]);
+    U64 pinMask = get_pin_mask(sq);
 
     // extract and consider each move
     while (moves)
     {
         int to = pop_lsb(moves);
+        U64 toBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | chameleon;
 
         // determine where retractor lands
@@ -510,7 +542,8 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int captures
         move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
 
         movelist[size] = move;
-        size += !capturesOnly || (move & move_captMask) > 0;
+        // only count quiet moves if we're generating all moves AND they obey pin masks.
+        size += is_move_capt(move) || (!capturesOnly && (pinMask & toBoard));
         moves &= moves - 1;
     }
 
@@ -521,13 +554,16 @@ int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist)
 {
     int size = 0;
 
+    U64 totalBoard = g_pos.boards[white] | g_pos.boards[black];
+
     // extract and consider each move
     while (moves)
     {
         int capturing = pop_lsb(moves);
+        U64 land = springerLeaps[sq][capturing];
 
         // determine where the springer lands
-        int to = pop_lsb(springerLeaps[sq][capturing]);
+        int to = pop_lsb(land);
 
         Move move = move_cham_n_mask | (to << 9) | (sq << 3) | chameleon;
 
@@ -535,7 +571,7 @@ int generateChameleonSpringerCaptures(int sq, U64 moves, Move* movelist)
         moves &= moves - 1;
 
         // actually, don't count the move if it did not result in a capture
-        size -= (springerLeaps[sq][capturing] & (g_pos.boards[white] | g_pos.boards[black])) > 0 || springerLeaps[sq][capturing] == 0;
+        size -= (land & totalBoard) > 0 || land == 0;
     }
 
     return size;

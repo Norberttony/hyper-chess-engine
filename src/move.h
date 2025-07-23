@@ -7,6 +7,8 @@
 #include "magic-bitboards.h"
 #include "look-up-tables.h"
 #include "defines.h"
+#include "pins.h"
+
 
 // defines the max depth that the engine can calculate to.
 #define MAX_DEPTH 127
@@ -64,6 +66,9 @@ typedef uint32_t Move;
 extern const char* squareNames[];
 
 extern const U64 straddlerBounds[];
+
+// forward declaration from perft.h
+int isSquareControlled(int stp, int sq, int pieceType);
 
 // pass in pointer to array, which is then populated with the pseudo-legal moves.
 // returns the number of moves

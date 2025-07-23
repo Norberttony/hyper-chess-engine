@@ -501,11 +501,11 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
     U64 sqFile = files[get_file(sq)];
     U64 sqRank = ranks[get_rank(sq)];
-    
+
     return
         // king stays, coordinator moves
-        (sqFile & kingMovesBoard) > 0 && coordBoard & sqRank ||
-        (sqRank & kingMovesBoard) > 0 && coordBoard & sqFile ||
+        (sqFile & kingBoard) > 0 && coordBoard & sqRank ||
+        (sqRank & kingBoard) > 0 && coordBoard & sqFile ||
         // coordinator stays, king moves
         files[get_file(coordSq)] * (coordPieceBoard > 0) == sqFile && kingMovesBoard & sqRank ||
         ranks[get_rank(coordSq)] * (coordPieceBoard > 0) == sqRank && kingMovesBoard & sqFile;
