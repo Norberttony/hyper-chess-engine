@@ -113,7 +113,11 @@ void printPieceList(void);
 // generates zobrist hashes
 void generateZobristHashes(void);
 
-// returns 1 if the threefold flag is activated and 0 otherwise
-int getThreefoldFlag(void);
+// returns the number of times the current position has been repeated.
+int getNumberOfRepeats(void);
+
+// used for when the repeat table might be cleared out when printing out the PV.
+void saveRepeatTable(void);
+void restoreRepeatTable(void);
 
 #endif

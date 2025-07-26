@@ -12,11 +12,11 @@ Move killerMoves[MAX_DEPTH][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
 
-void orderMoves(Move* moves, int count, int depth)
+void orderMoves(Move* moves, int count, int height)
 {
     int scores[MAX_MOVES];
 
-    Move* killers = &killer_move(depth, 0);
+    Move* killers = &killer_move(height, 0);
 
     // score the moves
     for (int i = 0; i < count; i++)
@@ -68,11 +68,11 @@ void orderMoves(Move* moves, int count, int depth)
     */
 }
 
-void addKillerMove(Move m, int depth)
+void addKillerMove(Move m, int height)
 {
-    int isStored = killer_move(depth, 0) == m;
-    killer_move(depth, 1) = !isStored * killer_move(depth, 0) + isStored * killer_move(depth, 1);
-    killer_move(depth, 0) = !isStored * m + isStored * killer_move(depth, 0);
+    int isStored = killer_move(height, 0) == m;
+    killer_move(height, 1) = !isStored * killer_move(height, 0) + isStored * killer_move(height, 1);
+    killer_move(height, 0) = !isStored * m + isStored * killer_move(height, 0);
 }
 
 void updateHistory(int from, int to, int bonus)
@@ -88,5 +88,6 @@ void updateHistory(int from, int to, int bonus)
     }
 
     // apply the history gravity formula, which gives smaller bonuses if the history move was expected
-    historyValues[g_pos.toPlay == black][from][to] += bonus - historyValues[g_pos.toPlay == black][from][to] * abs(bonus) / MAX_HISTORY;
+    int s = g_pos.toPlay == black;
+    historyValues[s][from][to] += bonus - historyValues[s][from][to] * abs(bonus) / MAX_HISTORY;
 }

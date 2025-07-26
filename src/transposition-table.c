@@ -145,11 +145,12 @@ void printEval_TT(void)
     }
 }
 
-void printPrincipalVariation(int depth)
+void printPrincipalVariation(int depth, int maxDepth)
 {
     // base case
-    // a leaf node does not have a "best move" tied to it.
-    if (depth == 0)
+    // this is the last safety net in case we hit an unusual case and there's an infinite loop
+    // in this function with nothing to break it.
+    if (maxDepth == 0)
     {
         return;
     }
@@ -163,7 +164,18 @@ void printPrincipalVariation(int depth)
 
         // update the zobrist hash, and keep printing the principal variation.
         makeMove(entry->bestMove);
-        printPrincipalVariation(depth - 1);
+
+        // if we repeated three times already, then that's it. it's a draw.
+        // IF somehow we get a repetition that is longer than the repetition circular buffer can
+        // hold, then when the halfmove starts being factored into the TT hash (because of 50 move
+        // rule) we will break out of the loop.
+        if (getNumberOfRepeats() >= 3)
+        {
+            unmakeMove(entry->bestMove);
+            return;
+        }
+
+        printPrincipalVariation(TT_getDepth(entry->flags) - 1, maxDepth - 1);
         unmakeMove(entry->bestMove);
     }
 }

@@ -72,7 +72,7 @@ void printEval(int eval);
 void printEval_TT(void);
 
 // prints the sequence of moves that is considered best play.
-void printPrincipalVariation(int depth);
+void printPrincipalVariation(int depth, int maxDepth);
 
 // sets the transposition table's size to mb megabytes
 void setTranspositionTableSize(int mb);

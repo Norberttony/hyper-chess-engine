@@ -38,6 +38,8 @@ U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
 U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
 
+U64 repeatTableCopy[REPEAT_TABLE_ENTRIES];
+
 
 void printBoardLine(void)
 {
@@ -448,7 +450,7 @@ void generateZobristHashes(void)
     }
 }
 
-int getThreefoldFlag(void)
+int getNumberOfRepeats(void)
 {
     int repeats = 0;
     for (int j = 0; j < REPEAT_TABLE_ENTRIES; j++)
@@ -456,5 +458,21 @@ int getThreefoldFlag(void)
         repeats += repeatTable[j] == g_pos.zobristHash;
     }
 
-    return repeats >= 2;
+    return repeats;
+}
+
+void saveRepeatTable(void)
+{
+    for (int i = 0; i < REPEAT_TABLE_ENTRIES; i++)
+    {
+        repeatTableCopy[i] = repeatTable[i];
+    }
+}
+
+void restoreRepeatTable(void)
+{
+    for (int i = 0; i < REPEAT_TABLE_ENTRIES; i++)
+    {
+        repeatTable[i] = repeatTableCopy[i];
+    }
 }

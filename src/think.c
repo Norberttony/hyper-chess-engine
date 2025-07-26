@@ -128,7 +128,24 @@ Move startThink(void)
         printf("info score ");
         printEval_TT();
         printf(" depth %d nodes %lld time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
-        printPrincipalVariation(depth);
+        saveRepeatTable();
+        if (s->stopThinking)
+        {
+            // at least print part of the current principal variation if prompted to stop thinking
+            // if we changed moves at the root but interrupted thinking, the root hasn't had enough
+            // time to put in the best move into the TT. So, we forcefully play it here and then
+            // play out the PV. This might still give an inaccurate PV (because of missing TT
+            // entries) but should be right a good amount of the time.
+            printMove(currBestMove);
+            makeMove(currBestMove);
+            printPrincipalVariation(depth - 1, 2 * (depth - 1));
+            unmakeMove(currBestMove);
+        }
+        else
+        {
+            printPrincipalVariation(depth, 2 * depth);
+        }
+        restoreRepeatTable();
         puts("");
         depth++;
     }
@@ -182,7 +199,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     {
         return -(MAX_SCORE - distToRoot);
     }
-    else if (!isRoot && (getThreefoldFlag() || g_pos.state->halfmove >= DRAW_MOVE_RULE))
+    else if (!isRoot && (getNumberOfRepeats() >= 2 || g_pos.state->halfmove >= DRAW_MOVE_RULE))
     {
         return 0;
     }
@@ -277,7 +294,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
     // order most promising moves first
-    orderMoves(movelist, size, depth);
+    orderMoves(movelist, size, g_searchParams.height);
 
     // have at least a move before time runs out
     if (isRoot)
@@ -362,7 +379,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
             // store killer move
-            addKillerMove(m, depth);
+            addKillerMove(m, g_searchParams.height);
 
             // for moves that do not capture...
             if (!is_move_capt(m))

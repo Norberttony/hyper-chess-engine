@@ -143,7 +143,7 @@ clear hash
 position fen k2p1p2/p2P4/8/6u1/4bp1p/8/1p3K2/8 w 0 81
 go depth 8
 clear hash
-position fen k2p1p2/p7/8/8/3Pbp1p/6K1/1p3u2/8 b 7 84
+position fen 5p2/up1k4/Nnb2q1b/2Up4/3P3Q/2R5/P1PP3P/2B3K1 b 0 28
 go depth 8
 clear hash
 position fen un1q3r/p2kp3/2b1nb2/PP1U1p1p/5p1P/1P4p1/2PBP3/RN1QKBN1 b 7 10

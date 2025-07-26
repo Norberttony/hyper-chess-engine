@@ -34,6 +34,7 @@ Move startThink(void);
 // captures
 int thinkCaptures(int alpha, int beta, int accessTT);
 
+// forward declaration from uci.h
 void readInput(void);
 
 #endif
