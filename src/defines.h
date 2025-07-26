@@ -3,6 +3,7 @@
 
 #include <ctype.h> // for tolower and toupper
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "evaluate-defines.h"
 #include "bitboard-utility.h"
@@ -34,9 +35,13 @@ enum
     king
 };
 
+typedef uint32_t Move;
+
 typedef struct PositionState
 {
     int halfmove;
+    // the move that was played to lead into this position
+    Move prevMove;
 } PositionState;
 
 typedef struct Position
@@ -119,5 +124,14 @@ int getNumberOfRepeats(void);
 // used for when the repeat table might be cleared out when printing out the PV.
 void saveRepeatTable(void);
 void restoreRepeatTable(void);
+
+static inline Move get_move_n_ply_ago(int ply)
+{
+    if (g_pos.state - g_states >= ply)
+    {
+        return (g_pos.state - ply + 1)->prevMove;
+    }
+    return 0;
+}
 
 #endif

@@ -146,6 +146,7 @@ int loadFEN(const char* fen)
     // reset history
     g_pos.state = g_states;
     g_pos.state->halfmove = 0;
+    g_pos.state->prevMove = 0;
 
     // interpret board string
     int i;

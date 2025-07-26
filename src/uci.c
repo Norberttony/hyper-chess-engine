@@ -90,6 +90,7 @@ void uciLoop(void)
             memset(transpositionTable, 0, sizeof(transpositionTable));
             memset(historyValues, 0, sizeof(historyValues));
             memset(killerMoves, 0, sizeof(killerMoves));
+            memset(continuationHistory, 0, sizeof(continuationHistory));
         }
         else if (!strncmp(line, "runtestsuite", 12))
         {

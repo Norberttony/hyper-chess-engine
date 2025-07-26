@@ -388,7 +388,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 // update history moves
                 int bonus = 600 * depth * depth;
 
-                updateHistory(get_from(m), get_to(m), bonus);
+                updateHistory(m, bonus);
 
                 // all previously searched quiet moves receive a negative score, as they did not
                 // provide the desired cut-off. (history maluses)
@@ -397,7 +397,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 for (int j = lastCaptIdx + 1; j < i; j++)
                 {
                     Move mj = movelist[j];
-                    updateHistory(get_from(mj), get_to(mj), malusBonus);
+                    updateHistory(mj, malusBonus);
                 }
             }
 

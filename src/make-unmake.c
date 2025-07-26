@@ -273,6 +273,7 @@ void makeMove(Move m)
     // update move counters
     g_pos.state++;
     g_pos.state->halfmove = !is_move_capt(m) * ((g_pos.state - 1)->halfmove + 1);
+    g_pos.state->prevMove = m;
     g_pos.fullmove += g_pos.toPlay == white;
 }
 

@@ -11,12 +11,27 @@ const int killerValue = 800000000;
 Move killerMoves[MAX_DEPTH][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
+// continuation history idea courtesy of
+// https://www.chessprogramming.org/History_Heuristic#Continuation_History
+int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
+
 
 void orderMoves(Move* moves, int count, int height)
 {
     int scores[MAX_MOVES];
 
     Move* killers = &killer_move(height, 0);
+
+    Move prevs[CONT_HISTORY_PLY] = { 0 };
+    for (int i = 0; i < CONT_HISTORY_PLY; i++)
+    {
+        Move m = get_move_n_ply_ago(i + 1);
+        if (m)
+        {
+            prevs[i] = m;
+        }
+    }
+
 
     // score the moves
     for (int i = 0; i < count; i++)
@@ -32,6 +47,19 @@ void orderMoves(Move* moves, int count, int height)
 
         int killScore = (m == killers[0] || m == killers[1]) * killerValue;
         int historyScore = historyValues[stmIdx][fromSq][toSq];
+
+        if (!isCapt)
+        {
+            // add continuation history value
+            for (int i = 0; i < CONT_HISTORY_PLY; i++)
+            {
+                Move pm = prevs[i];
+                if (pm)
+                {
+                    historyScore += continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][get_to(m)];
+                }
+            }
+        }
 
         int quietScore = !isCapt * (historyScore + killScore);
 
@@ -75,8 +103,11 @@ void addKillerMove(Move m, int height)
     killer_move(height, 0) = !isStored * m + isStored * killer_move(height, 0);
 }
 
-void updateHistory(int from, int to, int bonus)
+void updateHistory(Move m, int bonus)
 {
+    int from = get_from(m);
+    int to = get_to(m);
+
     // clamp bonus between -MAX_HISTORY and MAX_HISTORY to avoid oversaturated history values
     if (bonus > MAX_HISTORY)
     {
@@ -90,4 +121,15 @@ void updateHistory(int from, int to, int bonus)
     // apply the history gravity formula, which gives smaller bonuses if the history move was expected
     int s = g_pos.toPlay == black;
     historyValues[s][from][to] += bonus - historyValues[s][from][to] * abs(bonus) / MAX_HISTORY;
+
+    // continuation history
+    for (int i = 0; i < CONT_HISTORY_PLY; i++)
+    {
+        Move pm = get_move_n_ply_ago(i + 1);
+        if (pm)
+        {
+            int* v = &continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][to];
+            *v += bonus - *v * abs(bonus) / MAX_HISTORY;
+        }
+    }
 }
