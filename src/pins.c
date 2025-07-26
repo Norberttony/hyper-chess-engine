@@ -9,7 +9,6 @@ U64 g_pinMasks[64] = { 0ULL };
 U64 g_pinned = 0ULL;
 U64 g_checkMask = __UINT64_MAX__;
 U64 g_immCheckMask = __UINT64_MAX__;
-U64 g_enemKC = 0ULL;
 
 
 void initPins(void)
@@ -18,7 +17,6 @@ void initPins(void)
     g_checkMask = __UINT64_MAX__;
     g_immCheckMask = __UINT64_MAX__;
     g_pinned = 0ULL;
-    g_enemKC = 0ULL;
     for (int s = 0; s < 64; s++)
     {
         g_pinMasks[s] = __UINT64_MAX__;
@@ -272,7 +270,6 @@ void generatePins(void)
     // coordinator pins
     U64 enemCoord = g_pos.boards[g_pos.notToPlay | coordinator];
     U64 enemKC = g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon];
-    g_enemKC = enemKC;
     if (enemCoord && files[kingFile] & enemKC)
     {
         // if coordinator can move to the king's rank, the king is captured!!

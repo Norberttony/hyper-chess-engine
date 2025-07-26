@@ -298,7 +298,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         Move m = movelist[i];
         makeMove(m);
 
-        if (isAttackingKing())
+        if (is_move_capt(m) && isAttackingKing())
         {
             unmakeMove(m);
             continue;

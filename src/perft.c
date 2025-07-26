@@ -113,6 +113,10 @@ MoveCounter countMoves(int depth, Move prevMove)
 
 int isMoveLegal(Move m)
 {
+    if (!is_move_capt(m))
+    {
+        return 1;
+    }
     makeMove(m);
 
     int res = !isAttackingKing();
@@ -344,7 +348,7 @@ int isSquareControlled(int stp, int targetSq, int pieceType)
     {
         return springer;
     }
-    else if (isSquareControlledByCoordinator(stp, targetSq, notImmInfl, totalBoard, pieceType == coordinator))
+    else if (isSquareControlledByCoordinator(stp, targetSq, notImmInfl, totalBoard, pieceType))
     {
         return coordinator;
     }
@@ -472,19 +476,27 @@ int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard
     return isSpringerCheck;
 }
 
-int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
+int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int pieceType)
 {
+    int inclCham = pieceType == coordinator;
+
     U64 kingBoard = g_pos.boards[stp + king] & notImmInfl;
     U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~g_pos.boards[stp]);
 
+    if (pieceType == king)
+    {
+        U64 chamBoard = g_pos.boards[stp + chameleon] & notImmInfl;
+        kingBoard |= chamBoard;
+        while (chamBoard)
+        {
+            kingMovesBoard |= kingMoves[pop_lsb(chamBoard)];
+            chamBoard &= chamBoard - 1;
+        }
+    }
+
     U64 coordPieceBoard = g_pos.boards[stp + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
-    U64 coordBoard = 0ULL;
-
-    if (coordPieceBoard & notImmInfl && (files[get_file(sq)] | ranks[get_rank(sq)]) & kingMovesBoard)
-    {   
-        coordBoard = (get_queen_attacks(coordSq, totalBoard)) & ~totalBoard;
-    }
+    U64 coordBoard = (get_queen_attacks(coordSq, totalBoard)) & ~totalBoard;
 
     if (inclCham)
     {

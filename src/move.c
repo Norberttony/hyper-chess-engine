@@ -36,6 +36,7 @@ const U64 straddlerBounds[] = {
 
 int generateMoves(Move *movelist, int capturesOnly)
 {
+    generatePins();
     int size = 0;
 
     int toPlay = g_pos.toPlay;
@@ -85,7 +86,7 @@ int generateMoves(Move *movelist, int capturesOnly)
 
         if (!capturesOnly)
         {
-            size += generateStraddlerMoves(sq, moves & ~straddlerCaptures, &movelist[size]);
+            size += generateStraddlerMoves(sq, moves & ~straddlerCaptures & get_pin_mask(sq), &movelist[size]);
         }
 
         // also add the captures right here. right now. just to be able to use the up/left/right/down straddler board from before.
@@ -129,7 +130,7 @@ int generateMoves(Move *movelist, int capturesOnly)
         U64 immBoard = position[toPlay + immobilizer] & notImmInfl & ~chamInfl;
         int sq = pop_lsb(immBoard);
         U64 moves = (immBoard > 0) * (get_queen_attacks(sq, totalBoard)) & ~totalBoard;
-        size += generateImmobilizerMoves(sq, moves, &movelist[size]);
+        size += generateImmobilizerMoves(sq, moves & get_imm_pin_mask(sq), &movelist[size]);
     }
 
     // coordinator moves (there's only one)
@@ -158,7 +159,7 @@ int generateMoves(Move *movelist, int capturesOnly)
 
         if (!capturesOnly)
         {
-            size += generateCoordinatorMoves(sq, moves & ~captures, &movelist[size]);
+            size += generateCoordinatorMoves(sq, moves & ~captures & get_pin_mask(sq), &movelist[size]);
         }
         size += generateCoordinatorCaptures(sq, moves & captures, &movelist[size]);
     }
@@ -184,7 +185,7 @@ int generateMoves(Move *movelist, int capturesOnly)
 
         if (!capturesOnly)
         {
-            size += generateSpringerMoves(sq, moves & ~totalBoard, &movelist[size]);
+            size += generateSpringerMoves(sq, moves & ~totalBoard & get_pin_mask(sq), &movelist[size]);
         }
         size += generateSpringerCaptures(sq, moves & position[notToPlay], &movelist[size]);
 
@@ -200,7 +201,7 @@ int generateMoves(Move *movelist, int capturesOnly)
 
         if (!capturesOnly)
         {
-            size += generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard, &movelist[size]);
+            size += generateRetractorMoves(sq, moves & ~kingMoves[sq] & ~totalBoard & get_pin_mask(sq), &movelist[size]);
         }
 
         // consider moves separately from (potential) captures.
@@ -342,12 +343,14 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
     // safely remove the king from the board. This will allow isSquareControlled to consider moves
     // that x-ray where the king currently is.
     U64 kingBoardCopy = g_pos.boards[toPlay | king];
+    g_pos.boards[toPlay] ^= kingBoardCopy;
     g_pos.boards[toPlay | king] = 0ULL;
+
+    U64 enemKC = g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon];
 
     while (moves)
     {
         int to = pop_lsb(moves);
-        U64 toBoard = 1ULL << to;
         Move move = (to << 9) | (sq << 3) | king;
 
         // capture by displacement
@@ -380,7 +383,7 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
         {
             // now, isSquareControlled is kind of poorly written... I should fix this, but for now, any
             // king/chameleon takes by vanilla king move is not checked for when running isSquareControlled.
-            if ((g_enemKC & toBoard) || isSquareControlled(g_pos.notToPlay, to, king))
+            if ((enemKC & kingMoves[to]) || isSquareControlled(g_pos.notToPlay, to, king))
             {
                 size--;
             }
@@ -388,6 +391,7 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
         moves &= moves - 1;
     }
 
+    g_pos.boards[toPlay] ^= kingBoardCopy;
     g_pos.boards[toPlay | king] = kingBoardCopy;
 
     return size;

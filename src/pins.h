@@ -21,7 +21,6 @@ extern U64 g_pinMasks[64];
 extern U64 g_pinned;
 extern U64 g_checkMask;
 extern U64 g_immCheckMask;
-extern U64 g_enemKC;
 
 // forward declaration from move.h
 extern const U64 straddlerBounds[];
