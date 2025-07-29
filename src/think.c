@@ -306,7 +306,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
     // order most promising moves first
-    orderMoves(movelist, size, g_searchParams.height);
+    orderMoves(movelist, size, g_searchParams.height, depth);
 
     // have at least a move before time runs out
     if (isRoot)
@@ -525,7 +525,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
     }
 
     // determine most promising moves
-    orderMoves(movelist, size, -1);
+    orderMoves(movelist, size, -1, 0);
 
     int nodeType = TT_LOWER;
 

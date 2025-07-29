@@ -16,7 +16,7 @@ int historyValues[2][64][64] = { 0 };
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
 
 
-void orderMoves(Move* moves, int count, int height)
+void orderMoves(Move* moves, int count, int height, int depth)
 {
     int scores[MAX_MOVES];
 
@@ -66,7 +66,13 @@ void orderMoves(Move* moves, int count, int height)
         scores[i] = orderFirstScore + captScore + quietScore;
         if (isCapt)
         {
-            scores[i] += moveCaptureValue(m);
+            int captVal = moveCaptureValue(m);
+            scores[i] += captVal;
+            // sort losing captures to be at the end of the list.
+            if (depth > 4 && captVal < pieceValues[get_type(m)] && isSquareControlled(g_pos.notToPlay, toSq, get_type(m)))
+            {
+                scores[i] -= 2 * isCaptValue;
+            }
         }
     }
 
