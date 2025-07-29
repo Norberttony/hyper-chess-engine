@@ -7,7 +7,7 @@
 
 
 #define MAX_HISTORY 10000
-#define CONT_HISTORY_PLY 5
+#define CONT_HISTORY_PLY 1
 
 #define killer_move(depth, idx) killerMoves[depth][idx]
 
