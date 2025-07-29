@@ -34,6 +34,13 @@ U64 cutoffThird = 0ULL;
 U64 cutoffAvg = 0ULL;
 U64 cutoffRemaining = 0ULL;
 U64 cutoffRemainingAvg = 0ULL;
+U64 cutoffFirstCapt = 0ULL;
+U64 cutoffSecondCapt = 0ULL;
+U64 captureCutoffs = 0ULL;
+U64 noCaptureCutNodes = 0ULL;
+U64 historyReliantCutNodes = 0ULL;
+U64 goodKillers = 0ULL;
+U64 badKillers = 0ULL;
 #endif
 
 Move currBestMove = 0;
@@ -177,6 +184,11 @@ Move startThink(void)
     printf("All nodes: %lld\n", nodeOccurrence[TT_LOWER]);
     printf("Cut nodes: %lld\n", nodeOccurrence[TT_UPPER]);
     printf("PV nodes: %lld\n", nodeOccurrence[TT_EXACT]);
+    printf("# of cut-offs caused by a capture: %lld\n", captureCutoffs);
+    printf("# of cut-offs caused by a capture ordered first: %lld\n", cutoffFirstCapt);
+    printf("# of cut-offs caused by a capture ordered second: %lld\n", cutoffSecondCapt);
+    printf("# of cut nodes without any captures: %lld\n", noCaptureCutNodes);
+    printf("cut nodes that rely on history: %lld\n", historyReliantCutNodes);
     puts("");
 #endif
 
@@ -306,10 +318,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 
 #ifdef DEBUG
     int mIdx = 0;
+    int capts = 0;
+    int k1Idx = -1;
+    int k2Idx = -1;
 #endif
 
     Move bestMove = 0;
-    int lastCaptIdx = -1;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -327,12 +341,13 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             flags &= ~IS_PV_FLAG;
         }
         hasLegalMoves = 1;
-        lastCaptIdx += is_move_capt(m);
 
 #ifdef DEBUG
         // keep track of move index to avoid factoring in illegal moves as part of the list
         // this is used for cutoff statistics later.
         mIdx++;
+        capts += is_move_capt(m);
+        Move* killers = &killer_move(g_searchParams.height, 0);
 #endif
 
         g_searchParams.height++;
@@ -361,20 +376,32 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
 #ifdef DEBUG
-            nodeOccurrence[TT_UPPER]++;
-            
-            cutoffFirst += mIdx == 1;
-            cutoffSecond += mIdx == 2;
-            cutoffThird += mIdx == 3;
-            cutoffAvg += mIdx;
-
-            Move* killers = &killer_move(g_searchParams.height, 0);
-            int isKiller = killers[0] == m || killers[1] == m;
-
-            if (m != orderedFirst && !is_move_capt(m) && !isKiller)
+            if (!isNullMovePruning)
             {
-                cutoffRemaining++;
-                cutoffRemainingAvg += mIdx;
+                nodeOccurrence[TT_UPPER]++;
+                
+                cutoffFirst += mIdx == 1;
+                cutoffSecond += mIdx == 2;
+                cutoffThird += mIdx == 3;
+                cutoffAvg += mIdx;
+
+                captureCutoffs += is_move_capt(m);
+                cutoffFirstCapt += capts == 1 && is_move_capt(m);
+                cutoffSecondCapt += capts == 2 && is_move_capt(m);
+                noCaptureCutNodes += capts == 0;
+
+                int isKiller = killers[0] == m || killers[1] == m;
+
+                historyReliantCutNodes += !isFromTT && capts == 0 && !isKiller;
+
+                goodKillers += isKiller;
+                badKillers += (k1Idx > -1) + (k2Idx > -1);
+
+                if (m != orderedFirst && !is_move_capt(m) && !isKiller)
+                {
+                    cutoffRemaining++;
+                    cutoffRemainingAvg += mIdx;
+                }
             }
 #endif
 
@@ -394,15 +421,29 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 // provide the desired cut-off. (history maluses)
                 // this gives unpromising moves a negative score
                 int malusBonus = -bonus;
-                for (int j = lastCaptIdx + 1; j < i; j++)
+                for (int j = 0; j < i; j++)
                 {
                     Move mj = movelist[j];
-                    updateHistory(mj, malusBonus);
+                    if (!is_move_capt(mj))
+                    {
+                        updateHistory(mj, malusBonus);
+                    }
                 }
             }
 
             return beta;
         }
+
+#ifdef DEBUG
+        if (killers[0] == m)
+        {
+            k1Idx = mIdx;
+        }
+        if (killers[1] == m)
+        {
+            k2Idx = mIdx;
+        }
+#endif
 
         if (eval > alpha)
         {

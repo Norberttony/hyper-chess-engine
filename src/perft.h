@@ -41,7 +41,7 @@ int isSquareControlled(int stp, int sq, int pieceType);
 int isSquareControlledByStraddler(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
 int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
-int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham);
+int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBoard, int pieceType);
 int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard);
 
 #endif
