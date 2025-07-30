@@ -7,12 +7,12 @@ Move orderFirst = 0;
 const int orderFirstValue = 1000000000;
 const int isCaptValue = 900000000;
 const int killerValue = 800000000;
+// place losing captures after killer moves
+const int losingCaptValue = killerValue;
 
 Move killerMoves[MAX_DEPTH][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
-// continuation history idea courtesy of
-// https://www.chessprogramming.org/History_Heuristic#Continuation_History
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
 
 
@@ -68,10 +68,10 @@ void orderMoves(Move* moves, int count, int height, int depth)
         {
             int captVal = moveCaptureValue(m);
             scores[i] += captVal;
-            // sort losing captures to be at the end of the list.
-            if (depth > 4 && captVal < pieceValues[get_type(m)] && isSquareControlled(g_pos.notToPlay, toSq, get_type(m)))
+            // sort losing captures
+            if (depth > 3 && captVal < pieceValues[get_type(m)] && isSquareControlled(g_pos.notToPlay, toSq, get_type(m)))
             {
-                scores[i] -= 2 * isCaptValue;
+                scores[i] += losingCaptValue - isCaptValue - pieceValues[get_type(m)];
             }
         }
     }

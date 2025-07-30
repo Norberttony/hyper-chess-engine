@@ -308,12 +308,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // order most promising moves first
     orderMoves(movelist, size, g_searchParams.height, depth);
 
-    // have at least a move before time runs out
-    if (isRoot)
-    {
-        currBestMove = movelist[0];
-    }
-
     int hasLegalMoves = 0;
 
 #ifdef DEBUG
@@ -339,6 +333,11 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         if (hasLegalMoves)
         {
             flags &= ~IS_PV_FLAG;
+        }
+        // have at least a move before time runs out
+        if (!hasLegalMoves && isRoot && !currBestMove)
+        {
+            currBestMove = m;
         }
         hasLegalMoves = 1;
 
