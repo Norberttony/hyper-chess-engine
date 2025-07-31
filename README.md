@@ -84,3 +84,9 @@ Below is a quick list of some of the evaluation heuristics the engine calculates
 In fact, all three of these heuristics require the use of bitboards.
 
 Piece square tables (PSQT) are used to give a bonus/penalty to the current placement of pieces. These tables act as a guideline for the engine when it cannot see far enough to see the long-term impacts of its arbitrary piece configuration.
+
+# Resources
+- [Chess Programming Wiki](https://www.chessprogramming.org/Main_Page)
+- Sebastian Lague's chess programming videos, [part 1](https://www.youtube.com/watch?v=U4ogK0MIzqk) and [part 2](https://www.youtube.com/watch?v=_vqlIPDR2TU)
+- Chess Programming's BBC engine: [Bitboard Chess Engine in C playlist](https://www.youtube.com/watch?v=QUNP-UjujBM&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
+- [Bluefever Software's chess engine Vice](https://www.youtube.com/watch?v=gVGadWuBqEA)
