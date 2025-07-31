@@ -20,6 +20,7 @@ extern int continuationHistory[CONT_HISTORY_PLY][7][64][7][64];
 
 
 void orderMoves(Move* moves, int count, int height);
+void orderCapts(Move* moves, int count);
 void addKillerMove(Move m, int depth);
 void updateHistory(Move m, int bonus);
 

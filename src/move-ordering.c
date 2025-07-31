@@ -5,72 +5,17 @@
 Move orderFirst = 0;
 
 const int orderFirstValue = 1000000000;
-const int isCaptValue = 900000000;
-const int killerValue = 800000000;
+const int isCaptValue     =  900000000;
+const int killerValue     =  800000000;
 
 Move killerMoves[MAX_DEPTH][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
-// continuation history idea courtesy of
-// https://www.chessprogramming.org/History_Heuristic#Continuation_History
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
 
 
-void orderMoves(Move* moves, int count, int height)
+static inline void insertionSort(Move* restrict moves, int* restrict scores, int count)
 {
-    int scores[MAX_MOVES];
-
-    Move* killers = &killer_move(height, 0);
-
-    Move prevs[CONT_HISTORY_PLY] = { 0 };
-    for (int i = 0; i < CONT_HISTORY_PLY; i++)
-    {
-        Move m = get_move_n_ply_ago(i + 1);
-        if (m)
-        {
-            prevs[i] = m;
-        }
-    }
-
-
-    // score the moves
-    for (int i = 0; i < count; i++)
-    {
-        Move m = moves[i];
-        int fromSq = get_from(m);
-        int toSq = get_to(m);
-        int isCapt = is_move_capt(m);
-        int stmIdx = g_pos.toPlay == black;
-
-        int orderFirstScore = orderFirstValue * (m == orderFirst);
-        int captScore = isCapt * isCaptValue;
-
-        int killScore = (m == killers[0] || m == killers[1]) * killerValue;
-        int historyScore = historyValues[stmIdx][fromSq][toSq];
-
-        if (!isCapt)
-        {
-            // add continuation history value
-            for (int i = 0; i < CONT_HISTORY_PLY; i++)
-            {
-                Move pm = prevs[i];
-                if (pm)
-                {
-                    historyScore += continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][get_to(m)];
-                }
-            }
-        }
-
-        int quietScore = !isCapt * (historyScore + killScore);
-
-        scores[i] = orderFirstScore + captScore + quietScore;
-        if (isCapt)
-        {
-            scores[i] += moveCaptureValue(m);
-        }
-    }
-
-    // sort the moves using insertion sort
     for (int i = 1; i < count; i++)
     {
         Move m = moves[i];
@@ -86,6 +31,69 @@ void orderMoves(Move* moves, int count, int height)
         moves[j + 1] = m;
         scores[j + 1] = s;
     }
+}
+
+void orderMoves(Move* moves, int count, int height)
+{
+    int scores[MAX_MOVES];
+
+    Move* killers = &killer_move(height, 0);
+
+    // get a list of all of the previous moves now
+    Move prevs[CONT_HISTORY_PLY] = { 0 };
+    for (int i = 0; i < CONT_HISTORY_PLY; i++)
+    {
+        Move m = get_move_n_ply_ago(i + 1);
+        if (m)
+        {
+            prevs[i] = m;
+        }
+    }
+
+    // score the moves
+    for (int i = 0; i < count; i++)
+    {
+        Move m = moves[i];
+        int fromSq = get_from(m);
+        int toSq = get_to(m);
+        int isCapt = is_move_capt(m);
+        int stmIdx = g_pos.toPlay == black;
+
+        int score = 0;
+
+        // special moves that are first in line to be tried
+        score += orderFirstValue * (m == orderFirst);
+
+        // order quiet moves
+        if (!isCapt)
+        {
+            // add killer move value
+            score += (m == killers[0] || m == killers[1]) * killerValue;
+
+            // add history value
+            score += historyValues[stmIdx][fromSq][toSq];
+
+            // add continuation history value
+            for (int i = 0; i < CONT_HISTORY_PLY; i++)
+            {
+                Move pm = prevs[i];
+                if (pm)
+                {
+                    score += continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][get_to(m)];
+                }
+            }
+
+        }
+        // order captures
+        else
+        {
+            score += isCaptValue + moveCaptureValue(m);
+        }
+        scores[i] = score;
+    }
+
+    // sort the moves using insertion sort
+    insertionSort(moves, scores, count);
 
     /*
     for (int i = 0; i < count; i++)
@@ -94,6 +102,23 @@ void orderMoves(Move* moves, int count, int height)
         printf("is valued at %d\n", scores[i]);
     }
     */
+}
+
+// used in quiescent search, assumes that all moves in the list are captures and sorts them
+// accordingly.
+void orderCapts(Move* moves, int count)
+{
+    int scores[MAX_MOVES];
+
+    // score the moves
+    for (int i = 0; i < count; i++)
+    {
+        Move m = moves[i];
+        scores[i] = (m == orderFirst) * orderFirstValue + moveCaptureValue(m);
+    }
+
+    // sort the moves using insertion sort
+    insertionSort(moves, scores, count);
 }
 
 void addKillerMove(Move m, int height)
