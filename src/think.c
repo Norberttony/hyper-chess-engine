@@ -308,6 +308,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // order most promising moves first
     orderMoves(movelist, size, g_searchParams.height);
 
+    // clear killer moves for this ply
+    killer_move(g_searchParams.height + 1, 0) = 0;
+    killer_move(g_searchParams.height + 1, 1) = 0;
+
     int hasLegalMoves = 0;
 
 #ifdef DEBUG
@@ -342,6 +346,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         }
         hasLegalMoves = 1;
 
+        g_searchParams.height++;
+        int eval = -think(depth - 1, -beta, -alpha, flags);
+        g_searchParams.height--;
+
+        unmakeMove(m);
+
 #ifdef DEBUG
         // keep track of move index to avoid factoring in illegal moves as part of the list
         // this is used for cutoff statistics later.
@@ -349,12 +359,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         capts += is_move_capt(m);
         Move* killers = &killer_move(g_searchParams.height, 0);
 #endif
-
-        g_searchParams.height++;
-        int eval = -think(depth - 1, -beta, -alpha, flags);
-        g_searchParams.height--;
-
-        unmakeMove(m);
 
         // make sure we are still allowed to think.
         if (g_searchParams.stopThinking)
@@ -385,12 +389,36 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 cutoffThird += mIdx == 3;
                 cutoffAvg += mIdx;
 
+                int isKiller = killers[0] == m || killers[1] == m;
+
+                // This code is for showing all of the poor move ordering choices with some data.
+                /*
+                if (mIdx > 1 && depth > 5)
+                {
+                    char fen[1024];
+                    getFEN(fen, 1024);
+                    printf("(depth %d) At position %s\n", depth, fen);
+                    printf("Is first move from TT? %d\n", isFromTT);
+                    puts("MOVE ORDERING:");
+                    for (int j = 0; j < i; j++)
+                    {
+                        printf("%d. ", j + 1);
+                        prettyPrintMove(movelist[j]);
+                    }
+                    printf("Whereas the good cut off move was at index %d: ", mIdx);
+                    prettyPrintMove(m);
+                    printf("Killer moves are: ");
+                    printMove(killers[0]);
+                    printf(" ");
+                    printMove(killers[1]);
+                    puts("\n");
+                }
+                */
+
                 captureCutoffs += is_move_capt(m);
                 cutoffFirstCapt += capts == 1 && is_move_capt(m);
                 cutoffSecondCapt += capts == 2 && is_move_capt(m);
                 noCaptureCutNodes += capts == 0;
-
-                int isKiller = killers[0] == m || killers[1] == m;
 
                 historyReliantCutNodes += !isFromTT && capts == 0 && !isKiller;
 
@@ -405,12 +433,11 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             }
 #endif
 
-            // store killer move
-            addKillerMove(m, g_searchParams.height);
-
             // for moves that do not capture...
             if (!is_move_capt(m))
             {
+                // store killer move
+                addKillerMove(m, g_searchParams.height);
 
                 // update history moves
                 int bonus = 600 * depth * depth;

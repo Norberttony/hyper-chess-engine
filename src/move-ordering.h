@@ -14,7 +14,7 @@
 
 extern Move orderFirst; // the move to order first
 
-extern Move killerMoves[MAX_DEPTH][2];
+extern Move killerMoves[MAX_DEPTH + 1][2];
 extern int historyValues[2][64][64];
 extern int continuationHistory[CONT_HISTORY_PLY][7][64][7][64];
 

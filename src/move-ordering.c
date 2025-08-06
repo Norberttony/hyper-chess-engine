@@ -7,8 +7,9 @@ Move orderFirst = 0;
 const int orderFirstValue = 1000000000;
 const int isCaptValue     =  900000000;
 const int killerValue     =  800000000;
+const int killerFalloff   =   10000000;
 
-Move killerMoves[MAX_DEPTH][2] = { 0 };
+Move killerMoves[MAX_DEPTH + 1][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
@@ -68,7 +69,8 @@ void orderMoves(Move* moves, int count, int height)
         if (!isCapt)
         {
             // add killer move value
-            score += (m == killers[0] || m == killers[1]) * killerValue;
+            score += (m == killers[1]) * killerValue;
+            score += (m == killers[0]) * (killerValue - killerFalloff);
 
             // add history value
             score += historyValues[stmIdx][fromSq][toSq];
@@ -123,9 +125,9 @@ void orderCapts(Move* moves, int count)
 
 void addKillerMove(Move m, int height)
 {
-    int isStored = killer_move(height, 0) == m;
-    killer_move(height, 1) = !isStored * killer_move(height, 0) + isStored * killer_move(height, 1);
-    killer_move(height, 0) = !isStored * m + isStored * killer_move(height, 0);
+    int isStored = killer_move(height, 1) == m;
+    killer_move(height, 0) = !isStored * killer_move(height, 1) + isStored * killer_move(height, 0);
+    killer_move(height, 1) = !isStored * m + isStored * killer_move(height, 1);
 }
 
 void updateHistory(Move m, int bonus)
