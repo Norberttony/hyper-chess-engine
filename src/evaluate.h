@@ -20,4 +20,21 @@ int evaluate(void);
 // determines the material value of all the pieces captured.
 int moveCaptureValue(Move m);
 
+
+// returns the value of an immobilizer being on the given square based on immBonus
+static inline int getImmobilizedValue(int sq, int stm)
+{
+    // immobilizd enemy material
+    U64 imm = kingMoves[sq] & g_pos.boards[!stm * 8];
+
+    int score = 0;
+    while (imm)
+    {
+        score += immBonus[g_pos.pieceList[pop_lsb(imm)]];
+        imm &= imm - 1;
+    }
+
+    return score;
+}
+
 #endif

@@ -34,10 +34,8 @@ static inline void insertionSort(Move* restrict moves, int* restrict scores, int
     }
 }
 
-void orderMoves(Move* moves, int count, int height)
+void orderMoves(Move* moves, int count, int height, int* scores)
 {
-    int scores[MAX_MOVES];
-
     Move* killers = &killer_move(height, 0);
 
     // get a list of all of the previous moves now
@@ -49,6 +47,17 @@ void orderMoves(Move* moves, int count, int height)
         {
             prevs[i] = m;
         }
+    }
+
+    // current score of the immobilizer's location
+    U64 immBoard = g_pos.boards[g_pos.toPlay + immobilizer];
+    int currentImmScore = 0;
+    // int isImmFromSqControlled = 0;
+    if (immBoard)
+    {
+        int immSq = pop_lsb(immBoard);
+        currentImmScore = getImmobilizedValue(immSq, g_pos.toPlay);
+        // isImmFromSqControlled = isSquareControlled(g_pos.notToPlay, immSq, immobilizer);
     }
 
     // score the moves
@@ -64,6 +73,22 @@ void orderMoves(Move* moves, int count, int height)
 
         // special moves that are first in line to be tried
         score += orderFirstValue * (m == orderFirst);
+
+        // immobilizer moves get to be captures when their move immobilizes pieces
+        if (get_type(m) == immobilizer)
+        {
+            int toImmVal = getImmobilizedValue(toSq, g_pos.toPlay);
+            int netImmVal = toImmVal - currentImmScore;
+
+            if (netImmVal >= 100)
+            {
+                score += netImmVal;
+                isCapt = 1;
+                // make this move a capture so it doesn't get included in killer moves or history
+                // heuristic eval.
+                moves[i] |= 0xFFF8000u;
+            }
+        }
 
         // order quiet moves
         if (!isCapt)
@@ -84,7 +109,6 @@ void orderMoves(Move* moves, int count, int height)
                     score += continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][get_to(m)];
                 }
             }
-
         }
         // order captures
         else

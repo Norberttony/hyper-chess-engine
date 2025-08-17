@@ -41,6 +41,7 @@ U64 noCaptureCutNodes = 0ULL;
 U64 historyReliantCutNodes = 0ULL;
 U64 goodKillers = 0ULL;
 U64 badKillers = 0ULL;
+int pieceTypeCutoffs[8] = { 0 };
 #endif
 
 Move currBestMove = 0;
@@ -189,6 +190,10 @@ Move startThink(void)
     printf("# of cut-offs caused by a capture ordered second: %lld\n", cutoffSecondCapt);
     printf("# of cut nodes without any captures: %lld\n", noCaptureCutNodes);
     printf("cut nodes that rely on history: %lld\n", historyReliantCutNodes);
+    for (int i = straddler; i <= king; i++)
+    {
+        printf("%c - %d\n", pieceFEN[i], pieceTypeCutoffs[i]);
+    }
     puts("");
 #endif
 
@@ -293,6 +298,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     }
 
     Move movelist[MAX_MOVES];
+    int moveScores[MAX_MOVES];
     int size = generateMoves((Move*)movelist, 0);
 
     // check for stalemate
@@ -306,7 +312,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 #endif
 
     // order most promising moves first
-    orderMoves(movelist, size, g_searchParams.height);
+    orderMoves(movelist, size, g_searchParams.height, moveScores);
 
     // clear killer moves for this ply
     killer_move(g_searchParams.height + 1, 0) = 0;
@@ -392,7 +398,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 int isKiller = killers[0] == m || killers[1] == m;
 
                 // This code is for showing all of the poor move ordering choices with some data.
-                /*
                 if (mIdx > 1 && depth > 5)
                 {
                     char fen[1024];
@@ -402,10 +407,10 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                     puts("MOVE ORDERING:");
                     for (int j = 0; j < i; j++)
                     {
-                        printf("%d. ", j + 1);
+                        printf("%d. (%d) ", j + 1, moveScores[j]);
                         prettyPrintMove(movelist[j]);
                     }
-                    printf("Whereas the good cut off move was at index %d: ", mIdx);
+                    printf("Whereas the good cut off move was at index %d (%d): ", mIdx, moveScores[mIdx - 1]);
                     prettyPrintMove(m);
                     printf("Killer moves are: ");
                     printMove(killers[0]);
@@ -413,7 +418,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                     printMove(killers[1]);
                     puts("\n");
                 }
-                */
 
                 captureCutoffs += is_move_capt(m);
                 cutoffFirstCapt += capts == 1 && is_move_capt(m);
@@ -429,6 +433,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 {
                     cutoffRemaining++;
                     cutoffRemainingAvg += mIdx;
+                    pieceTypeCutoffs[get_type(m)]++;
                 }
             }
 #endif
