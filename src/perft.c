@@ -344,7 +344,7 @@ int isSquareControlled(int stp, int targetSq, int pieceType)
     {
         return springer;
     }
-    else if (isSquareControlledByCoordinator(stp, targetSq, notImmInfl, totalBoard, pieceType == coordinator))
+    else if (isSquareControlledByCoordinator(stp, targetSq, notImmInfl, totalBoard, pieceType))
     {
         return coordinator;
     }
