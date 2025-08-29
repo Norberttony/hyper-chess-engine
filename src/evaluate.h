@@ -34,6 +34,12 @@ static inline int getImmobilizedValue(int sq, int stm)
         imm &= imm - 1;
     }
 
+    // apply penalty if the imagined immobilizer would be immobilized by enemy pieces.
+    U64 enemImmBoard = g_pos.boards[g_pos.notToPlay + immobilizer];
+    U64 enemChamBoard = g_pos.boards[g_pos.notToPlay + chameleon];
+    int willBeImm = (kingMoves[sq] & (enemImmBoard | enemChamBoard)) > 0;
+    score -= willBeImm * immBonus[immobilizer];
+
     return score;
 }
 

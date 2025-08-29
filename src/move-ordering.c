@@ -52,12 +52,10 @@ void orderMoves(Move* moves, int count, int height, int* scores)
     // current score of the immobilizer's location
     U64 immBoard = g_pos.boards[g_pos.toPlay + immobilizer];
     int currentImmScore = 0;
-    // int isImmFromSqControlled = 0;
     if (immBoard)
     {
         int immSq = pop_lsb(immBoard);
         currentImmScore = getImmobilizedValue(immSq, g_pos.toPlay);
-        // isImmFromSqControlled = isSquareControlled(g_pos.notToPlay, immSq, immobilizer);
     }
 
     // score the moves
@@ -80,7 +78,13 @@ void orderMoves(Move* moves, int count, int height, int* scores)
             int toImmVal = getImmobilizedValue(toSq, g_pos.toPlay);
             int netImmVal = toImmVal - currentImmScore;
 
-            if (netImmVal >= 100)
+            // take piece off the board, then place it back
+            // some pieces can block attacks by being behind other pieces...
+            g_pos.boards[g_pos.toPlay + immobilizer] = 0ULL;
+            int isToSqCtrled = isSquareControlled(g_pos.notToPlay, toSq, immobilizer);
+            g_pos.boards[g_pos.toPlay + immobilizer] = immBoard;
+
+            if (netImmVal >= 100 && !isToSqCtrled)
             {
                 score += netImmVal;
                 isCapt = 1;
