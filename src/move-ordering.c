@@ -80,11 +80,11 @@ void orderMoves(Move* moves, int count, int height, int* scores)
 
             // take piece off the board, then place it back
             // some pieces can block attacks by being behind other pieces...
-            g_pos.boards[g_pos.toPlay + immobilizer] = 0ULL;
+            g_pos.boards[g_pos.toPlay + immobilizer] = 1ULL << toSq;
             int isToSqCtrled = isSquareControlled(g_pos.notToPlay, toSq, immobilizer);
             g_pos.boards[g_pos.toPlay + immobilizer] = immBoard;
 
-            if (netImmVal >= 100 && !isToSqCtrled)
+            if (netImmVal >= 300 && !isToSqCtrled)
             {
                 score += netImmVal;
                 isCapt = 1;
