@@ -1,151 +1,151 @@
 clear hash
 position fen pnb1k1r1/1up1pp1n/Rp2Q1bP/1P3PPU/8/4P3/2P2P2/1NBK1BN1 b 6 13
-go depth 8
+go depth 7
 clear hash
 position fen p1b1k1r1/1u2p1Nn/R2p1p1P/1P1P1P1U/8/5P2/2P2P2/1NBK1B2 b 0 17
-go depth 8
+go depth 7
 clear hash
 position fen p4Ur1/1u1kp2n/Rp3p1P/P2P1P2/8/b4P2/2P2P2/1NBK1B2 w 6 21
-go depth 8
+go depth 7
 clear hash
 position fen p5r1/P1P1pk1n/1p3p1P/3P1P2/8/3b1P2/5P2/N1BK1B2 w 2 24
-go depth 8
+go depth 7
 clear hash
 position fen p2r4/4pp2/p3k3/8/4n2P/2P3P1/N2K1P2/5B2 b 7 31
-go depth 8
+go depth 7
 clear hash
 position fen p1k5/4pp2/p7/r7/n6P/2P2P2/5P2/N1K2B2 w 14 35
-go depth 8
+go depth 7
 clear hash
 position fen p2k4/4pp2/p3N3/5r2/3n3P/2PP4/5P2/1K1B4 b 27 41
-go depth 8
+go depth 7
 clear hash
 position fen p2k4/4pp2/p3r3/7n/B6P/2P1N1P1/5P2/K7 w 36 46
-go depth 8
+go depth 7
 clear hash
 position fen p2k4/4pp2/p6r/N7/B6P/2P1nP1P/8/K7 b 43 49
-go depth 8
+go depth 7
 clear hash
 position fen p2k4/4pp2/8/3n1P2/4r2P/7P/1N6/K5B1 b 15 58
-go depth 8
+go depth 7
 clear hash
 position fen p3k3/4pp2/2n4P/3r1P2/3N4/7P/8/K5B1 b 25 63
-go depth 8
+go depth 7
 clear hash
 position fen p3k3/2p2p2/1N2r2P/8/4nP2/7P/8/K5B1 b 41 71
-go depth 8
+go depth 7
 clear hash
 position fen p4k2/2p2p2/8/4n3/1rN3PP/7P/8/K5B1 b 53 77
-go depth 8
+go depth 7
 clear hash
 position fen 5k2/2p2p2/7P/5nP1/prN5/7P/8/K3B3 b 59 80
-go depth 8
+go depth 7
 clear hash
 position fen 7k/2p2p2/2n4P/1P6/prN5/7P/8/K7 w 0 84
-go depth 8
+go depth 7
 clear hash
 position fen 5p1k/2p5/7P/n7/p7/P7/1P6/K7 w 4 87
-go depth 8
+go depth 7
 clear hash
 position fen 5p1k/p7/3P4/2n5/p7/3P4/1P6/K7 w 10 90
-go depth 8
+go depth 7
 clear hash
 position fen P4p1k/6p1/2n5/7P/7p/8/8/K7 b 7 95
-go depth 8
+go depth 7
 clear hash
 position fen P6k/8/5p2/3n4/7p/6p1/8/K7 w 4 102
-go depth 8
+go depth 7
 clear hash
 position fen p6k/8/8/3n4/8/7p/P7/K5p1 w 14 107
-go depth 8
+go depth 7
 clear hash
 position fen 2p4k/p7/8/8/4n3/8/8/KP4p1 w 26 113
-go depth 8
+go depth 7
 clear hash
 position fen 5p1k/8/8/3n4/8/p7/1P6/K5p1 w 32 116
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p6P/3n4/5p2/7p/8/K7 b 41 120
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p7/3n4/5p2/7p/8/K7 w 6 126
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p7/8/4p3/7p/K7/3n4 w 14 130
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p7/8/5p2/7p/8/K2n4 w 22 134
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/5p2/3n4/5p2/6p1/K7/8 b 29 137
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p7/3n4/7p/7p/8/1K6 b 41 143
-go depth 8
+go depth 7
 clear hash
 position fen 7k/8/p7/3n4/7p/7p/8/1K6 b 59 152
-go depth 8
+go depth 7
 clear hash
 position fen 1n2kbn1/p1p1p1p1/b1u2p2/4q2p/p6r/1P1P1PP1/2NBP2P/R2QKBNU w 4 12
-go depth 8
+go depth 7
 clear hash
 position fen 1n1k1bn1/p1p1p1p1/b1u2p1r/4q2p/p5P1/1P1P1PU1/2NBP2P/R2QKBN1 w 10 15
-go depth 8
+go depth 7
 clear hash
 position fen 3k1b2/p1p1p1pn/b1r5/6p1/p2p1U2/2RPB2B/1nNuP1NP/3QK3 b 1 25
-go depth 8
+go depth 7
 clear hash
 position fen 3k1b2/p1p1p1p1/b7/6p1/p2npU2/1Br1B3/2NuP1NP/3QK3 b 1 28
-go depth 8
+go depth 7
 clear hash
 position fen n1pqk1nr/p2pp1pp/b2u1Qbp/4P2P/p3U1P1/3P1P1B/NPP1P3/R1B1K1N1 b 20 10
-go depth 8
+go depth 7
 clear hash
 position fen 1npqknpr/p2p3p/b1u1pQbp/5P1P/p1U3P1/NP1P1P1B/2PBP3/R3K1N1 b 30 15
-go depth 8
+go depth 7
 clear hash
 position fen 2pqknpr/p1n4p/2u1pQbp/1b3P1P/pPU3P1/N2P1P1B/2PBP3/R3K1N1 b 0 18
-go depth 8
+go depth 7
 clear hash
 position fen 2pqknpr/p3pp2/2n2Q1p/ub3PbP/pPU3P1/N1RP1P1B/2PBP3/4K1N1 w 13 25
-go depth 8
+go depth 7
 clear hash
 position fen 2pqk1pr/p4n1p/6n1/ub1PpPPp/pPU4P/N1R2P1B/2PBP3/4K3 w 4 30
-go depth 8
+go depth 7
 clear hash
 position fen 2p1k1p1/p4nrp/6n1/ub1Ppqp1/pPURP1PP/3P2B1/1NPB4/4K3 b 3 35
-go depth 8
+go depth 7
 clear hash
 position fen 2p1k1p1/p1n3rp/1n2q3/ub1Pp1p1/pPU3BP/2RPP3/1NPB4/4K3 b 1 38
-go depth 8
+go depth 7
 clear hash
 position fen 2pk2p1/p1n3rp/1n6/ub2p1p1/pPUR2BP/2NPP3/2PB1K2/8 b 0 41
-go depth 8
+go depth 7
 clear hash
 position fen 3k2p1/pr5p/4n3/ubp1p1p1/pPU2B1P/2N1P3/2PB4/4K3 w 0 46
-go depth 8
+go depth 7
 clear hash
 position fen 2k3p1/p6p/8/ubp1p3/pP2P1BP/2P5/8/5K2 b 0 53
-go depth 8
+go depth 7
 clear hash
 position fen 2ku2p1/p6p/8/1b6/p1p3BP/3P4/3p1P2/5K2 w 6 57
-go depth 8
+go depth 7
 clear hash
 position fen 2k3p1/p6p/8/5Pu1/p1p3BP/5b2/3p3P/5K2 b 13 60
-go depth 8
+go depth 7
 clear hash
 position fen 1k3pp1/p6p/8/6u1/4b1BP/2p4P/5p2/6K1 b 13 69
-go depth 8
+go depth 7
 clear hash
 position fen k2p1p1p/p4P2/8/6u1/4b1BP/2p5/1p6/7K b 27 76
-go depth 8
+go depth 7
 clear hash
 position fen k2p1p2/p2P4/8/6u1/4bp1p/8/1p3K2/8 w 0 81
-go depth 8
+go depth 7
 clear hash
 position fen 5p2/up1k4/Nnb2q1b/2Up4/3P3Q/2R5/P1PP3P/2B3K1 b 0 28
-go depth 8
+go depth 7
 clear hash
 position fen un1q3r/p2kp3/2b1nb2/PP1U1p1p/5p1P/1P4p1/2PBP3/RN1QKBN1 b 7 10
-go depth 8
+go depth 7
 quit
