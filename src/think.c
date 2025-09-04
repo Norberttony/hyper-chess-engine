@@ -219,7 +219,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     int nodeType = TT_LOWER;
 
     int isNullMovePruning = flags & IS_NULL_MOVE_PRUNING_FLAG;
-    // int isPV = flags & IS_PV_FLAG;
+    int isPV = flags & IS_PV_FLAG;
 
     int isFromTT = 0;
 
@@ -269,7 +269,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them and we can hit a beta cut off.
-    /* commented out for retesting
     int nullDepth = depth - 1 - NULL_MOVE_R;
     if (!isPV && !isNullMovePruning)
     {
@@ -292,7 +291,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         }
         makeNullMove();
     }
-    */
 
     Move movelist[MAX_MOVES];
     int size = generateMoves((Move*)movelist, 0);
