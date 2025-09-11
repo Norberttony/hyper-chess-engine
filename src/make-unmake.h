@@ -5,8 +5,8 @@
 #include "move.h"
 
 
-void makeMove(Move);
-void unmakeMove(Move);
+void makeMove(Move m);
+void unmakeMove(Move m);
 
 // used to pass (or "unpass") a turn
 void makeNullMove(void);

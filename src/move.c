@@ -346,7 +346,9 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
     g_pos.boards[toPlay] ^= kingBoardCopy;
     g_pos.boards[toPlay | king] = 0ULL;
 
-    U64 enemKC = g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon];
+    U64 imm = g_pos.boards[g_pos.toPlay | immobilizer];
+    U64 notImmInfl = imm > 0 ? ~kingMoves[pop_lsb(imm)] : UINT64_MAX;
+    U64 enemKC = (g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon]) & notImmInfl;
 
     while (moves)
     {

@@ -726,11 +726,11 @@ pos positions[NUM_TEST_SUITE_POSITIONS] =
 	},
 	{
 		"King pins pieces",
-		"position fen 8/1ppp3k/2K5/8/8/8/7R/8 b 0 1",
-		{ 1ULL, 14ULL, 0ULL },
-		{ 0ULL, 0ULL, 0ULL },
-		{ 0ULL, 0ULL, 0ULL },
-		{ 0ULL, 0ULL, 0ULL }
+		"8/1ppp3k/2K5/8/8/8/7R/8 b 0 1",
+		{ 1ULL, 3ULL, 80ULL, 1651ULL, 39373ULL, 1018172ULL },
+		{ 0ULL, 0ULL, 12ULL, 6ULL, 5064ULL, 3592ULL },
+		{ 0ULL, 0ULL, 12ULL, 6ULL, 5410ULL, 3592ULL },
+		{ 0ULL, 0ULL,  0ULL, 0ULL, 0ULL, 0ULL }
 	},
 	{
 		"King and chameleon pin capture exception exception",

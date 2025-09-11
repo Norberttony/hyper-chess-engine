@@ -325,4 +325,27 @@ void debugPrintPins(void)
     // print the immobilizer's check mask
     puts("Of course, the immobilizer follows a different check mask:");
     printBitboard(g_immCheckMask);
+
+    // print which of the king's squares are under control
+    puts("And here is a list of which king squares are controlled, and by what piece:");
+    U64 imm = g_pos.boards[g_pos.toPlay | immobilizer];
+    U64 notImmInfl = imm > 0 ? ~kingMoves[pop_lsb(imm)] : UINT64_MAX;
+
+    U64 enemKC = (g_pos.boards[g_pos.notToPlay | king] | g_pos.boards[g_pos.notToPlay | chameleon]) & notImmInfl;
+    U64 kingBoard = g_pos.boards[g_pos.toPlay | king];
+    U64 moves = kingMoves[pop_lsb(kingBoard)];
+    while (moves)
+    {
+        int to = pop_lsb(moves);
+        if ((enemKC & kingMoves[to]))
+        {
+            printf("%s is controlled by king/chameleon\n", squareNames[to]);
+        }
+        int ctrl = isSquareControlled(g_pos.notToPlay, to, king);
+        if (ctrl)
+        {
+            printf("%s is controlled by piece %c\n", squareNames[to], pieceFEN[ctrl]);
+        }
+        moves &= moves - 1;
+    }
 }

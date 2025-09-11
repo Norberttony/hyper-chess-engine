@@ -1,6 +1,8 @@
 #ifndef PINS_HEADER
 #define PINS_HEADER
 
+#include <stdint.h>
+
 #include "defines.h"
 #include "bitboard-utility.h"
 #include "magic-bitboards.h"
@@ -24,6 +26,9 @@ extern U64 g_immCheckMask;
 
 // forward declaration from move.h
 extern const U64 straddlerBounds[];
+
+// forward declaration from perft.h
+int isSquareControlled(int stp, int sq, int pieceType);
 
 
 // initializes data necessary for pins, should be run once before doing any searching.
