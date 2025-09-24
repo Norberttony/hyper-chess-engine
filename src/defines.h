@@ -36,6 +36,7 @@ enum
 };
 
 typedef uint32_t Move;
+typedef uint_fast8_t SearchFlags;
 
 typedef struct PositionState
 {

@@ -7,6 +7,7 @@
 #include "transposition-table.h"
 #include "evaluate.h"
 #include "utils.h"
+#include "debug.h"
 
 #define USE_TRANSPOSITION_TABLE
 
@@ -20,7 +21,7 @@ extern SearchParams g_searchParams;
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.
 // returns the evaluation of the position.
-int think(int depth, int alpha, int beta, uint_fast8_t flags);
+int think(int depth, int alpha, int beta, SearchFlags flags);
 
 // performs a min-max alpha-beta search up to the given depth and returns the best move.
 Move getBestMove(int depth);

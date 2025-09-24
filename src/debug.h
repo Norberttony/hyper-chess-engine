@@ -1,0 +1,38 @@
+#ifndef DEBUG_H
+#define DEBUG_H
+
+#include <string.h>
+#include <stdint.h>
+
+#include "move.h"
+#include "transposition-table.h"
+
+typedef struct DebugStats
+{
+    U64 nodesVisited;
+    U64 qNodesVisited;
+    U64 totalMoves;
+    // total number of nodes searched given depth (across all searches).
+    // does not include quiescent nodes! those should be handled separately.
+    U64 nodesPerDepth[MAX_DEPTH];
+    // how much each depth has occurred (ie. how many times has the engine searched at depth 1?)
+    U64 depthCounts[MAX_DEPTH];
+    
+    U64 cutoffs[MAX_MOVES];
+    U64 nodeOccurrences[4];
+
+    U64 NMP_nodesSearched;
+} DebugStats;
+
+void count_print(void);
+void count_clear(void);
+
+void count_startDepth(int depth);
+void count_move(Move m);
+void count_betaCutoff(int moveIdx, Move move);
+void count_nodeVisited(int isQuiescent);
+void count_NMP(int success);
+void count_writeTT(int nodeType, int success);
+void count_nodeType(int nodeType);
+
+#endif
