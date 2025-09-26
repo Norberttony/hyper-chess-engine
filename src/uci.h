@@ -7,6 +7,7 @@
 #include <unistd.h>
 #else
 #define STDIN_FILENO 0
+#include <io.h>
 #endif
 
 #include <stdio.h>

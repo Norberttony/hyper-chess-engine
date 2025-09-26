@@ -309,7 +309,11 @@ void readInput(void)
         puts("info string Paused. Type in 'stop'/'quit' to stop or just press Enter to continue.");
         do
         {
+#ifdef _WIN32
+            bytes = _read(STDIN_FILENO, input, 256);
+#else
             bytes = read(STDIN_FILENO, input, 256);
+#endif
         }
         while (bytes <= 0);
         puts("info string Input received.");
