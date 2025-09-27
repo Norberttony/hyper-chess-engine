@@ -240,8 +240,14 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             if (nullEval >= beta)
             {
                 makeNullMove();
+#ifdef DEBUG
+                count_NMP(1, depth, beta - evaluate());
+#endif
                 return beta;
             }
+#ifdef DEBUG
+            count_NMP(0, depth, beta - evaluate());
+#endif
         }
         makeNullMove();
     }

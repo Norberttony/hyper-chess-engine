@@ -11,6 +11,7 @@ void count_print(void)
     U64 allNodes = debug.nodeOccurrences[TT_LOWER];
     U64 pvNodes = debug.nodeOccurrences[TT_EXACT];
 
+    printf("\n");
     printf("Total nodes visited: %lld\n", debug.nodesVisited);
     printf("Total quiescent nodes visited: %lld\n", debug.qNodesVisited);
     
@@ -39,6 +40,29 @@ void count_print(void)
 
     // display node type frequency
     printf("All nodes (%lld) | Cut nodes (%lld) | PV nodes (%lld)\n", allNodes, cutNodes, pvNodes);
+
+    // display NMP success rate
+    printf("NMP success rates w/ Beta Margin (BM):\n");
+    for (int i = MAX_DEPTH; i >= 0; i--)
+    {
+        int64_t successes = debug.NMP_successes[i];
+        int64_t tries = debug.NMP_tries[i];
+
+        if (tries == 0)
+        {
+            continue;
+        }
+
+        int64_t bm_success = debug.NMP_totalBetaMarginSucc[i];
+        int64_t bm_fail = debug.NMP_totalBetaMarginFail[i];
+
+        double rate = (double)(100 * successes) / tries;
+        double bm_successAvg = (double)bm_success / tries;
+        double bm_failAvg = (double)bm_fail / tries;
+
+        printf("(%d) %lld / %lld (%.3f%%) BM success (%.2f) fail (%.2f)\n",
+            i, successes, tries, rate, bm_successAvg, bm_failAvg);
+    }
 
     printf("\n");
 }
@@ -72,8 +96,23 @@ void count_nodeVisited(int isQuiescent)
     debug.nodesPerDepth[rootDepth] += !isQuiescent;
 }
 
-void count_NMP(int success)
+void count_NMP(int success, int depth, int beta)
 {
+    debug.NMP_successes[depth] += success;
+    debug.NMP_tries[depth]++;
+    
+    if (beta < MATE_SCORE)
+    {
+        int betaMargin = beta - evaluate();
+        if (success)
+        {
+            debug.NMP_totalBetaMarginSucc[depth] += betaMargin;
+        }
+        else
+        {
+            debug.NMP_totalBetaMarginFail[depth] += betaMargin;
+        }
+    }
 }
 
 void count_writeTT(int nodeType, int success)
