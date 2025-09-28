@@ -64,6 +64,38 @@ void count_print(void)
             i, successes, tries, rate, bm_successAvg, bm_failAvg);
     }
 
+    puts("Cutoffs by piece types:");
+    for (int i = straddler; i <= king; i++)
+    {
+        U64 quietCutoffs = debug.cutoffsPType[0][i];
+        U64 captCutoffs = debug.cutoffsPType[1][i];
+
+        U64 quietIdx = debug.cutoffsPTypeIdx[0][i];
+        U64 captIdx = debug.cutoffsPTypeIdx[1][i];
+
+        U64 cutoffs = quietCutoffs + captCutoffs;
+        U64 cutoffsIdx = quietIdx + captIdx;
+        printf("%c: %lld avg idx: %.3f\n", pieceFEN[i], cutoffs, (double)cutoffsIdx / cutoffs);
+        printf(" c %lld avg idx: %.3f\n", captCutoffs, (double)captIdx / captCutoffs);
+        printf(" q %lld avg idx: %.3f\n", quietCutoffs, (double)quietIdx / quietCutoffs);
+        printf("\n");
+    }
+
+    // print piece cutoff heat maps
+    for (int i = straddler; i <= king; i++)
+    {
+        printf("Piece %c:\n", pieceFEN[i]);
+        for (int j = 0; j < 64; j++)
+        {
+            printf("%8.6lf ", (double)debug.cutoffHeatmaps[i][j] / debug.cutoffHeatmapFreq[i][j]);
+            if ((j + 1) % 8 == 0)
+            {
+                printf("\n");
+            }
+        }
+        printf("\n");
+    }
+
     printf("\n");
 }
 
@@ -78,15 +110,62 @@ void count_startDepth(int depth)
     debug.depthCounts[depth]++;
 }
 
+// flips the square given the square and the piece type.
+// different pieces have a different symmetry with their counterpart.
+static inline int flipSq(int to, int t)
+{
+    if (t != immobilizer && t != coordinator)
+    {
+        // handle symmetry across horizontal (all of the pieces here are aligned in the startpos)
+        int r = get_rank(to);
+        int f = get_file(to);
+        return (7 - r) * 8 + f;
+    }
+    else
+    {
+        // handle symmetry across y = x
+        int r = get_rank(to);
+        int f = get_file(to);
+        return (7 - r) * 8 + (7 - f);
+    }
+}
+
 // !! Should not be run for nonquiescent nodes!
 void count_move(Move m)
 {
     debug.totalMoves++;
+
+    // for heatmaps
+    if (!is_move_capt(m))
+    {
+        int t = get_type(m);
+        int to = get_to(m);
+        if (g_pos.toPlay == white)
+        {
+            to = flipSq(to, t);
+        }
+        debug.cutoffHeatmapFreq[t][to]++;
+    }
 }
 
 void count_betaCutoff(int moveIdx, Move move)
 {
     debug.cutoffs[moveIdx]++;
+    debug.cutoffsPType[is_move_capt(move)][get_type(move)]++;
+    debug.cutoffsPTypeIdx[is_move_capt(move)][get_type(move)] += moveIdx;
+
+    // record occurrence on heatmap
+    if (!is_move_capt(move))
+    {
+        // determine to square
+        int to = get_to(move);
+        int t = get_type(move);
+        if (g_pos.toPlay == black)
+        {
+            to = flipSq(to, t);
+        }
+        debug.cutoffHeatmaps[t][to]++;
+    }
 }
 
 void count_nodeVisited(int isQuiescent)

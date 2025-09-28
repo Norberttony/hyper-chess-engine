@@ -20,6 +20,10 @@ typedef struct DebugStats
     U64 depthCounts[MAX_DEPTH];
     
     U64 cutoffs[MAX_MOVES];
+    U64 cutoffsPType[2][8];
+    U64 cutoffsPTypeIdx[2][8];
+    U64 cutoffHeatmaps[8][64];
+    U64 cutoffHeatmapFreq[8][64];
     U64 nodeOccurrences[4];
 
     U64 NMP_successes[MAX_DEPTH];

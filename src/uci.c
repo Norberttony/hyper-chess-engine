@@ -151,6 +151,15 @@ void uciLoop(void)
                 setTranspositionTableSize(mb);
             }
         }
+
+        if (inputFile == stdin)
+        {
+#ifdef DEBUG
+            // if the debug part of the program is being tested OR if the file was just closed.
+            count_print();
+#endif
+        }
+
         if (g_searchParams.stopThinking == -1)
         {
             break;
@@ -159,6 +168,10 @@ void uciLoop(void)
 
     if (inputFile != stdin)
     {
+        // if the "quit" command was found in a file, the debug results should be printed.
+#ifdef DEBUG
+        count_print();
+#endif
         fclose(inputFile);
     }
 }

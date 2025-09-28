@@ -22,6 +22,7 @@
 #include "defines.h"
 #include "perft.h"
 #include "test-suite.h"
+#include "debug.h"
 
 
 // starts waiting for user input

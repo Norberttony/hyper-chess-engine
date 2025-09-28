@@ -138,10 +138,6 @@ Move startThink(void)
         puts("PANIC! HASH ERROR!");
     }
 
-#ifdef DEBUG
-    count_print();
-#endif
-
     return currBestMove;
 }
 
