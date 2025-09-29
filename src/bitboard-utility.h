@@ -36,4 +36,16 @@ void printBitboard(U64 bitboard);
 
 U64 randomU64(void);
 
+// reflects the square vertically with the board center
+static inline int reflectSq(int sq)
+{
+    return (56 - (sq & 56)) | get_file(sq);
+}
+
+// returns the square as if the board was flipped 180 degrees
+static inline int flipSq(int sq)
+{
+    return (56 - (sq & 56)) | (7 - get_file(sq));
+}
+
 #endif

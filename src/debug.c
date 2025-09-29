@@ -112,21 +112,17 @@ void count_startDepth(int depth)
 
 // flips the square given the square and the piece type.
 // different pieces have a different symmetry with their counterpart.
-static inline int flipSq(int to, int t)
+static inline int debug_getSq(int to, int t)
 {
     if (t != immobilizer && t != coordinator)
     {
         // handle symmetry across horizontal (all of the pieces here are aligned in the startpos)
-        int r = get_rank(to);
-        int f = get_file(to);
-        return (7 - r) * 8 + f;
+        return reflectSq(to);
     }
     else
     {
         // handle symmetry across y = x
-        int r = get_rank(to);
-        int f = get_file(to);
-        return (7 - r) * 8 + (7 - f);
+        return flipSq(to);
     }
 }
 
@@ -142,7 +138,7 @@ void count_move(Move m)
         int to = get_to(m);
         if (g_pos.toPlay == white)
         {
-            to = flipSq(to, t);
+            to = debug_getSq(to, t);
         }
         debug.cutoffHeatmapFreq[t][to]++;
     }
@@ -162,7 +158,7 @@ void count_betaCutoff(int moveIdx, Move move)
         int t = get_type(move);
         if (g_pos.toPlay == black)
         {
-            to = flipSq(to, t);
+            to = debug_getSq(to, t);
         }
         debug.cutoffHeatmaps[t][to]++;
     }
