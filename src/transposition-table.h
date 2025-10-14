@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "move.h"
 #include "make-unmake.h"
+#include "debug.h"
 
 #include <limits.h>
 #include <string.h>
@@ -14,7 +15,8 @@
 #define MAX_TT_SIZE_MB 128
 #endif
 
-#define TT_GET_NUMBER_OF_ENTRIES(mb) ((mb) * 1000000 / sizeof(struct TranspositionEntry) / 2)
+#define TT_BUCKETS 2
+#define TT_GET_NUMBER_OF_ENTRIES(mb) ((mb) * 1000000 / sizeof(struct TranspositionEntry) / TT_BUCKETS)
 
 #define MAX_TT_ENTRIES TT_GET_NUMBER_OF_ENTRIES(MAX_TT_SIZE_MB)
 
@@ -39,22 +41,18 @@ struct TranspositionEntry
     uint32_t flags;
 };
 
-// statistics related to the transposition table.
-extern int TT_misses;
-extern int TT_hits;
-extern int TT_overwrites;
-extern int TT_writes;
-
 extern const int TT_nodeTypeMask;
 extern const int TT_depthMask;
 extern const int TT_evalSignMask;
 extern const int TT_evalValueMask;
 
+extern int TT_entries;
+
 // forward declaration.
 extern SearchParams g_searchParams;
 
 // [0] is replace by depth and [1] is always replace
-extern struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][2];
+extern struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS];
 
 // returns either a TT entry that contains the first move of the PV or NULL if there is no such entry
 struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);

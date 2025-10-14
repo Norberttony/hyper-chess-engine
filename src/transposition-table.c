@@ -1,12 +1,7 @@
 
 #include "transposition-table.h"
 
-struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][2] = { 0 };
-
-int TT_misses = 0;
-int TT_hits = 0;
-int TT_overwrites = 0;
-int TT_writes = 0;
+struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
 
 const int TT_nodeTypeMask = 0x3;
 const int TT_depthMask = 0x1FC;
@@ -70,16 +65,22 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
     // note: this does not prevent search instability.
     if (depthEntry->zobristHash == hash)
     {
-        // TT_hits++;
+#ifdef DEBUG
+        count_TT_read(1);
+#endif
         return depthEntry;
     }
     else if (alwaysEntry->zobristHash == hash)
     {
-        // TT_hits++;
+#ifdef DEBUG
+        count_TT_read(1);
+#endif
         return alwaysEntry;
     }
 
-    // TT_misses++;
+#ifdef DEBUG
+    count_TT_read(0);
+#endif
 
     return NULL;
 }
@@ -106,8 +107,9 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
         eval -= ply;
     }
 
-    // TT_overwrites += transpositionTable[index][1].zobristHash != 0;
-    // TT_writes++;
+#ifdef DEBUG
+    count_TT_write(transpositionTable[index][1].zobristHash != 0);
+#endif
 
     // always replace any entry here
     uint32_t flags = ((uint32_t)abs(eval) << 10) | ((eval < 0) << 9) | (depth << 2) | nodeType;
@@ -116,6 +118,9 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     // only replace if the depth is better
     if (TT_getDepth(transpositionTable[index][0].flags) < depth)
     {
+#ifdef DEBUG
+        count_TT_write(transpositionTable[index][0].zobristHash != 0);
+#endif
         transpositionTable[index][0] = (struct TranspositionEntry){ hash, bestMove, flags }; 
     }
 }

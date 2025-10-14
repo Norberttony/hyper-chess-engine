@@ -4,8 +4,24 @@
 static DebugStats debug = { 0 };
 int rootDepth = 0;
 
+void printNodeCounts(void);
+void printNMP(void);
+void printPieceCutoffs(void);
+void printPieceCutoffHeatmaps(void);
+void printTT(void);
 
 void count_print(void)
+{
+    printNodeCounts();
+    printNMP();
+    printPieceCutoffs();
+    // printPieceCutoffHeatmaps();
+    printTT();
+    printf("\n");
+}
+
+
+void printNodeCounts(void)
 {
     U64 cutNodes = debug.nodeOccurrences[TT_UPPER];
     U64 allNodes = debug.nodeOccurrences[TT_LOWER];
@@ -40,7 +56,11 @@ void count_print(void)
 
     // display node type frequency
     printf("All nodes (%lld) | Cut nodes (%lld) | PV nodes (%lld)\n", allNodes, cutNodes, pvNodes);
+    printf("\n");
+}
 
+void printNMP(void)
+{
     // display NMP success rate
     printf("NMP success rates w/ Beta Margin (BM):\n");
     for (int i = MAX_DEPTH; i >= 0; i--)
@@ -63,7 +83,11 @@ void count_print(void)
         printf("(%d) %lld / %lld (%.3f%%) BM success (%.2f) fail (%.2f)\n",
             i, successes, tries, rate, bm_successAvg, bm_failAvg);
     }
+    printf("\n");
+}
 
+void printPieceCutoffs(void)
+{
     puts("Cutoffs by piece types:");
     for (int i = straddler; i <= king; i++)
     {
@@ -80,7 +104,11 @@ void count_print(void)
         printf(" q %lld avg idx: %.3f\n", quietCutoffs, (double)quietIdx / quietCutoffs);
         printf("\n");
     }
+    printf("\n");
+}
 
+void printPieceCutoffHeatmaps(void)
+{
     // print piece cutoff heat maps
     for (int i = straddler; i <= king; i++)
     {
@@ -95,7 +123,19 @@ void count_print(void)
         }
         printf("\n");
     }
+    printf("\n");
+}
 
+void printTT(void)
+{
+    U64 reads = debug.TT_hits + debug.TT_misses;
+    // print TT stats
+    puts("Transposition Table stats:");
+    printf("%lld writes, %lld collisions\n", debug.TT_writes, debug.TT_collisions);
+    printf("%lld reads, %lld hits, %lld misses\n", reads, debug.TT_hits, debug.TT_misses);
+    printf("Hit rate: %.3lf%%\n", (double)(100 * debug.TT_hits) / reads);
+    printf("Current usage: %lld / %d (%.3lf%%)\n",
+        debug.TT_entriesUsed, TT_entries, (double)(100 * debug.TT_entriesUsed) / (TT_BUCKETS * TT_entries));
     printf("\n");
 }
 
@@ -190,8 +230,23 @@ void count_NMP(int success, int depth, int beta)
     }
 }
 
-void count_writeTT(int nodeType, int success)
+void count_TT_write(int isCollision)
 {
+    debug.TT_collisions += isCollision;
+    debug.TT_entriesUsed += !isCollision;
+    debug.TT_writes++;
+}
+
+void count_TT_read(int isHit)
+{
+    debug.TT_hits += isHit;
+    debug.TT_misses += !isHit;
+}
+
+void count_TT_clear(void)
+{
+    // since the TT has been cleared, 0 entries are ued.
+    debug.TT_entriesUsed = 0;
 }
 
 void count_nodeType(int nodeType)

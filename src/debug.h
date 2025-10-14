@@ -30,6 +30,12 @@ typedef struct DebugStats
     U64 NMP_tries[MAX_DEPTH];
     int64_t NMP_totalBetaMarginSucc[MAX_DEPTH];
     int64_t NMP_totalBetaMarginFail[MAX_DEPTH];
+
+    U64 TT_hits;
+    U64 TT_misses;
+    U64 TT_writes;
+    U64 TT_collisions;
+    U64 TT_entriesUsed;
 } DebugStats;
 
 void count_print(void);
@@ -40,7 +46,9 @@ void count_move(Move m);
 void count_betaCutoff(int moveIdx, Move move);
 void count_nodeVisited(int isQuiescent);
 void count_NMP(int success, int depth, int betaMargin);
-void count_writeTT(int nodeType, int success);
+void count_TT_write(int isCollision);
+void count_TT_read(int isHit);
+void count_TT_clear(void);
 void count_nodeType(int nodeType);
 
 #endif
