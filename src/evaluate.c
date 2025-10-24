@@ -4,9 +4,12 @@
 struct EvalContext {
     U64 totalBoard;
     U64 immobilizers[2];
+    // immobilizer infl
     U64 infl[2];
     int immSq[2];
     int immImm[2];
+    // immobilizers' open lines of sight
+    int immLoS[2];
 };
 
 enum
@@ -16,6 +19,31 @@ enum
 
 int EVAL_DBG_PRINT = 0;
 
+
+// counts the number of lines of sight of the immobilizer
+static inline __attribute__((always_inline)) int countImmLoS(U64 immBoard, int immImm, U64 diags, U64 lines)
+{
+    // determines whether to test left to right (-1) or up to down (1)
+    int testUpDn = immBoard & ranks[0] | immBoard & ranks[7];
+    int testLtRt = immBoard & files[7] | immBoard & files[0];
+    int onlyTest = testUpDn - testLtRt;
+
+    // count lines of sight for the immobilizer
+    int myImmLoS = 
+        // top left to bottom right diagonal
+        (((immBoard << 9 | immBoard >> 9) & diags) > 0) * (onlyTest == 0) +
+        // up to down
+        (((immBoard << 8 | immBoard >> 8) & lines) > 0) * (onlyTest >= 0) +
+        // top right to bottom left
+        (((immBoard << 7 | immBoard >> 7) & diags) > 0) * (onlyTest == 0) +
+        // left to right
+        (((immBoard << 1 | immBoard >> 1) & lines) > 0) * (onlyTest <= 0);
+
+    // handle a corner case (well, literally, the immobilizer being in the corner)
+    myImmLoS *= !(testUpDn && testLtRt);
+
+    return myImmLoS;
+}
 
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
 {
@@ -60,7 +88,7 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
 }
 
 // immobilized material and penalties for badly-positioned immobilized pieces
-static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
+static inline __attribute__((always_inline)) int evalRelImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
 {
     int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
     int notSide = !side * 8;
@@ -151,31 +179,90 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
 static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *ctx, U64 diags, U64 lines, int reverseSide, int perspective)
 {
     int mineValue = (mine + reverseSide) & 0x1;
+    int myImmLoS = ctx->immLoS[mineValue];
 
     U64 myImmobilizer = ctx->immobilizers[mineValue];
     int myImmImm = ctx->immImm[mineValue];
 
-    // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
-    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
-    int onlyTest = testUpDn - testLtRt;
-
-    // count lines of sight for the immobilizer
-    int myImmLoS = 
-        // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) > 0) * (onlyTest == 0) +
-        // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) > 0) * (onlyTest >= 0) +
-        // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) > 0) * (onlyTest == 0) +
-        // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) > 0) * (onlyTest <= 0);
-
-    // handle a corner case (well, literally, the immobilizer being in the corner)
-    myImmLoS *= !(testUpDn && testLtRt);
-
     // apply penalty based on the number of available lines of attack
     return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+}
+
+static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
+{
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
+    int notSide = !side * 8;
+
+    int mineValue = (mine + reverseSide) & 0x1;
+
+    // important immobilizer variables :)
+    int myImmSq = ctx->immSq[mineValue];
+    U64 myInfl = ctx->infl[mineValue];
+    U64 myInflOrtho = (files[get_file(myImmSq)] | ranks[get_rank(myImmSq)]) & myInfl;
+    U64 myInflCorner = myInfl & ~myInflOrtho;
+    int myLoS = ctx->immLoS[mineValue];
+
+    
+    // determines if king (K) or coordinator (Co) are immobilized and not orthogonal to the immobilizer
+    U64 enemKB = g_pos.boards[notSide + king];
+    U64 enemCoB = g_pos.boards[notSide + coordinator];
+    int enemKCornerImm = (enemKB & myInflCorner) > 0;
+    int enemCoBCornerImm = (enemCoB & myInflCorner) > 0;
+    
+    // determines if coordinator and king duo can threaten to capture the immobilizer
+    int KCThreat = ((enemKB | enemCoB) & ~myInfl) > 0ULL && enemCoB && !enemKCornerImm && !enemCoBCornerImm;
+
+
+    // determine if straddlers can threaten to capture the immobilizer
+    U64 enemStB = g_pos.boards[notSide + straddler];
+    int StThreat = (enemStB & myInflOrtho) > 0 && (enemStB & ~myInfl) > 0;
+
+
+    // determine if springers can threaten to capture the immobilizer
+    U64 enemSpB = g_pos.boards[notSide + springer];
+    int SpThreat = myLoS && enemSpB > 0;
+
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("Immobilizer capturability: KC (%d) | St (%d) | Sp (%d)\n", KCThreat, StThreat, SpThreat);
+    }
+#endif
+
+    if (!KCThreat && !StThreat && !SpThreat)
+    {
+        // wait! the immobilizer can't be captured! whatever it has immobilized will never be able
+        // to get out!
+#ifdef DEBUG
+        if (EVAL_DBG_PRINT)
+        {
+            printf("Immobilizer is uncapturable from %d perspective\n", perspective);
+        }
+#endif
+
+        // technically, the immobilizer might have to stay here (which means it's not
+        // entirely as if the piece was captured), but still!
+        int evaluation = 0;
+        U64 enemyImmMaterial = g_pos.boards[side] & myInfl;
+        while (enemyImmMaterial)
+        {
+            evaluation += pieceValues[g_pos.pieceList[pop_lsb(enemyImmMaterial)]];
+            enemyImmMaterial &= enemyImmMaterial - 1;
+        }
+
+        // consider the relative capturability of immobilized chameleons
+        ctx->infl[mineValue] = 0ULL;
+        evaluation -= evalRelImmPieces(ctx, !reverseSide, -perspective);
+        ctx->infl[mineValue] = myInfl;
+
+        return evaluation;
+    }
+    else
+    {
+        int immLoSEval = evalImmLoS(ctx, ctx->totalBoard, ctx->totalBoard, reverseSide, perspective);
+        return -evalRelImmPieces(ctx, !reverseSide, -perspective) + immLoSEval;
+    }
 }
 
 const int immDistPenalties[8] =
@@ -210,6 +297,7 @@ int evaluate(void)
     int myImmImm = (myInfl & (g_pos.boards[notToPlay + chameleon] | g_pos.boards[notToPlay + immobilizer])) > 0;
     int enemyImmImm = (enemyInfl & (g_pos.boards[toPlay + chameleon] | g_pos.boards[toPlay + immobilizer])) > 0;
 
+    U64 totalBoard = g_pos.boards[toPlay] | g_pos.boards[notToPlay];
 
     struct EvalContext ctx =
     {
@@ -229,13 +317,17 @@ int evaluate(void)
         .immImm =
         {
             myImmImm, enemyImmImm
+        },
+        .immLoS =
+        {
+            countImmLoS(myImmobilizer, myImmImm, totalBoard, totalBoard),
+            countImmLoS(enemyImmobilizer, enemyImmImm, totalBoard, totalBoard)
         }
     };
 
     int evaluation = 0;
 
     // count mobility
-    U64 totalBoard = g_pos.boards[toPlay] | g_pos.boards[notToPlay];
     int mobilityA = 0;
     int mobilityB = 0;
     for (int i = 2; i <= 6; i++)
@@ -246,14 +338,9 @@ int evaluate(void)
     evaluation += mobilityA - mobilityB;
     
     int perspective = 2 * (toPlay == white) - 1; // am I WTP (1) or BTP (-1)?
-
     int immPiecesA = evalImmPieces(&ctx, 0, perspective);
     int immPiecesB = evalImmPieces(&ctx, 1, -perspective);
     evaluation += immPiecesA - immPiecesB;
-
-    int immLoSA = evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
-    int immLoSB = evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
-    evaluation += immLoSA - immLoSB;
 
     int immDistA = evalImmDist(&ctx, 0, perspective);
     int immDistB = evalImmDist(&ctx, 1, -perspective);
@@ -268,7 +355,6 @@ int evaluate(void)
         puts("Evaluation Scores:");
         printf("Mobility:\t\t\t%d - %d = %d\n", mobilityA, mobilityB, mobilityA - mobilityB);
         printf("Immobilized pieces:\t\t%d - %d = %d\n", immPiecesA, immPiecesB, immPiecesA - immPiecesB);
-        printf("Immobilizer line of sights:\t%d - %d = %d\n", immLoSA, immLoSB, immLoSA - immLoSB);
         printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
         printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
         puts("");
