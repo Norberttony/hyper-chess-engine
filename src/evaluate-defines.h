@@ -26,6 +26,8 @@ extern const int immBonus[];
 
 extern const int immLoSPen[];
 
+extern const int immDistPenalties[8];
+
 extern const int pieceValues[];
 
 extern int pieceSquareTables[8][64];

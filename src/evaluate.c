@@ -178,10 +178,6 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
 }
 
-const int immDistPenalties[8] =
-{
-    0, 5, 10, 30, 50, 70, 70, 70
-};
 static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
 {
     int mineValue = (mine + reverseSide) & 0x1;
