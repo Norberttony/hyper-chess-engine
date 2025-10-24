@@ -17,6 +17,12 @@ enum
 int EVAL_DBG_PRINT = 0;
 
 
+static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
+{
+    U64 mask = UINT64_MAX >> (8 * (7 - get_rank(sq)));
+    return side == white ? mask >> 8 : ~mask;
+}
+
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
 static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int reverseSide, int pieceType)
@@ -31,17 +37,26 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
     {
         int sq = pop_lsb(myBoard);
         U64 moveBoard = get_queen_attacks(sq, totalBoard) & ~totalBoard;
+        
+        // forward moves get a double bonus (ie. they're counted twice, once on forwardMoveBoard
+        // and another time on moveBoard)
+        U64 forwardMoveBoard = getForwardMask(sq, side) & moveBoard;
+        while (forwardMoveBoard)
+        {
+            mobility += 3;
+            forwardMoveBoard &= forwardMoveBoard - 1;
+        }
 
         while (moveBoard)
         {
-            mobility++;
+            mobility += 2;
             moveBoard &= moveBoard - 1;
         }
 
         myBoard &= myBoard - 1;
     }
 
-    return 2 * mobility;
+    return mobility;
 }
 
 // immobilized material and penalties for badly-positioned immobilized pieces
