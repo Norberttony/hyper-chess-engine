@@ -32,7 +32,7 @@ const int pieceValues[] =
     1100,       // coordinator
     1300,       // immobilizer
     700,        // chameleon
-    0           // king (priceless)
+    500         // king (if irreparably immobilized)
 };
 
 int pieceSquareTables[8][64] =
