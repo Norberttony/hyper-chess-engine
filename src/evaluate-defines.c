@@ -13,7 +13,7 @@ const int immBonus[] =
     200,        // coordinator
     150,        // immobilizer
     125,        // chameleon
-    200         // king
+    400         // king
 };
 
 // Penalties based on how many open lines of sight are against the immobilizer.
