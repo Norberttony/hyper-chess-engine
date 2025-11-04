@@ -13,16 +13,22 @@ const int immBonus[] =
     200,        // coordinator
     150,        // immobilizer
     125,        // chameleon
-    200         // king
+    400         // king
 };
 
-// Gives a penalty based on how many lines of sights against an immobilizer are blocked.
-// The highest penalty occurs when no lines of sights are blocked.
+// Penalties based on how many open lines of sight are against the immobilizer.
 const int immLoSPen[] =
 {
     0, 25, 50, 100, 150
 };
 
+// the penalty to apply based on how far (in ranks) the immobilizer is from the home rank.
+const int immDistPenalties[8] =
+{
+    0, 5, 10, 30, 50, 70, 70, 70
+};
+
+// the flat bonus for having a piece on the board.
 const int pieceValues[] = 
 {
     0,          // empty
@@ -35,6 +41,9 @@ const int pieceValues[] =
     500         // king (if irreparably immobilized)
 };
 
+// when considering squares for black, the board is flipped according to the piece's symmetry:
+// Straddlers, retractors, kings, springers, and chameleons have vertical symmetry.
+// Coordinators and immobilizers have symmetry across y = x, or "counter symmetry."
 int pieceSquareTables[8][64] =
 {
     { 0 },

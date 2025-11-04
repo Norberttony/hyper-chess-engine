@@ -26,43 +26,57 @@ int EVAL_DBG_PRINT = 0;
 
 
 // counts the number of orthogonal lines of sight of the immobilizer
-static inline __attribute__((always_inline)) int countImmOrthoLoS(U64 immBoard, int immImm, U64 diags, U64 lines)
+static inline __attribute__((always_inline)) int countImmOrthoLoS(U64 immBoard, U64 lines)
 {
     // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = immBoard & ranks[0] | immBoard & ranks[7];
-    int testLtRt = immBoard & files[7] | immBoard & files[0];
+    int testUpDn = (immBoard & ranks[0] | immBoard & ranks[7]) > 0;
+    int testLtRt = (immBoard & files[7] | immBoard & files[0]) > 0;
     int onlyTest = testUpDn - testLtRt;
 
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // up to down
-        (((immBoard << 8 | immBoard >> 8) & lines) > 0) * (onlyTest >= 0) +
+        (((immBoard << 8 | immBoard >> 8) & lines) == 0) * (onlyTest >= 0) +
         // left to right
-        (((immBoard << 1 | immBoard >> 1) & lines) > 0) * (onlyTest <= 0);
+        (((immBoard << 1 | immBoard >> 1) & lines) == 0) * (onlyTest <= 0);
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("Ortho LoS: %d\n", myImmLoS);
+    }
+#endif
 
     return myImmLoS;
 }
 
 // counts the number of diagonal lines of sight of the immobilizer
-static inline __attribute__((always_inline)) int countImmDiagLoS(U64 immBoard, int immImm, U64 diags, U64 lines)
+static inline __attribute__((always_inline)) int countImmDiagLoS(U64 immBoard, U64 diags)
 {
     // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = immBoard & ranks[0] | immBoard & ranks[7];
-    int testLtRt = immBoard & files[7] | immBoard & files[0];
+    int testUpDn = (immBoard & ranks[0] | immBoard & ranks[7]) > 0;
+    int testLtRt = (immBoard & files[7] | immBoard & files[0]) > 0;
     int onlyTest = testUpDn - testLtRt;
 
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // top left to bottom right diagonal
-        (((immBoard << 9 | immBoard >> 9) & diags) > 0) * (onlyTest == 0) +
+        (((immBoard << 9 | immBoard >> 9) & diags) == 0) * (onlyTest == 0) +
         // top right to bottom left
-        (((immBoard << 7 | immBoard >> 7) & diags) > 0) * (onlyTest == 0);
+        (((immBoard << 7 | immBoard >> 7) & diags) == 0) * (onlyTest == 0);
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("Diag LoS: %d\n", myImmLoS);
+    }
+#endif
 
     return myImmLoS;
 }
@@ -212,12 +226,11 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
 
 static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
 {
-    int immLoSEval = evalImmLoS(ctx, reverseSide, perspective);
-    return -evalRelImmPieces(ctx, !reverseSide, -perspective) + immLoSEval;
     int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
     int notSide = !side * 8;
 
     int mineValue = (mine + reverseSide) & 0x1;
+    int enemyValue = (enemy + reverseSide) & 0x1;
 
     // important immobilizer variables :)
     int myImmSq = ctx->immSq[mineValue];
@@ -277,9 +290,10 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
         }
 
         // consider the relative capturability of immobilized chameleons
-        ctx->infl[mineValue] = 0ULL;
-        evaluation -= evalRelImmPieces(ctx, !reverseSide, -perspective);
-        ctx->infl[mineValue] = myInfl;
+        U64 enemyInfl = ctx->infl[enemyValue];
+        ctx->infl[enemyValue] &= g_pos.boards[side | chameleon];
+        evaluation -= evalRelImmPieces(ctx, reverseSide, perspective);
+        ctx->infl[enemyValue] = enemyInfl;
 
         return evaluation;
     }
@@ -290,10 +304,6 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
     }
 }
 
-const int immDistPenalties[8] =
-{
-    0, 5, 10, 30, 50, 70, 70, 70
-};
 static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
 {
     int mineValue = (mine + reverseSide) & 0x1;
@@ -345,13 +355,13 @@ int evaluate(void)
         },
         .immOrthoLoS =
         {
-            countImmOrthoLoS(myImmobilizer, myImmImm, totalBoard, totalBoard),
-            countImmOrthoLoS(enemyImmobilizer, enemyImmImm, totalBoard, totalBoard)
+            countImmOrthoLoS(myImmobilizer, totalBoard),
+            countImmOrthoLoS(enemyImmobilizer, totalBoard)
         },
         .immDiagLoS =
         {
-            countImmDiagLoS(myImmobilizer, myImmImm, totalBoard, totalBoard),
-            countImmDiagLoS(enemyImmobilizer, enemyImmImm, totalBoard, totalBoard)
+            countImmDiagLoS(myImmobilizer, totalBoard),
+            countImmDiagLoS(enemyImmobilizer, totalBoard)
         }
     };
 
