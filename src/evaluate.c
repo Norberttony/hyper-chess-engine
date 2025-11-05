@@ -36,19 +36,12 @@ static inline __attribute__((always_inline)) int countImmOrthoLoS(U64 immBoard, 
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // up to down
-        (((immBoard << 8 | immBoard >> 8) & lines) == 0) * (onlyTest >= 0) +
+        (((immBoard << 8 | immBoard >> 8) & lines) == 0) * (onlyTest <= 0) +
         // left to right
-        (((immBoard << 1 | immBoard >> 1) & lines) == 0) * (onlyTest <= 0);
+        (((immBoard << 1 | immBoard >> 1) & lines) == 0) * (onlyTest >= 0);
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
-
-#ifdef DEBUG
-    if (EVAL_DBG_PRINT)
-    {
-        printf("Ortho LoS: %d\n", myImmLoS);
-    }
-#endif
 
     return myImmLoS;
 }
@@ -70,13 +63,6 @@ static inline __attribute__((always_inline)) int countImmDiagLoS(U64 immBoard, U
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
-
-#ifdef DEBUG
-    if (EVAL_DBG_PRINT)
-    {
-        printf("Diag LoS: %d\n", myImmLoS);
-    }
-#endif
 
     return myImmLoS;
 }
@@ -282,10 +268,17 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
         // technically, the immobilizer might have to stay here (which means it's not
         // entirely as if the piece was captured), but still!
         int evaluation = 0;
-        U64 enemyImmMaterial = g_pos.boards[side] & myInfl;
+        U64 enemyImmMaterial = g_pos.boards[notSide] & myInfl;
         while (enemyImmMaterial)
         {
-            evaluation += pieceValues[g_pos.pieceList[pop_lsb(enemyImmMaterial)]];
+            int piece = g_pos.pieceList[pop_lsb(enemyImmMaterial)];
+#ifdef DEBUG
+            if (EVAL_DBG_PRINT)
+            {
+                printf("Piece %c: penalty of %d\n", pieceFEN[piece], pieceValues[piece]);
+            }
+#endif
+            evaluation += pieceValues[piece];
             enemyImmMaterial &= enemyImmMaterial - 1;
         }
 
@@ -397,6 +390,9 @@ int evaluate(void)
         printf("Immobilized pieces:\t\t%d - %d = %d\n", immPiecesA, immPiecesB, immPiecesA - immPiecesB);
         printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
         printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
+        puts("");
+        printf("Ortho LoS: w %d b %d\n", ctx.immOrthoLoS[toPlay == black], ctx.immOrthoLoS[toPlay == white]);
+        printf("Diag LoS:  w %d b %d\n", ctx.immDiagLoS[toPlay == black], ctx.immDiagLoS[toPlay == white]);
         puts("");
     }
 #endif
