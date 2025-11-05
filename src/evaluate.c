@@ -156,23 +156,30 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     int myImmImm = ctx->immImm[mineValue];
 
     // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
-    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
+    int testUpDn = (myImmobilizer & ranks[0] | myImmobilizer & ranks[7]) > 0;
+    int testLtRt = (myImmobilizer & files[7] | myImmobilizer & files[0]) > 0;
     int onlyTest = testUpDn - testLtRt;
 
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) > 0) * (onlyTest == 0) +
+        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) == 0) * (onlyTest == 0) +
         // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) > 0) * (onlyTest >= 0) +
+        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) == 0) * (onlyTest <= 0) +
         // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) > 0) * (onlyTest == 0) +
+        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) == 0) * (onlyTest == 0) +
         // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) > 0) * (onlyTest <= 0);
+        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) == 0) * (onlyTest >= 0);
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("%d LoS: %d\n", perspective, myImmLoS);
+    }
+#endif
 
     // apply penalty based on the number of available lines of attack
     return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
