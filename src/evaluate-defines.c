@@ -11,7 +11,7 @@ const int immBonus[] =
     80,         // retractor
     100,        // springer
     200,        // coordinator
-    150,        // immobilizer
+    250,        // immobilizer
     125,        // chameleon
     400         // king
 };
@@ -19,7 +19,7 @@ const int immBonus[] =
 // Penalties based on how many open lines of sight are against the immobilizer.
 const int immLoSPen[] =
 {
-    0, 25, 50, 100, 150
+    0, 60, 70, 80, 90
 };
 
 // the penalty to apply based on how far (in ranks) the immobilizer is from the home rank.

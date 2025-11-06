@@ -174,15 +174,17 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
 
+    int eval = -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+
 #ifdef DEBUG
     if (EVAL_DBG_PRINT)
     {
-        printf("%d LoS: %d\n", perspective, myImmLoS);
+        printf("%d LoS: %d eval: %d\n", perspective, myImmLoS, eval);
     }
 #endif
 
     // apply penalty based on the number of available lines of attack
-    return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+    return eval;
 }
 
 static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
