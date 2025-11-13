@@ -5,7 +5,6 @@ struct EvalContext {
     U64 totalBoard;
     U64 immobilizers[2];
     // immobilizer infl
-    // immobilizer infl
     U64 infl[2];
     int immSq[2];
     int immImm[2];
@@ -208,6 +207,93 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
 
     // apply penalty based on the number of available lines of attack
     return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+}
+
+static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContext *ctx, int reverseSide, int perspective)
+{
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
+    int notSide = !side * 8;
+
+    int mineValue = (mine + reverseSide) & 0x1;
+    int enemyValue = (enemy + reverseSide) & 0x1;
+
+    // important immobilizer variables :)
+    int myImmSq = ctx->immSq[mineValue];
+    U64 myInfl = ctx->infl[mineValue];
+    U64 myInflOrtho = (files[get_file(myImmSq)] | ranks[get_rank(myImmSq)]) & myInfl;
+    U64 myInflCorner = myInfl & ~myInflOrtho;
+    int myOrthoLoS = ctx->immOrthoLoS[mineValue];
+    int myLoS = myOrthoLoS + ctx->immDiagLoS[mineValue];
+
+    
+    // determines if king (K) or coordinator (Co) are immobilized and not orthogonal to the immobilizer
+    U64 enemKB = g_pos.boards[notSide + king];
+    U64 enemCoB = g_pos.boards[notSide + coordinator];
+    int enemKCornerImm = (enemKB & myInflCorner) > 0;
+    int enemCoBCornerImm = (enemCoB & myInflCorner) > 0;
+    
+    // determines if coordinator and king duo can threaten to capture the immobilizer
+    int KCThreat = ((enemKB | enemCoB) & ~myInfl) > 0ULL && enemCoB && !enemKCornerImm && !enemCoBCornerImm;
+
+
+    // determine if straddlers can threaten to capture the immobilizer
+    U64 enemStB = g_pos.boards[notSide + straddler];
+    int StThreat = (enemStB & ~myInfl) > 0 && ((enemStB & myInflOrtho) > 0 || myOrthoLoS > 0);
+
+
+    // determine if springers can threaten to capture the immobilizer
+    U64 enemSpB = g_pos.boards[notSide + springer] & ~myInfl;
+    int SpThreat = myLoS && enemSpB > 0;
+
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("Immobilizer capturability: KC (%d) | St (%d) | Sp (%d)\n", KCThreat, StThreat, SpThreat);
+    }
+#endif
+
+    if (!KCThreat && !StThreat && !SpThreat)
+    {
+        // wait! the immobilizer can't be captured! whatever it has immobilized will never be able
+        // to get out!
+#ifdef DEBUG
+        if (EVAL_DBG_PRINT)
+        {
+            printf("Immobilizer is uncapturable from %d perspective\n", perspective);
+        }
+#endif
+
+        // technically, the immobilizer might have to stay here (which means it's not
+        // entirely as if the piece was captured), but still!
+        int evaluation = 0;
+        U64 enemyImmMaterial = g_pos.boards[notSide] & myInfl;
+        while (enemyImmMaterial)
+        {
+            int piece = g_pos.pieceList[pop_lsb(enemyImmMaterial)];
+#ifdef DEBUG
+            if (EVAL_DBG_PRINT)
+            {
+                printf("Piece %c: penalty of %d\n", pieceFEN[piece], pieceValues[piece]);
+            }
+#endif
+            evaluation += pieceValues[piece];
+            enemyImmMaterial &= enemyImmMaterial - 1;
+        }
+
+        // consider the relative capturability of immobilized chameleons
+        U64 enemyInfl = ctx->infl[enemyValue];
+        ctx->infl[enemyValue] &= g_pos.boards[side | chameleon];
+        evaluation -= evalRelImmPieces(ctx, reverseSide, perspective);
+        ctx->infl[enemyValue] = enemyInfl;
+
+        return evaluation;
+    }
+    else
+    {
+        int immLoSEval = evalImmLoS(ctx, reverseSide, perspective);
+        return -evalRelImmPieces(ctx, !reverseSide, -perspective) + immLoSEval;
+    }
 }
 
 static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
