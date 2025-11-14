@@ -477,7 +477,7 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
     int inclCham = pieceType == coordinator;
 
     U64 kingBoard = g_pos.boards[stp + king] & notImmInfl;
-    U64 kingMovesBoard = (kingBoard > 0) * (kingMoves[pop_lsb(kingBoard)] & ~g_pos.boards[stp]);
+    U64 kingMovesBoard = kingBoard > 0 ? kingMoves[pop_lsb(kingBoard)] & ~g_pos.boards[stp] : 0ULL;
 
     if (pieceType == king)
     {
@@ -485,14 +485,17 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
         kingBoard |= chamBoard;
         while (chamBoard)
         {
-            kingMovesBoard |= kingMoves[pop_lsb(chamBoard)];
+            kingMovesBoard |= kingMoves[pop_lsb(chamBoard)] & ~totalBoard;
             chamBoard &= chamBoard - 1;
         }
     }
 
     U64 coordPieceBoard = g_pos.boards[stp + coordinator];
     int coordSq = pop_lsb(coordPieceBoard);
-    U64 coordBoard = (get_queen_attacks(coordSq, totalBoard)) & ~totalBoard;
+    U64 coordBoard =
+        (coordPieceBoard & notImmInfl) > 0 ?
+        get_queen_attacks(coordSq, totalBoard) & ~totalBoard :
+        0ULL;
 
     if (inclCham)
     {
@@ -503,7 +506,6 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
         int cham2Sq = pop_lsb(cham2Board);
 
         coordBoard |= (chamBoard > 0) * (get_queen_attacks(cham1Sq, totalBoard)) & ~totalBoard;
-
         coordBoard |= (cham2Board > 0) * (get_queen_attacks(cham2Sq, totalBoard)) & ~totalBoard;
     }
 
@@ -512,11 +514,11 @@ int isSquareControlledByCoordinator(int stp, int sq, U64 notImmInfl, U64 totalBo
 
     return
         // king stays, coordinator moves
-        (sqFile & kingBoard) > 0 && coordBoard & sqRank ||
-        (sqRank & kingBoard) > 0 && coordBoard & sqFile ||
+        (sqFile & kingBoard) > 0 && (coordBoard & sqRank) ||
+        (sqRank & kingBoard) > 0 && (coordBoard & sqFile) ||
         // coordinator stays, king moves
-        files[get_file(coordSq)] * (coordPieceBoard > 0) == sqFile && kingMovesBoard & sqRank ||
-        ranks[get_rank(coordSq)] * (coordPieceBoard > 0) == sqRank && kingMovesBoard & sqFile;
+        coordPieceBoard > 0 && files[get_file(coordSq)] == sqFile && (kingMovesBoard & sqRank) ||
+        coordPieceBoard > 0 && ranks[get_rank(coordSq)] == sqRank && (kingMovesBoard & sqFile);
 }
 
 int isSquareControlledByKing(int stp, int sq, U64 notImmInfl, U64 totalBoard)

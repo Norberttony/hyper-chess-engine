@@ -91,6 +91,7 @@ void uciLoop(void)
             memset(historyValues, 0, sizeof(historyValues));
             memset(killerMoves, 0, sizeof(killerMoves));
             memset(continuationHistory, 0, sizeof(continuationHistory));
+            count_TT_clear();
         }
         else if (!strncmp(line, "runtestsuite", 12))
         {
@@ -151,6 +152,15 @@ void uciLoop(void)
                 setTranspositionTableSize(mb);
             }
         }
+
+        if (inputFile == stdin)
+        {
+#ifdef DEBUG
+            // if the debug part of the program is being tested OR if the file was just closed.
+            count_print();
+#endif
+        }
+
         if (g_searchParams.stopThinking == -1)
         {
             break;
@@ -159,6 +169,10 @@ void uciLoop(void)
 
     if (inputFile != stdin)
     {
+        // if the "quit" command was found in a file, the debug results should be printed.
+#ifdef DEBUG
+        count_print();
+#endif
         fclose(inputFile);
     }
 }
@@ -309,7 +323,11 @@ void readInput(void)
         puts("info string Paused. Type in 'stop'/'quit' to stop or just press Enter to continue.");
         do
         {
+#ifdef _WIN32
+            bytes = _read(STDIN_FILENO, input, 256);
+#else
             bytes = read(STDIN_FILENO, input, 256);
+#endif
         }
         while (bytes <= 0);
         puts("info string Input received.");

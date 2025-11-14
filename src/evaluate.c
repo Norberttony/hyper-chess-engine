@@ -17,6 +17,12 @@ enum
 int EVAL_DBG_PRINT = 0;
 
 
+static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
+{
+    U64 mask = UINT64_MAX >> (8 * (7 - get_rank(sq)));
+    return side == white ? mask >> 8 : ~mask;
+}
+
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
 static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int reverseSide, int pieceType)
@@ -31,17 +37,26 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
     {
         int sq = pop_lsb(myBoard);
         U64 moveBoard = get_queen_attacks(sq, totalBoard) & ~totalBoard;
+        
+        // forward moves get a double bonus (ie. they're counted twice, once on forwardMoveBoard
+        // and another time on moveBoard)
+        U64 forwardMoveBoard = getForwardMask(sq, side) & moveBoard;
+        while (forwardMoveBoard)
+        {
+            mobility += 3;
+            forwardMoveBoard &= forwardMoveBoard - 1;
+        }
 
         while (moveBoard)
         {
-            mobility++;
+            mobility += 2;
             moveBoard &= moveBoard - 1;
         }
 
         myBoard &= myBoard - 1;
     }
 
-    return 2 * mobility;
+    return mobility;
 }
 
 // immobilized material and penalties for badly-positioned immobilized pieces
@@ -141,32 +156,37 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     int myImmImm = ctx->immImm[mineValue];
 
     // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = myImmobilizer & ranks[0] | myImmobilizer & ranks[7];
-    int testLtRt = myImmobilizer & files[7] | myImmobilizer & files[0];
+    int testUpDn = (myImmobilizer & ranks[0] | myImmobilizer & ranks[7]) > 0;
+    int testLtRt = (myImmobilizer & files[7] | myImmobilizer & files[0]) > 0;
     int onlyTest = testUpDn - testLtRt;
 
     // count lines of sight for the immobilizer
     int myImmLoS = 
         // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) > 0) * (onlyTest == 0) +
+        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) == 0) * (onlyTest == 0) +
         // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) > 0) * (onlyTest >= 0) +
+        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) == 0) * (onlyTest <= 0) +
         // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) > 0) * (onlyTest == 0) +
+        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) == 0) * (onlyTest == 0) +
         // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) > 0) * (onlyTest <= 0);
+        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) == 0) * (onlyTest >= 0);
 
     // handle a corner case (well, literally, the immobilizer being in the corner)
     myImmLoS *= !(testUpDn && testLtRt);
 
+    int eval = -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+
+#ifdef DEBUG
+    if (EVAL_DBG_PRINT)
+    {
+        printf("%d LoS: %d eval: %d\n", perspective, myImmLoS, eval);
+    }
+#endif
+
     // apply penalty based on the number of available lines of attack
-    return -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+    return eval;
 }
 
-const int immDistPenalties[8] =
-{
-    0, 5, 10, 30, 50, 70, 70, 70
-};
 static inline __attribute__((always_inline)) int evalImmDist(struct EvalContext* ctx, int reverseSide, int perspective)
 {
     int mineValue = (mine + reverseSide) & 0x1;

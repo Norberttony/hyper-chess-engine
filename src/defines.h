@@ -16,26 +16,9 @@
 #define MAX_GAME_LENGTH (DRAW_MOVE_RULE * 30)
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 
-// whose side it is to play
-enum
-{
-    white = 0, black = 8
-};
-
-// piece types
-enum
-{
-    _,
-    straddler,
-    retractor,
-    springer,
-    coordinator,
-    immobilizer,
-    chameleon,
-    king
-};
 
 typedef uint32_t Move;
+typedef uint_fast8_t SearchFlags;
 
 typedef struct PositionState
 {

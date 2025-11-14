@@ -7,9 +7,6 @@ U64 orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
 U64 nodesVisited = 0;
-#ifdef DEBUG
-U64 qNodesVisited = 0;
-#endif
 
 SearchParams g_searchParams =
 {
@@ -21,28 +18,8 @@ SearchParams g_searchParams =
 };
 
 // search flags
-const uint_fast8_t IS_PV_FLAG = 0x1;
-const uint_fast8_t IS_NULL_MOVE_PRUNING_FLAG = 0x2;
-
-#ifdef DEBUG
-U64 cumulativeNodesVisited = 0ULL;
-U64 cumulativeQNodesVisited = 0ULL;
-U64 cumulativeTime = 0ULL;
-U64 cutoffFirst = 0ULL;
-U64 cutoffSecond = 0ULL;
-U64 cutoffThird = 0ULL;
-U64 cutoffAvg = 0ULL;
-U64 cutoffRemaining = 0ULL;
-U64 cutoffRemainingAvg = 0ULL;
-U64 cutoffFirstCapt = 0ULL;
-U64 cutoffSecondCapt = 0ULL;
-U64 captureCutoffs = 0ULL;
-U64 noCaptureCutNodes = 0ULL;
-U64 historyReliantCutNodes = 0ULL;
-U64 goodKillers = 0ULL;
-U64 badKillers = 0ULL;
-int pieceTypeCutoffs[8] = { 0 };
-#endif
+const SearchFlags IS_PV_FLAG = 0x1;
+const SearchFlags IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
 Move currBestMove = 0;
 
@@ -107,10 +84,10 @@ Move startThink(void)
 #endif
     while (!s->stopThinking && depth <= s->maxDepth)
     {
-        nodesVisited = 0ULL;
 #ifdef DEBUG
-        qNodesVisited = 0ULL;
+        count_startDepth(depth);
 #endif
+        nodesVisited = 0ULL;
 
         int eval = think(depth, -MAX_SCORE, MAX_SCORE, IS_PV_FLAG);
 
@@ -128,10 +105,6 @@ Move startThink(void)
         orderFirst = currBestMove;
 
         totalNodesVisited += nodesVisited;
-#ifdef DEBUG
-        cumulativeNodesVisited += totalNodesVisited;
-        cumulativeQNodesVisited += qNodesVisited;
-#endif
 
         printf("info score ");
         printEval_TT();
@@ -158,9 +131,6 @@ Move startThink(void)
         depth++;
     }
 
-#ifdef DEBUG
-    cumulativeTime += (U64)(getCurrentTime() - s->thinkStart);
-#endif
     printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);
 
     if (myHash != g_pos.zobristHash)
@@ -168,39 +138,10 @@ Move startThink(void)
         puts("PANIC! HASH ERROR!");
     }
 
-#ifdef DEBUG
-    U64 cutoffs = nodeOccurrence[TT_UPPER];
-    puts("\nCumulative Stats");
-    printf("Nodes visited: %lld\n", cumulativeNodesVisited);
-    printf("QNodes visited: %lld\n", cumulativeQNodesVisited);
-    printf("Nodes per second: %lf\n", (double)cumulativeNodesVisited * 1000 / cumulativeTime);
-    printf("Total execution time (in ms): %lld\n", cumulativeTime);
-    printf("# of cut-offs: %lld\n", cutoffs);
-    printf("First move cut-off: %lf%%\n", 100 * (double)cutoffFirst / cutoffs);
-    printf("Second move cut-off: %lf%%\n", 100 * (double)cutoffSecond / cutoffs);
-    printf("Third move cut-off: %lf%%\n", 100 * (double)cutoffThird / cutoffs);
-    printf("On average move cut off after: %lf moves\n", (double)cutoffAvg / cutoffs);
-    printf("Cut-off in remaining moves (after hash, killers, captures): %lld (%lf%%)\n", cutoffRemaining, 100 * (double)cutoffRemaining / cutoffs);
-    printf("Cut-off avg with remaining moves: %lf\n", (double)cutoffRemainingAvg / cutoffRemaining);
-    printf("All nodes: %lld\n", nodeOccurrence[TT_LOWER]);
-    printf("Cut nodes: %lld\n", nodeOccurrence[TT_UPPER]);
-    printf("PV nodes: %lld\n", nodeOccurrence[TT_EXACT]);
-    printf("# of cut-offs caused by a capture: %lld\n", captureCutoffs);
-    printf("# of cut-offs caused by a capture ordered first: %lld\n", cutoffFirstCapt);
-    printf("# of cut-offs caused by a capture ordered second: %lld\n", cutoffSecondCapt);
-    printf("# of cut nodes without any captures: %lld\n", noCaptureCutNodes);
-    printf("cut nodes that rely on history: %lld\n", historyReliantCutNodes);
-    for (int i = straddler; i <= king; i++)
-    {
-        printf("%c - %d\n", pieceFEN[i], pieceTypeCutoffs[i]);
-    }
-    puts("");
-#endif
-
     return currBestMove;
 }
 
-int think(int depth, int alpha, int beta, uint_fast8_t flags)
+int think(int depth, int alpha, int beta, SearchFlags flags)
 {
     nodesVisited++;
     int isRoot = g_searchParams.height == 0;
@@ -268,12 +209,16 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         return thinkCaptures(alpha, beta, !isNullMovePruning);
     }
 
+#ifdef DEBUG
+    count_nodeVisited(0);
+#endif
+
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
-    // didn't really help them and we can hit a beta cut off.
+    // didn't really help them. We might get a beta cut off.
     int nullDepth = depth - 1 - NULL_MOVE_R;
     if (!isPV && !isNullMovePruning)
     {
@@ -291,8 +236,14 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
             if (nullEval >= beta)
             {
                 makeNullMove();
+#ifdef DEBUG
+                count_NMP(1, depth, beta - evaluate());
+#endif
                 return beta;
             }
+#ifdef DEBUG
+            count_NMP(0, depth, beta - evaluate());
+#endif
         }
         makeNullMove();
     }
@@ -308,11 +259,13 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     }
 
 #ifdef DEBUG
-    Move orderedFirst = orderFirst;
+    // Move orderedFirst = orderFirst;
 #endif
 
     // order most promising moves first
     orderMoves(movelist, size, g_searchParams.height, moveScores);
+
+    orderFirst = 0;
 
     // clear killer moves for this ply
     killer_move(g_searchParams.height + 1, 0) = 0;
@@ -320,12 +273,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 
     int hasLegalMoves = 0;
 
-#ifdef DEBUG
-    int mIdx = 0;
-    int capts = 0;
-    int k1Idx = -1;
-    int k2Idx = -1;
-#endif
+    int mIdx = -1;
 
     Move bestMove = 0;
     for (int i = 0; i < size; i++)
@@ -352,19 +300,18 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
         }
         hasLegalMoves = 1;
 
+#ifdef DEBUG
+        count_move(m);
+#endif
+
         g_searchParams.height++;
         int eval = -think(depth - 1, -beta, -alpha, flags);
         g_searchParams.height--;
 
         unmakeMove(m);
 
-#ifdef DEBUG
         // keep track of move index to avoid factoring in illegal moves as part of the list
-        // this is used for cutoff statistics later.
         mIdx++;
-        capts += is_move_capt(m);
-        Move* killers = &killer_move(g_searchParams.height, 0);
-#endif
 
         // make sure we are still allowed to think.
         if (g_searchParams.stopThinking)
@@ -384,60 +331,6 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                 writeToTranspositionTable(depth, beta, m, TT_UPPER);
             }
 #endif
-
-#ifdef DEBUG
-            if (!isNullMovePruning)
-            {
-                nodeOccurrence[TT_UPPER]++;
-                
-                cutoffFirst += mIdx == 1;
-                cutoffSecond += mIdx == 2;
-                cutoffThird += mIdx == 3;
-                cutoffAvg += mIdx;
-
-                int isKiller = killers[0] == m || killers[1] == m;
-
-                // This code is for showing all of the poor move ordering choices with some data.
-                if (mIdx > 1 && depth > 5)
-                {
-                    char fen[1024];
-                    getFEN(fen, 1024);
-                    printf("(depth %d) At position %s\n", depth, fen);
-                    printf("Is first move from TT? %d\n", isFromTT);
-                    puts("MOVE ORDERING:");
-                    for (int j = 0; j < i; j++)
-                    {
-                        printf("%d. (%d) ", j + 1, moveScores[j]);
-                        prettyPrintMove(movelist[j]);
-                    }
-                    printf("Whereas the good cut off move was at index %d (%d): ", mIdx, moveScores[mIdx - 1]);
-                    prettyPrintMove(m);
-                    printf("Killer moves are: ");
-                    printMove(killers[0]);
-                    printf(" ");
-                    printMove(killers[1]);
-                    puts("\n");
-                }
-
-                captureCutoffs += is_move_capt(m);
-                cutoffFirstCapt += capts == 1 && is_move_capt(m);
-                cutoffSecondCapt += capts == 2 && is_move_capt(m);
-                noCaptureCutNodes += capts == 0;
-
-                historyReliantCutNodes += !isFromTT && capts == 0 && !isKiller;
-
-                goodKillers += isKiller;
-                badKillers += (k1Idx > -1) + (k2Idx > -1);
-
-                if (m != orderedFirst && !is_move_capt(m) && !isKiller)
-                {
-                    cutoffRemaining++;
-                    cutoffRemainingAvg += mIdx;
-                    pieceTypeCutoffs[get_type(m)]++;
-                }
-            }
-#endif
-
             // for moves that do not capture...
             if (!is_move_capt(m))
             {
@@ -462,20 +355,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
                     }
                 }
             }
-
+#ifdef DEBUG
+            count_nodeType(TT_UPPER);
+            count_betaCutoff(mIdx, m);
+#endif
             return beta;
         }
-
-#ifdef DEBUG
-        if (killers[0] == m)
-        {
-            k1Idx = mIdx;
-        }
-        if (killers[1] == m)
-        {
-            k2Idx = mIdx;
-        }
-#endif
 
         if (eval > alpha)
         {
@@ -501,7 +386,7 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
     }
 
 #ifdef DEBUG
-    nodeOccurrence[nodeType]++;
+    count_nodeType(nodeType);
 #endif
 
     // save this entry in the transposition table
@@ -518,13 +403,12 @@ int think(int depth, int alpha, int beta, uint_fast8_t flags)
 
 int thinkCaptures(int alpha, int beta, int accessTT)
 {
+#ifdef DEBUG
+    count_nodeVisited(1);
+#endif
     // avoids counting leaf nodes (as they have already been counted by the parent node)
     nodesVisited += !accessTT;
 
-#ifdef DEBUG
-    qNodesVisited++;
-#endif
-    
     if ((nodesVisited & 2047ULL) == 0ULL)
     {
         determineThinkAllowance();
