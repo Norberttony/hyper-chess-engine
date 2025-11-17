@@ -240,7 +240,9 @@ int evaluate(void)
     int evaluation = 0;
 
     // count mobility
-    U64 totalBoard = g_pos.boards[toPlay] | g_pos.boards[notToPlay];
+    U64 myBoard = g_pos.boards[toPlay];
+    U64 enemyBoard = g_pos.boards[notToPlay];
+    U64 totalBoard = myBoard | enemyBoard;
     int mobilityA = 0;
     int mobilityB = 0;
     for (int i = 2; i <= 6; i++)
@@ -256,8 +258,8 @@ int evaluate(void)
     int immPiecesB = evalImmPieces(&ctx, 1, -perspective);
     evaluation += immPiecesA - immPiecesB;
 
-    int immLoSA = evalImmLoS(&ctx, totalBoard, totalBoard, 0, perspective);
-    int immLoSB = evalImmLoS(&ctx, totalBoard, totalBoard, 1, -perspective);
+    int immLoSA = evalImmLoS(&ctx, enemyBoard, enemyBoard, 0, perspective);
+    int immLoSB = evalImmLoS(&ctx, myBoard, myBoard, 1, -perspective);
     evaluation += immLoSA - immLoSB;
 
     int immDistA = evalImmDist(&ctx, 0, perspective);
