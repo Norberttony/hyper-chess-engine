@@ -38,4 +38,17 @@ int thinkCaptures(int alpha, int beta, int accessTT);
 // forward declaration from uci.h
 void readInput(void);
 
+static inline int checkIfImmobilizerWasImmobilized(void)
+{
+    // determine if the last move caused an immobilization of the immobilizer.
+    U64 enemyImmBoard = g_pos.boards[g_pos.notToPlay + immobilizer];
+    U64 enemyChamBoard = g_pos.boards[g_pos.notToPlay + chameleon];
+    int immSq = pop_lsb(g_pos.boards[g_pos.toPlay + immobilizer]);
+    U64 immobilizers = kingMoves[immSq] & (enemyImmBoard | enemyChamBoard);
+    Move m = get_move_n_ply_ago(1);
+    U64 toBoard = 1ULL << get_to(m);
+    int wasImm = (immobilizers & ~toBoard) == 0ULL && (immobilizers & toBoard);
+    return wasImm;
+}
+
 #endif

@@ -216,11 +216,14 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
+    // was the immobilizer immobilized on the last move?
+    int wasImmobilized = checkIfImmobilizerWasImmobilized();
+
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them. We might get a beta cut off.
     int nullDepth = depth - 1 - NULL_MOVE_R;
-    if (!isPV && !isNullMovePruning)
+    if (!isPV && !isNullMovePruning && !wasImmobilized)
     {
         makeNullMove();
         int isInCheck = isAttackingKing();
