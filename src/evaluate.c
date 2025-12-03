@@ -23,6 +23,40 @@ static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side
     return side == white ? mask >> 8 : ~mask;
 }
 
+static inline __attribute__((always_inline)) U64 getForwardSq(U64 sqBoard, int side)
+{
+    return side == white ? sqBoard >> 8 : sqBoard << 8;
+}
+
+// for now just the three forward squares of the king
+int kingBlockers[3] =
+{
+    20, 30, 20
+};
+
+static inline __attribute__((always_inline)) int evalKingSafety(struct EvalContext *ctx, int reverseSide)
+{
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
+
+    int eval = 0;
+    U64 straddlers = g_pos.boards[side + straddler];
+    U64 kingBoard = g_pos.boards[side + king];
+
+    int isFirstFile = (files[0] & kingBoard) > 0;
+    int isLastFile = (files[7] & kingBoard) > 0;
+
+    U64 forward = getForwardSq(kingBoard, side);
+
+    // center straddler
+    eval += kingBlockers[1] * ((forward & straddlers) > 0);
+
+    // left/right straddlers
+    eval += kingBlockers[0] * (((forward >> 1) & straddlers) > 0) * !isFirstFile;
+    eval += kingBlockers[2] * (((forward << 1) & straddlers) > 0) * !isLastFile;
+
+    return eval;
+}
+
 // counts number of pseudo-legal moves that the side can perform given the pieces.
 // does not actually work for king or straddler.
 static inline __attribute__((always_inline)) int evalMobility(struct EvalContext *ctx, int reverseSide, int pieceType)
@@ -259,6 +293,10 @@ int evaluate(void)
     int immDistB = evalImmDist(&ctx, 1, -perspective);
     evaluation += immDistA - immDistB;
 
+    int kingSafetyA = evalKingSafety(&ctx, 0);
+    int kingSafetyB = evalKingSafety(&ctx, 1);
+    evaluation += kingSafetyA - kingSafetyB;
+
 #ifdef DEBUG
     if (EVAL_DBG_PRINT)
     {
@@ -271,6 +309,7 @@ int evaluate(void)
         printf("Immobilizer line of sights:\t%d - %d = %d\n", immLoSA, immLoSB, immLoSA - immLoSB);
         printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
         printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
+        printf("King safety:\t\t%d - %d = %d\n", kingSafetyA, kingSafetyB, kingSafetyA - kingSafetyB);
         puts("");
     }
 #endif
