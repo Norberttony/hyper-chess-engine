@@ -65,16 +65,16 @@ void printNMP(void)
     printf("NMP success rates w/ Beta Margin (BM):\n");
     for (int i = MAX_DEPTH; i >= 0; i--)
     {
-        int64_t successes = debug.NMP_successes[i];
-        int64_t tries = debug.NMP_tries[i];
+        long long int successes = debug.NMP_successes[i];
+        long long int tries = debug.NMP_tries[i];
 
         if (tries == 0)
         {
             continue;
         }
 
-        int64_t bm_success = debug.NMP_totalBetaMarginSucc[i];
-        int64_t bm_fail = debug.NMP_totalBetaMarginFail[i];
+        long long int bm_success = debug.NMP_totalBetaMarginSucc[i];
+        long long int bm_fail = debug.NMP_totalBetaMarginFail[i];
 
         double rate = (double)(100 * successes) / tries;
         double bm_successAvg = (double)bm_success / tries;
