@@ -4,7 +4,6 @@
 #include "evaluate-defines.h"
 #include "move.h"
 
-
 void makeMove(Move);
 void unmakeMove(Move);
 

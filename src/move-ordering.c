@@ -1,6 +1,4 @@
-
 #include "move-ordering.h"
-
 
 Move orderFirst = 0;
 
@@ -8,12 +6,12 @@ const int orderFirstValue = 1000000000;
 const int isCaptValue     =  900000000;
 const int killerValue     =  800000000;
 const int killerFalloff   =   10000000;
+const int checkBonus      =      10000;
 
 Move killerMoves[MAX_DEPTH + 1][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
-
 
 static inline void insertionSort(Move* restrict moves, int* restrict scores, int count)
 {
@@ -65,6 +63,16 @@ void orderMoves(Move* moves, int count, int height)
         // special moves that are first in line to be tried
         score += orderFirstValue * (m == orderFirst);
 
+        // add check bonus
+        makeMove(m);
+        makeNullMove();
+        if (isAttackingKing())
+        {
+            score += checkBonus;
+        }
+        makeNullMove();
+        unmakeMove(m);
+
         // order quiet moves
         if (!isCapt)
         {
@@ -84,7 +92,6 @@ void orderMoves(Move* moves, int count, int height)
                     score += continuationHistory[i][get_type(pm) - 1][get_to(pm)][get_type(m) - 1][get_to(m)];
                 }
             }
-
         }
         // order captures
         else
