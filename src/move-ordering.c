@@ -6,7 +6,7 @@ const int orderFirstValue = 1000000000;
 const int isCaptValue     =  900000000;
 const int killerValue     =  800000000;
 const int killerFalloff   =   10000000;
-const int checkBonus      =      10000;
+const int checkBonus      =       1000;
 
 Move killerMoves[MAX_DEPTH + 1][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
