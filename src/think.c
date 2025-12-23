@@ -172,7 +172,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
-    if (!isNullMovePruning && !isRoot && depth >= TT_MIN_DEPTH)
+    if (!isRoot && depth >= TT_MIN_DEPTH)
     {
         struct TranspositionEntry* savedEval = getTranspositionTableEntry();
         if (savedEval)
@@ -206,7 +206,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        return thinkCaptures(alpha, beta, !isNullMovePruning);
+        return thinkCaptures(alpha, beta, 1);
     }
 
 #ifdef DEBUG
@@ -325,10 +325,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         {
             // store the move that caused the cut off
 #ifdef USE_TRANSPOSITION_TABLE
-            if (!isNullMovePruning)
-            {
-                writeToTranspositionTable(depth, beta, m, TT_UPPER);
-            }
+            writeToTranspositionTable(depth, beta, m, TT_UPPER);
 #endif            
             // for moves that do not capture...
             if (!is_move_capt(m))
@@ -390,10 +387,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
 
     // save this entry in the transposition table
 #ifdef USE_TRANSPOSITION_TABLE
-    if (!isNullMovePruning)
-    {
-        writeToTranspositionTable(depth, alpha, bestMove, nodeType);
-    }
+    writeToTranspositionTable(depth, alpha, bestMove, nodeType);
 #endif
 
     // return best evaluation
