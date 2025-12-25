@@ -219,7 +219,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them. We might get a beta cut off.
-    int nullDepth = depth - 1 - NULL_MOVE_R;
+    int nullDepth = depth - 1 - NULL_MOVE_R - depth / 3;
     if (!isPV && !isNullMovePruning)
     {
         makeNullMove();
