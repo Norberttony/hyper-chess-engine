@@ -216,6 +216,10 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
+    makeNullMove();
+    int isInCheck = isAttackingKing();
+    makeNullMove();
+
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them. We might get a beta cut off.
@@ -223,7 +227,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     if (!isPV && !isNullMovePruning)
     {
         makeNullMove();
-        int isInCheck = isAttackingKing();
         if (!isInCheck)
         {
             if (nullDepth < 0)
@@ -256,10 +259,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     {
         return 0;
     }
-
-#ifdef DEBUG
-    // Move orderedFirst = orderFirst;
-#endif
 
     // order most promising moves first
     orderMoves(movelist, size, g_searchParams.height);
@@ -299,18 +298,33 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         }
         hasLegalMoves = 1;
 
+        // keep track of move index to avoid factoring in illegal moves as part of the list
+        mIdx++;
+
 #ifdef DEBUG
         count_move(m);
 #endif
 
         g_searchParams.height++;
-        int eval = -think(depth - 1, -beta, -alpha, flags);
+        int eval = 0;
+        // LMR is done for remaining moves
+        if (mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
+        {
+            int reduce = 1;
+            eval = -think(depth - 1 - reduce, -beta, -alpha, flags);
+            // must search again
+            if (eval > alpha)
+            {
+                eval = -think(depth - 1, -beta, -alpha, flags);
+            }
+        }
+        else
+        {
+            eval = -think(depth - 1, -beta, -alpha, flags);
+        }
         g_searchParams.height--;
 
         unmakeMove(m);
-
-        // keep track of move index to avoid factoring in illegal moves as part of the list
-        mIdx++;
 
         // make sure we are still allowed to think.
         if (g_searchParams.stopThinking)
