@@ -308,7 +308,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         g_searchParams.height++;
         int eval = 0;
         // LMR is done for remaining moves
-        if (mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
+        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
         {
             int reduce = 1;
             eval = -think(depth - 1 - reduce, -beta, -alpha, flags);
