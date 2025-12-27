@@ -311,7 +311,8 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
         {
             int reduce = 1;
-            eval = -think(depth - 1 - reduce, -beta, -alpha, flags);
+            // search with a null window (PVS)
+            eval = -think(depth - 1 - reduce, -alpha - 1, -alpha, flags);
             // must search again
             if (eval > alpha)
             {
