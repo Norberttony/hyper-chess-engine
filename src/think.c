@@ -218,6 +218,9 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
 
     // was the immobilizer immobilized on the last move?
     int wasImmobilized = checkIfImmobilizerWasImmobilized();
+    makeNullMove();
+    int isInCheck = isAttackingKing();
+    makeNullMove();
 
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
@@ -226,7 +229,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     if (!isPV && !isNullMovePruning && !wasImmobilized)
     {
         makeNullMove();
-        int isInCheck = isAttackingKing();
         if (!isInCheck)
         {
             if (nullDepth < 0)
@@ -259,10 +261,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     {
         return 0;
     }
-
-#ifdef DEBUG
-    // Move orderedFirst = orderFirst;
-#endif
 
     // order most promising moves first
     orderMoves(movelist, size, g_searchParams.height);
@@ -302,18 +300,34 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         }
         hasLegalMoves = 1;
 
+        // keep track of move index to avoid factoring in illegal moves as part of the list
+        mIdx++;
+
 #ifdef DEBUG
         count_move(m);
 #endif
 
         g_searchParams.height++;
-        int eval = -think(depth - 1, -beta, -alpha, flags);
+        int eval = 0;
+        // LMR is done for remaining moves
+        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
+        {
+            int reduce = 1;
+            // search with a null window (PVS)
+            eval = -think(depth - 1 - reduce, -alpha - 1, -alpha, flags);
+            // must search again
+            if (eval > alpha)
+            {
+                eval = -think(depth - 1, -beta, -alpha, flags);
+            }
+        }
+        else
+        {
+            eval = -think(depth - 1, -beta, -alpha, flags);
+        }
         g_searchParams.height--;
 
         unmakeMove(m);
-
-        // keep track of move index to avoid factoring in illegal moves as part of the list
-        mIdx++;
 
         // make sure we are still allowed to think.
         if (g_searchParams.stopThinking)
