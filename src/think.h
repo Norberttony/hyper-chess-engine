@@ -38,17 +38,24 @@ int thinkCaptures(int alpha, int beta, int accessTT);
 // forward declaration from uci.h
 void readInput(void);
 
-static inline int checkIfImmobilizerWasImmobilized(void)
+// returns 1 if the given move (when played by STP) will immobilize the enemy
+// immobilizer. Returns 0 otherwise. Works even if the given move was already
+// played.
+static inline int checkIfImmobilizedImmobilizer(int stp, Move m)
 {
-    // determine if the last move caused an immobilization of the immobilizer.
-    U64 enemyImmBoard = g_pos.boards[g_pos.notToPlay + immobilizer];
-    U64 enemyChamBoard = g_pos.boards[g_pos.notToPlay + chameleon];
-    int immSq = pop_lsb(g_pos.boards[g_pos.toPlay + immobilizer]);
-    U64 immobilizers = kingMoves[immSq] & (enemyImmBoard | enemyChamBoard);
-    Move m = get_move_n_ply_ago(1);
+    int nstp = !stp * 8;
+
+    // is this square immobilized?
+    int immSq = pop_lsb(g_pos.boards[nstp + immobilizer]);
+
+    // get all current immobilizers
+    U64 myImmBoard = g_pos.boards[stp + immobilizer];
+    U64 myChamBoard = g_pos.boards[stp + chameleon];
+    U64 immobilizers = kingMoves[immSq] & (myImmBoard | myChamBoard);
+
+    // ensures immobilizer wasn't already immobilized (before move played)
     U64 toBoard = 1ULL << get_to(m);
-    int wasImm = (immobilizers & ~toBoard) == 0ULL && (immobilizers & toBoard);
-    return wasImm;
+    return (immobilizers & ~toBoard) == 0ULL && (immobilizers & toBoard);
 }
 
 #endif

@@ -216,8 +216,9 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     orderFirstAttempts += isFromTT;
     orderFirstSuccess += isFromTT;
 
-    // was the immobilizer immobilized on the last move?
-    int wasImmobilized = checkIfImmobilizerWasImmobilized();
+    // did opponent immobilize my immobilizer on the last move?
+    int isImmImmobilized = checkIfImmobilizedImmobilizer(g_pos.notToPlay, get_move_n_ply_ago(1));
+
     makeNullMove();
     int isInCheck = isAttackingKing();
     makeNullMove();
@@ -226,7 +227,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
     // didn't really help them. We might get a beta cut off.
     int nullDepth = depth - 1 - NULL_MOVE_R;
-    if (!isPV && !isNullMovePruning && !wasImmobilized)
+    if (!isPV && !isNullMovePruning && !isImmImmobilized)
     {
         makeNullMove();
         if (!isInCheck)
@@ -310,7 +311,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         g_searchParams.height++;
         int eval = 0;
         // LMR is done for remaining moves
-        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth > 3 && !isInCheck && !isAttackingKing())
+        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth > 3 && !isInCheck && !isImmImmobilized && !checkIfImmobilizedImmobilizer(g_pos.notToPlay, m) && !isAttackingKing())
         {
             int reduce = 1;
             // search with a null window (PVS)
