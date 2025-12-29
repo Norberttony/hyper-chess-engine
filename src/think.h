@@ -1,6 +1,7 @@
 #ifndef THINK_HEADER
 #define THINK_HEADER
 
+#include <math.h>
 #include "perft.h"
 #include "move.h"
 #include "move-ordering.h"

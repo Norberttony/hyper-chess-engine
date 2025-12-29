@@ -310,9 +310,17 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         // LMR is done for remaining moves
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 3 && !isInCheck && !isAttackingKing())
         {
-            int reduce = 1;
+            // From https://www.chessprogramming.org/Late_Move_Reductions
+            int reduce = (int)(1.0 + log(depth) * log(mIdx) / 2.5);
+
+            int newDepth = depth - 1 - reduce;
+            if (newDepth < 0)
+            {
+                newDepth = 0;
+            }
+
             // search with a null window (PVS)
-            eval = -think(depth - 1 - reduce, -alpha - 1, -alpha, flags);
+            eval = -think(newDepth, -alpha - 1, -alpha, flags);
             // must search again
             if (eval > alpha)
             {
