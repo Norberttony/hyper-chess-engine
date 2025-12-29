@@ -305,12 +305,20 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         count_move(m);
 #endif
 
+        U64 myImm = g_pos.boards[g_pos.toPlay + immobilizer];
+        U64 myCham = g_pos.boards[g_pos.toPlay + chameleon];
+        U64 enemyImm = g_pos.boards[g_pos.notToPlay + immobilizer];
+        U64 enemyCham = g_pos.boards[g_pos.notToPlay + chameleon];
+        int isMyImmImm = myImm && kingMoves[pop_lsb(myImm)] & (enemyImm | enemyCham);
+        int isEnemyImmImm = enemyImm && kingMoves[pop_lsb(enemyImm)] & (myImm | myCham);
+        int isImmImm = isMyImmImm || isEnemyImmImm;
+
         g_searchParams.height++;
         int eval = 0;
         // LMR is done for remaining moves
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 3 && !isInCheck && !isAttackingKing())
         {
-            int reduce = 1;
+            int reduce = 1 + !isImmImm;
             // search with a null window (PVS)
             eval = -think(depth - 1 - reduce, -alpha - 1, -alpha, flags);
             // must search again
