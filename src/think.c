@@ -311,7 +311,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 3 && !isInCheck && !isAttackingKing())
         {
             // From https://www.chessprogramming.org/Late_Move_Reductions
-            int reduce = (int)(1.0 + log(depth) * log(mIdx) / 4);
+            int reduce = (int)(0.8 + log(depth) * log(mIdx) / 2.4);
 
             int newDepth = depth - 1 - reduce;
             if (newDepth < 0)
