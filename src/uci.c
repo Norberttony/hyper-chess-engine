@@ -190,7 +190,7 @@ void parseGo(char* line)
     int toPlay = g_pos.toPlay;
 
     int depth = -1;
-    int movesToGo = 30;
+    int movesToGo = 20;
     int moveTime = -1;
     int time = -1;
     int inc = 0;
@@ -252,12 +252,12 @@ void parseGo(char* line)
     if (time != -1)
     {
         time /= movesToGo;
-        time -= 50; // some buffer to prevent bot from timing out
+        time -= 15; // some buffer to prevent bot from timing out
         if (time < 0)
         {
             time = 0;
         }
-        s->thinkingTime = time + inc;
+        s->thinkingTime = time + inc / 2;
     }
 
     if (depth == -1)
