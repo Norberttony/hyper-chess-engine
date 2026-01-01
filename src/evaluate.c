@@ -51,7 +51,7 @@ static inline __attribute__((always_inline)) int evalSpace(struct EvalContext *c
         spaceCount++;
         space &= space - 1;
     }
-    return 5 * spaceCount;
+    return 7 * spaceCount;
 }
 
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
