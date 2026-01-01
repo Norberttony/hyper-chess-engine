@@ -16,6 +16,43 @@ enum
 
 int EVAL_DBG_PRINT = 0;
 
+const U64 spaceBitboards[2] = {
+    4395513233029217340ULL, // white
+    4340410373568986940ULL, // black
+};
+
+static inline __attribute__((always_inline)) U64 getRearFill(U64 b, int toPlay)
+{
+    if (toPlay == black)
+    {
+        b |= b >> 8;
+        b |= b >> 16;
+        b |= b >> 32;
+    }
+    else
+    {
+        b |= b << 8;
+        b |= b << 16;
+        b |= b << 32;
+    }
+    return b;
+}
+
+static inline __attribute__((always_inline)) int evalSpace(struct EvalContext *ctx, int reverseSide)
+{
+    int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
+
+    U64 straddlers = g_pos.boards[side + straddler];
+    U64 space = (getRearFill(straddlers, side) & ~straddlers) & spaceBitboards[side == black];
+
+    int spaceCount = 0;
+    while (space)
+    {
+        spaceCount++;
+        space &= space - 1;
+    }
+    return 5 * spaceCount;
+}
 
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
 {
@@ -264,6 +301,10 @@ int evaluate(void)
     int immDistB = evalImmDist(&ctx, 1, -perspective);
     evaluation += immDistA - immDistB;
 
+    int spaceA = evalSpace(&ctx, 0);
+    int spaceB = evalSpace(&ctx, 1);
+    evaluation += spaceA - spaceB;
+
 #ifdef DEBUG
     if (EVAL_DBG_PRINT)
     {
@@ -275,6 +316,7 @@ int evaluate(void)
         printf("Immobilized pieces:\t\t%d - %d = %d\n", immPiecesA, immPiecesB, immPiecesA - immPiecesB);
         printf("Immobilizer line of sights:\t%d - %d = %d\n", immLoSA, immLoSB, immLoSA - immLoSB);
         printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
+        printf("Space:\t\t%d - %d = %d\n", spaceA, spaceB, spaceA - spaceB);
         printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
         puts("");
     }
