@@ -54,6 +54,25 @@ static inline __attribute__((always_inline)) int evalSpace(struct EvalContext *c
     return 5 * spaceCount;
 }
 
+static inline __attribute__((always_inline)) int penalizeTrappedPieces(struct EvalContext *ctx, int side)
+{
+    int nside = !side * 8;
+    int eval = 0;
+
+    // get enemy's space
+    U64 straddlers = g_pos.boards[nside + straddler];
+    U64 enemySpace = (getRearFill(straddlers, side) & ~straddlers) & spaceBitboards[nside == black];
+
+    U64 myPieces = g_pos.boards[side];
+    U64 trapped = myPieces & enemySpace;
+    while (trapped)
+    {
+        eval -= pieceValues[g_pos.pieceList[pop_lsb(trapped)]] >> 6;
+        trapped &= trapped - 1;
+    }
+    return eval;
+}
+
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
 {
     U64 mask = UINT64_MAX >> (8 * (7 - get_rank(sq)));
@@ -305,6 +324,10 @@ int evaluate(void)
     int spaceB = evalSpace(&ctx, 1);
     evaluation += spaceA - spaceB;
 
+    int trapA = penalizeTrappedPieces(&ctx, g_pos.toPlay);
+    int trapB = penalizeTrappedPieces(&ctx, g_pos.notToPlay);
+    evaluation += trapA - trapB;
+
 #ifdef DEBUG
     if (EVAL_DBG_PRINT)
     {
@@ -316,7 +339,8 @@ int evaluate(void)
         printf("Immobilized pieces:\t\t%d - %d = %d\n", immPiecesA, immPiecesB, immPiecesA - immPiecesB);
         printf("Immobilizer line of sights:\t%d - %d = %d\n", immLoSA, immLoSB, immLoSA - immLoSB);
         printf("Immobilizer distance:\t\t%d - %d = %d\n", immDistA, immDistB, immDistA - immDistB);
-        printf("Space:\t\t%d - %d = %d\n", spaceA, spaceB, spaceA - spaceB);
+        printf("Space:\t\t\t%d - %d = %d\n", spaceA, spaceB, spaceA - spaceB);
+        printf("Trapped pieces:\t\t%d - %d = %d\n", trapA, trapB, trapA - trapB);
         printf("Material:\t\t\t%d - %d = %d\n", materialA, materialB, materialA - materialB);
         puts("");
     }
