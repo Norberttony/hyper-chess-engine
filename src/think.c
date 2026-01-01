@@ -305,15 +305,26 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         count_move(m);
 #endif
 
+
         g_searchParams.height++;
         int eval = 0;
         // LMR is done for remaining moves
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 3 && !isInCheck && !isAttackingKing())
         {
-            // From https://www.chessprogramming.org/Late_Move_Reductions
-            int reduce = (int)(0.8 + log(depth) * log(mIdx) / 2.4);
+            int moveHistory = historyValues[g_pos.notToPlay == black][get_from(m)][get_to(m)];
 
-            int newDepth = depth - 1 - reduce;
+            // From https://www.chessprogramming.org/Late_Move_Reductions
+            double reduce = 0.8 + log(depth) * log(mIdx) / 2.4;
+
+            // reduce moves with bad history more, and reduce moves with good history less.
+            reduce += (double)-moveHistory / 20000.0;
+
+            if (reduce < 0.0)
+            {
+                reduce = 0.0;
+            }
+
+            int newDepth = depth - 1 - (int)reduce;
             if (newDepth < 0)
             {
                 newDepth = 0;
