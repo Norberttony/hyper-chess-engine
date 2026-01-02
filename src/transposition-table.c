@@ -83,7 +83,7 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
     return NULL;
 }
 
-void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
+void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType, int height)
 {
     if (depth < TT_MIN_DEPTH)
     {
@@ -95,14 +95,13 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     int index = (int)(hash % TT_entries);
 
     // adjust mate scores in the TT
-    int ply = g_searchParams.height;
     if (eval >= MATE_SCORE)
     {
-        eval += ply;
+        eval += height;
     }
     else if (eval <= -MATE_SCORE)
     {
-        eval -= ply;
+        eval -= height;
     }
 
 #ifdef DEBUG

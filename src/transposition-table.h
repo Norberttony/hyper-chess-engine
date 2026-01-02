@@ -46,9 +46,6 @@ extern const int TT_evalValueMask;
 
 extern int TT_entries;
 
-// forward declaration.
-extern SearchParams g_searchParams;
-
 // [0] is replace by depth and [1] is always replace
 extern struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS];
 
@@ -59,7 +56,7 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
 // there is no such entry.
 struct TranspositionEntry* getTranspositionTableEntry(void);
 
-void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
+void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType, int height);
 
 // prints the given eval in a specific format
 void printEval(int eval);

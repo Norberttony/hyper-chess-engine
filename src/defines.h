@@ -41,10 +41,18 @@ typedef struct SearchParams
 {
     int thinkingTime;
     int thinkStart;
-    int stopThinking;
     int maxDepth;
-    int height;
 } SearchParams;
+
+typedef struct SearchResults
+{
+    int thinkingTime;
+    int thinkStart;
+    int stopThinking;
+    int height;
+    U64 nodesVisited;
+    Move bestMove;
+} SearchResults;
 
 extern Position g_pos;
 extern PositionState g_states[MAX_GAME_LENGTH];
