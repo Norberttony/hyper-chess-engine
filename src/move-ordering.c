@@ -1,6 +1,4 @@
-
 #include "move-ordering.h"
-
 
 Move orderFirst = 0;
 
@@ -13,7 +11,6 @@ Move killerMoves[MAX_DEPTH + 1][2] = { 0 };
 int historyValues[2][64][64] = { 0 };
 
 int continuationHistory[CONT_HISTORY_PLY][7][64][7][64] = { 0 };
-
 
 static inline void insertionSort(Move* restrict moves, int* restrict scores, int count)
 {

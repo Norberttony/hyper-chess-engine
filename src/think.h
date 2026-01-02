@@ -15,9 +15,7 @@
 // the amount of moves to reduce
 #define NULL_MOVE_R 3
 
-
 extern SearchParams g_searchParams;
-
 
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.

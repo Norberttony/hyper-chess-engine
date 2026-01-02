@@ -1,4 +1,3 @@
-
 #include "evaluate-defines.h"
 
 // immobilizer receives a bonus for the pieces it immobilizes.

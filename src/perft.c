@@ -1,6 +1,4 @@
-
 #include "perft.h"
-
 
 void printMoveCounter(MoveCounter c)
 {
@@ -163,7 +161,7 @@ int countCaptures(Move move)
     }
 }
 
-int chooseMove(int startSq, int endSq)
+Move chooseMove(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
     int size = generateMoves(moves, 0);
@@ -188,7 +186,7 @@ int chooseMove(int startSq, int endSq)
     return 0;
 }
 
-int chooseMoveBlind(int startSq, int endSq)
+Move chooseMoveBlind(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
     int size = generateMoves(moves, 0);

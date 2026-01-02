@@ -1,13 +1,10 @@
-
 #include "uci.h"
 
 #define INPUT_BUFFER 5000
 
-
 void uciOk(void);
 void parseGo(char* line);
 void parsePos(char* line);
-
 
 void uciLoop(void)
 {

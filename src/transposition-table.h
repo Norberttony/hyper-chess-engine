@@ -1,13 +1,12 @@
 #ifndef TRANSPOSITION_TABLE_HEADER
 #define TRANSPOSITION_TABLE_HEADER
 
+#include <limits.h>
+#include <string.h>
 #include "defines.h"
 #include "move.h"
 #include "make-unmake.h"
 #include "debug.h"
-
-#include <limits.h>
-#include <string.h>
 
 #ifdef WEB
 #define MAX_TT_SIZE_MB 64
@@ -32,7 +31,6 @@
 #define TT_getEvalSign(flags) ((flags & TT_evalSignMask) > 0)
 #define TT_getEvalVal(flags) ((flags & TT_evalValueMask) >> 10)
 #define TT_getEval(flags) (-(2 * TT_getEvalSign(flags) - 1) * TT_getEvalVal(flags))
-
 
 struct TranspositionEntry
 {

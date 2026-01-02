@@ -1,4 +1,3 @@
-
 #include "evaluate.h"
 
 struct EvalContext {

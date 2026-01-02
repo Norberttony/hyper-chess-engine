@@ -14,9 +14,7 @@ typedef unsigned long long U64;
 #define get_rank(sq) (sq >> 3)
 #define get_file(sq) (sq & 0x7)
 
-
 extern const U64 g_DebruinSequence64;
-
 extern const int g_DebruijnIndexes64[];
 
 // easier representation of square indices
@@ -33,7 +31,6 @@ enum
 };
 
 void printBitboard(U64 bitboard);
-
 U64 randomU64(void);
 
 // reflects the square vertically with the board center

@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-
 #include "magic-bitboards.h"
 #include "look-up-tables.h"
 #include "defines.h"
@@ -62,7 +61,6 @@
 typedef uint32_t Move;
 
 extern const char* squareNames[];
-
 extern const U64 straddlerBounds[];
 
 // pass in pointer to array, which is then populated with the pseudo-legal moves.

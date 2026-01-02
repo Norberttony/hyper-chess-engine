@@ -1,4 +1,3 @@
-
 #include "transposition-table.h"
 
 struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
@@ -10,7 +9,6 @@ const int TT_evalValueMask = 0xFFFFFC00;
 
 // by default set the TT size to 32MB
 int TT_entries = TT_GET_NUMBER_OF_ENTRIES(32);
-
 
 // Courtesy of https://www.talkchess.com/forum/viewtopic.php?t=60264
 // Returns the hash of the position, sometimes factoring in the fifty move rule
