@@ -1,9 +1,4 @@
-
 #include "think.h"
-
-// how often the order first (from TT) performs
-U64 orderFirstAttempts = 0;
-U64 orderFirstSuccess = 0;
 
 // search nodes and quiescent search nodes visited
 U64 nodesVisited = 0;
@@ -23,9 +18,6 @@ const SearchFlags IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
 Move currBestMove = 0;
 
-U64 nodeOccurrence[4] = { 0 };
-
-
 // returns 1 if the engine is still allowed to think and 0 otherwise
 void determineThinkAllowance(void)
 {
@@ -43,7 +35,6 @@ Move thinkFor(int ms)
     s->thinkStart = getCurrentTime();
     s->thinkingTime = ms;
     s->maxDepth = MAX_DEPTH;
-
     return startThink();
 }
 
@@ -53,7 +44,6 @@ Move getBestMove(int depth)
     s->thinkStart = getCurrentTime();
     s->thinkingTime = -1;
     s->maxDepth = depth;
-
     return startThink();
 }
 
@@ -71,7 +61,6 @@ Move startThink(void)
     currBestMove = 0;
 
     U64 myHash = g_pos.zobristHash;
-
     U64 totalNodesVisited = 0ULL;
 
     // perform "iterative deepening"
@@ -167,8 +156,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     int isNullMovePruning = flags & IS_NULL_MOVE_PRUNING_FLAG;
     int isPV = flags & IS_PV_FLAG;
 
-    int isFromTT = 0;
-
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
 #ifdef USE_TRANSPOSITION_TABLE
@@ -198,7 +185,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             }
             // order based on saved entry
             orderFirst = savedEval->bestMove;
-            isFromTT = 1;
         }
     }
 #endif
@@ -212,9 +198,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
 #ifdef DEBUG
     count_nodeVisited(0);
 #endif
-
-    orderFirstAttempts += isFromTT;
-    orderFirstSuccess += isFromTT;
 
     makeNullMove();
     int isInCheck = isAttackingKing();
@@ -395,9 +378,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             {
                 currBestMove = m;
             }
-
-            orderFirstSuccess -= isFromTT;
-            isFromTT = 0;
         }
     }
 
