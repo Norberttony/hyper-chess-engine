@@ -63,11 +63,11 @@ static inline __attribute__((always_inline)) int penalizeTrappedPieces(struct Ev
     U64 straddlers = g_pos.boards[nside + straddler];
     U64 enemySpace = (getRearFill(straddlers, side) & ~straddlers) & spaceBitboards[nside == black];
 
-    U64 myPieces = g_pos.boards[side];
+    U64 myPieces = g_pos.boards[side] & ~g_pos.boards[side + straddler];
     U64 trapped = myPieces & enemySpace;
     while (trapped)
     {
-        eval -= pieceValues[g_pos.pieceList[pop_lsb(trapped)]] >> 6;
+        eval -= 10;
         trapped &= trapped - 1;
     }
     return eval;
