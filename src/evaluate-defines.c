@@ -36,7 +36,7 @@ const int pieceValues[] =
     300,        // retractor
     400,        // springer
     1100,       // coordinator
-    1300,       // immobilizer
+    1500,       // immobilizer
     700,        // chameleon
     0           // king (priceless)
 };
