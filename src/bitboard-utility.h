@@ -45,4 +45,15 @@ static inline int flipSq(int sq)
     return (56 - (sq & 56)) | (7 - get_file(sq));
 }
 
+static inline int countBits(U64 board)
+{
+    int c = 0;
+    while (board)
+    {
+        c++;
+        board &= board - 1;
+    }
+    return c;
+}
+
 #endif

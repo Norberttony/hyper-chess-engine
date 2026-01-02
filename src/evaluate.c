@@ -44,13 +44,7 @@ static inline __attribute__((always_inline)) int evalSpace(struct EvalContext *c
     U64 straddlers = g_pos.boards[side + straddler];
     U64 space = (getRearFill(straddlers, side) & ~straddlers) & spaceBitboards[side == black];
 
-    int spaceCount = 0;
-    while (space)
-    {
-        spaceCount++;
-        space &= space - 1;
-    }
-    return 5 * spaceCount;
+    return 5 * countBits(space);
 }
 
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
@@ -77,17 +71,8 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
         // forward moves get a double bonus (ie. they're counted twice, once on forwardMoveBoard
         // and another time on moveBoard)
         U64 forwardMoveBoard = getForwardMask(sq, side) & moveBoard;
-        while (forwardMoveBoard)
-        {
-            mobility += 3;
-            forwardMoveBoard &= forwardMoveBoard - 1;
-        }
-
-        while (moveBoard)
-        {
-            mobility += 2;
-            moveBoard &= moveBoard - 1;
-        }
+        mobility += 3 * countBits(forwardMoveBoard);
+        mobility += 2 * countBits(moveBoard);
 
         myBoard &= myBoard - 1;
     }
