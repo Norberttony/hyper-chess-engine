@@ -67,7 +67,7 @@ static inline __attribute__((always_inline)) int penalizeTrappedPieces(struct Ev
     U64 trapped = myPieces & enemySpace;
     while (trapped)
     {
-        eval -= 10;
+        eval -= 50;
         trapped &= trapped - 1;
     }
     return eval;
