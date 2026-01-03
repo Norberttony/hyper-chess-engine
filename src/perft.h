@@ -30,7 +30,7 @@ Move chooseMove(int startSq, int endSq);
 // chooses a move without checking if it is legal or not.
 Move chooseMoveBlind(int startSq, int endSq);
 
-int isAttackingKing(void);
+int isAttackingKing(int toPlay, int notToPlay);
 
 // just played a move. is it checkmate?
 int isCheckmate(void);

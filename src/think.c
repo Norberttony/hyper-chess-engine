@@ -163,9 +163,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
     count_nodeVisited(0);
 #endif
 
-    makeNullMove();
-    int isInCheck = isAttackingKing();
-    makeNullMove();
+    int isInCheck = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
@@ -226,7 +224,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
         Move m = movelist[i];
         makeMove(m);
 
-        if (isAttackingKing())
+        if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             unmakeMove(m);
             continue;
@@ -255,7 +253,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
         res->height++;
         int eval = 0;
         // LMR is done for remaining moves
-        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 2 && !isInCheck && !isAttackingKing())
+        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 2 && !isInCheck && !isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             // From https://www.chessprogramming.org/Late_Move_Reductions
             int reduce = (int)(0.8 + log(depth) * log(mIdx) / 2.4);
@@ -412,7 +410,7 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
         Move m = movelist[i];
         makeMove(m);
 
-        if (isAttackingKing())
+        if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             unmakeMove(m);
             continue;
