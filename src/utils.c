@@ -1,4 +1,3 @@
-
 #include "utils.h"
 
 // returns the current time in ms
@@ -21,11 +20,14 @@ int getCurrentTime(void)
 // Source: https://www.youtube.com/watch?v=gVGadWuBqEA
 // Bluefever Software chess engine Vice
 // Modified the windows version to only listen to keyboard down events.
+// to-do: This has different behavior... for all three versions... which isn't
+// a good thing. Windows version detects key presses (ConsoleInputs) and Linux
+// version detects buffered inputs and Web modifies a specific JS object.
 int inputIsWaiting(void)
 {
 #ifdef WEB
-    // since this emscripten code is significantly slower than the windows/linux build, there's an
-    // extra delay here.
+    // since this emscripten code is significantly slower than the windows/linux
+    // build, there's an extra delay here.
     static int web_additional_delay = 0;
     if (++web_additional_delay < 100)
     {
@@ -44,6 +46,14 @@ int inputIsWaiting(void)
 #else
 
 #ifndef _WIN32
+    // ignore the waiting input and finish the current operation if there is no
+    // terminal actively open. This is a shoddy fix for getting the makefile to
+    // work when piping commands.
+    if (!isatty(STDIN_FILENO))
+    {
+        return 0;
+    }
+
     fd_set readfds;
     struct timeval tv;
     
@@ -76,11 +86,13 @@ int inputIsWaiting(void)
 
     if (pipe)
     {
-        // A slight modification from the copied code: when PeekNamedPipe fails then '1' is not
-        // returned. When makefile was executing the program to make the profile build, it got hung
-        // up because, probably, it is running the program without stdin (in a "detached" state)...
-        // so if PeekNamedPipe fails, 0 is returned (input is not waiting). I don't know the full
-        // effects of removing PeekNamedPipe, but functionality looks the same.
+        // A slight modification from the copied code: when PeekNamedPipe fails
+        // then '1' is not returned. When makefile was executing the program to
+        // make the profile build, it got hung up because, probably, it is
+        // running the program without stdin (in a "detached" state)... so if
+        // PeekNamedPipe fails, 0 is returned (input is not waiting). I don't
+        // know the full effects of removing PeekNamedPipe, but functionality
+        // looks the same.
         if (!PeekNamedPipe(inh, NULL, 0, NULL, &dw, NULL))
         {
         }

@@ -1,6 +1,4 @@
-
 #include "perft.h"
-
 
 void printMoveCounter(MoveCounter c)
 {
@@ -114,11 +112,8 @@ MoveCounter countMoves(int depth, Move prevMove)
 int isMoveLegal(Move m)
 {
     makeMove(m);
-
-    int res = !isAttackingKing();
-
+    int res = !isAttackingKing(g_pos.toPlay, g_pos.notToPlay);
     unmakeMove(m);
-
     return res;
 }
 
@@ -163,7 +158,7 @@ int countCaptures(Move move)
     }
 }
 
-int chooseMove(int startSq, int endSq)
+Move chooseMove(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
     int size = generateMoves(moves, 0);
@@ -188,7 +183,7 @@ int chooseMove(int startSq, int endSq)
     return 0;
 }
 
-int chooseMoveBlind(int startSq, int endSq)
+Move chooseMoveBlind(int startSq, int endSq)
 {
     Move moves[MAX_MOVES];
     int size = generateMoves(moves, 0);
@@ -208,11 +203,9 @@ int chooseMoveBlind(int startSq, int endSq)
     return 0;
 }
 
-int isAttackingKing(void)
+int isAttackingKing(int toPlay, int notToPlay)
 {
     U64* position = g_pos.boards;
-    int toPlay = g_pos.toPlay;
-    int notToPlay = g_pos.notToPlay;
 
     // get squares that enemy immobilizer is not influencing
     U64 enemImm = position[notToPlay + immobilizer];
@@ -280,9 +273,7 @@ int isAttackingKing(void)
         coordRank * (coordPieceBoard > 0) == targetKingRank && kingAndChamKingMoves & targetKingFile;
 
     int isSpringerCheck = isSquareControlledBySpringer(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
-
     int isRetractorCheck = isSquareControlledByRetractor(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
-
     int isStraddlerCheck = isSquareControlledByStraddler(toPlay, targetKingSq, notImmInfl, totalBoard, 0);
 
     return position[notToPlay + king] & attacked || isCheck || isSpringerCheck || isRetractorCheck || isStraddlerCheck;
@@ -290,17 +281,9 @@ int isAttackingKing(void)
 
 int isCheckmate(void)
 {
-    // toggle turn
-    g_pos.toPlay = !g_pos.toPlay * 8;
-    g_pos.notToPlay = !g_pos.notToPlay * 8;
-
     // make sure king is actually attacked
     // if not, then it cannot be checkmate.
-    int isAttacked = isAttackingKing();
-
-    // toggle turn back
-    g_pos.toPlay = !g_pos.toPlay * 8;
-    g_pos.notToPlay = !g_pos.notToPlay * 8;
+    int isAttacked = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
     if (!isAttacked)
     {

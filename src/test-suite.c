@@ -1,6 +1,4 @@
-
 #include "test-suite.h"
-
 
 pos positions[NUM_TEST_SUITE_POSITIONS] =
 {

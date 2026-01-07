@@ -1,4 +1,3 @@
-
 #include "make-unmake.h"
 
 // this function assumes that the piece exists
@@ -19,7 +18,6 @@ static inline __attribute__((always_inline)) void unsetPiece(int stp, int type, 
     g_pos.pieceList[sq] = 0;
     g_pos.materialScore[stp == black] -= PSQT(type, stp, sq);
 }
-
 
 void makeMove(Move m)
 {

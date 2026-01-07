@@ -1,4 +1,3 @@
-
 #include "defines.h"
 
 PositionState g_states[MAX_GAME_LENGTH];
@@ -37,9 +36,7 @@ U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
 
 U64 repeatTable[REPEAT_TABLE_ENTRIES];
 int repeatTableIndex = 0;
-
 U64 repeatTableCopy[REPEAT_TABLE_ENTRIES];
-
 
 void printBoardLine(void)
 {
