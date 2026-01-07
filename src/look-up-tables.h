@@ -2,7 +2,6 @@
 #define LOOK_UP_TABLES_HEADER
 
 #include <stdlib.h>
-
 #include "bitboard-utility.h"
 
 extern U64 ranks[8];
@@ -21,7 +20,6 @@ extern U64 springerLeaps[64][64];
 // where the retractor has to move to capture an enemy piece
 // retractorCaptures[retractorSq][enemySq]
 extern U64 retractorCaptures[64][64];
-
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
 void populateRanksAndFiles(void);

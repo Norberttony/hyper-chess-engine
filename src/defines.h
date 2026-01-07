@@ -4,10 +4,8 @@
 #include <ctype.h> // for tolower and toupper
 #include <stdlib.h>
 #include <stdint.h>
-
 #include "evaluate-defines.h"
 #include "bitboard-utility.h"
-
 
 // determines "x-move-rule" which is "draw in x noncapturing moves"
 #define DRAW_MOVE_RULE 100
@@ -15,7 +13,6 @@
 // 30 capturable pieces that each extend the fifty move rule by 100 additional halfmoves.
 #define MAX_GAME_LENGTH (DRAW_MOVE_RULE * 30)
 #define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
-
 
 typedef uint32_t Move;
 typedef uint_fast8_t SearchFlags;
@@ -44,19 +41,23 @@ typedef struct SearchParams
 {
     int thinkingTime;
     int thinkStart;
-    int stopThinking;
     int maxDepth;
-    int height;
 } SearchParams;
 
+typedef struct SearchResults
+{
+    int thinkingTime;
+    int thinkStart;
+    int stopThinking;
+    int height;
+    U64 nodesVisited;
+    Move bestMove;
+} SearchResults;
+
 extern Position g_pos;
-
 extern PositionState g_states[MAX_GAME_LENGTH];
-
 extern const char pieceFEN[];
-
 extern const char StartingFEN[];
-
 extern const char* squareNames[];
 
 // 7 pieces on each side (so 14) on any of the 64 squares, which side to play
@@ -64,7 +65,6 @@ extern const char* squareNames[];
 // for the zobrist hash of a particular piece.
 #define ZOBRIST_HASH_COUNT (64 + 64 * 14 + 1)
 #define ZOBRIST_HASH_COUNT_HALFMOVE 20
-
 
 extern U64 zobristHashes[ZOBRIST_HASH_COUNT];
 extern U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
@@ -77,7 +77,6 @@ extern int repeatTableIndex;
 #define MAX_SCORE 4194303
 #define MATE_SCORE (MAX_SCORE - 10000)
 #define extract_mate_score(score) (MAX_SCORE - score)
-
 
 // prints all positions onto one board with FEN symbols
 void prettyPrintBoard(void);

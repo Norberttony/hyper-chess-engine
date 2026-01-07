@@ -1,78 +1,33 @@
-
 #include "think.h"
-
-// how often the order first (from TT) performs
-U64 orderFirstAttempts = 0;
-U64 orderFirstSuccess = 0;
-
-// search nodes and quiescent search nodes visited
-U64 nodesVisited = 0;
-
-SearchParams g_searchParams =
-{
-    .thinkingTime = -1,
-    .thinkStart = -1,
-    .stopThinking = 0,
-    .maxDepth = -1,
-    .height = 0
-};
 
 // search flags
 const SearchFlags IS_PV_FLAG = 0x1;
 const SearchFlags IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
-Move currBestMove = 0;
-
-U64 nodeOccurrence[4] = { 0 };
-
-
 // returns 1 if the engine is still allowed to think and 0 otherwise
-void determineThinkAllowance(void)
+static inline void determineThinkAllowance(SearchResults* s)
 {
-    SearchParams *s = &g_searchParams;
-    if (!(s->thinkingTime < 0 || (getCurrentTime() - s->thinkStart) < s->thinkingTime))
+    if ((s->nodesVisited & 2047ULL) == 0ULL)
     {
-        s->stopThinking = 1;
+        if (!(s->thinkingTime < 0 || (getCurrentTime() - s->thinkStart) < s->thinkingTime))
+        {
+            s->stopThinking = 1;
+        }
+        readInput();
     }
-    readInput();
 }
 
-Move thinkFor(int ms)
+void startThink(SearchParams* s, SearchResults* res)
 {
-    SearchParams *s = &g_searchParams;
-    s->thinkStart = getCurrentTime();
-    s->thinkingTime = ms;
-    s->maxDepth = MAX_DEPTH;
-
-    return startThink();
-}
-
-Move getBestMove(int depth)
-{
-    SearchParams *s = &g_searchParams;
-    s->thinkStart = getCurrentTime();
-    s->thinkingTime = -1;
-    s->maxDepth = depth;
-
-    return startThink();
-}
-
-// Parameters to set
-// - maxDepth: must be set to the depth that will be iteratively searched to.
-// - thinkStart: -1 if meant to think indefinitely
-// - thinkingTime: must be set
-Move startThink(void)
-{
-    SearchParams *s = &g_searchParams;
-
     // thinking is back on schedule
-    s->stopThinking = 0;
+    res->stopThinking = 0;
+    res->thinkingTime = s->thinkingTime;
+    res->thinkStart = s->thinkStart;
+    res->bestMove = 0;
+
     orderFirst = 0;
-    currBestMove = 0;
 
     U64 myHash = g_pos.zobristHash;
-
-    U64 totalNodesVisited = 0ULL;
 
     // perform "iterative deepening"
     // simply. search depth 1. then 2. then 3. until you're out of time.
@@ -82,17 +37,17 @@ Move startThink(void)
     printf("info string root-eval %d\n", (g_pos.toPlay == white ? 1 : -1) * evaluate());
     EVAL_DBG_PRINT = 0;
 #endif
-    while (!s->stopThinking && depth <= s->maxDepth)
+    while (!res->stopThinking && depth <= s->maxDepth)
     {
 #ifdef DEBUG
         count_startDepth(depth);
 #endif
-        nodesVisited = 0ULL;
-
-        int eval = think(depth, -MAX_SCORE, MAX_SCORE, IS_PV_FLAG);
+        U64 prevNodes = res->nodesVisited;
+        int eval = think(depth, -MAX_SCORE, MAX_SCORE, res, IS_PV_FLAG);
+        U64 nodesVisitedDepth = res->nodesVisited - prevNodes;
 
         // handling checkmate (or stalemate) at the root
-        if (depth > 0 && nodesVisited == 1ULL)
+        if (depth > 0 && nodesVisitedDepth == 1ULL)
         {
             printf("info score ");
             printEval(eval);
@@ -100,27 +55,28 @@ Move startThink(void)
             break;
         }
 
-        // since this is the best move at this depth, it will be ordered first (as it's likely
-        // still the first move of the PV).
-        orderFirst = currBestMove;
-
-        totalNodesVisited += nodesVisited;
+        // since this is the best move at this depth, it will be ordered first
+        // (as it's likely still the first move of the PV).
+        orderFirst = res->bestMove;
 
         printf("info score ");
         printEval_TT();
-        printf(" depth %d nodes %lld time %d pv ", depth, totalNodesVisited, getCurrentTime() - s->thinkStart);
+        printf(" depth %d nodes %lld time %d pv ",
+            depth, res->nodesVisited, getCurrentTime() - s->thinkStart);
         saveRepeatTable();
-        if (s->stopThinking)
+        if (res->stopThinking)
         {
-            // at least print part of the current principal variation if prompted to stop thinking
-            // if we changed moves at the root but interrupted thinking, the root hasn't had enough
-            // time to put in the best move into the TT. So, we forcefully play it here and then
-            // play out the PV. This might still give an inaccurate PV (because of missing TT
-            // entries) but should be right a good amount of the time.
-            printMove(currBestMove);
-            makeMove(currBestMove);
+            // at least print part of the current principal variation if
+            // prompted to stop thinking if we changed moves at the root but
+            // interrupted thinking, the root hasn't had enough time to put in
+            // the best move into the TT. So, we forcefully play it here and
+            // then play out the PV. This might still give an inaccurate PV
+            // (because of missing TT entries) but should be right a good
+            // amount of the time.
+            printMove(res->bestMove);
+            makeMove(res->bestMove);
             printPrincipalVariation(depth - 1, 2 * (depth - 1));
-            unmakeMove(currBestMove);
+            unmakeMove(res->bestMove);
         }
         else
         {
@@ -131,26 +87,24 @@ Move startThink(void)
         depth++;
     }
 
-    printf("bestmove %s%s\n", squareNames[get_from(currBestMove)], squareNames[get_to(currBestMove)]);
+    printf("bestmove %s%s\n",
+        squareNames[get_from(res->bestMove)], squareNames[get_to(res->bestMove)]);
 
     if (myHash != g_pos.zobristHash)
     {
         puts("PANIC! HASH ERROR!");
     }
 
-    return currBestMove;
+    return ;
 }
 
-int think(int depth, int alpha, int beta, SearchFlags flags)
+int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
 {
-    nodesVisited++;
-    int isRoot = g_searchParams.height == 0;
-    int distToRoot = g_searchParams.height;
+    res->nodesVisited++;
+    int isRoot = res->height == 0;
+    int distToRoot = res->height;
 
-    if ((nodesVisited & 2047ULL) == 0ULL)
-    {
-        determineThinkAllowance();
-    }
+    determineThinkAllowance(res);
 
     // check for three fold repetition and checkmate
     if (isCheckmate())
@@ -163,11 +117,8 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     }
 
     int nodeType = TT_LOWER;
-
     int isNullMovePruning = flags & IS_NULL_MOVE_PRUNING_FLAG;
     int isPV = flags & IS_PV_FLAG;
-
-    int isFromTT = 0;
 
     // return the evaluation that might have been saved in the transposition table.
     // this shifts our window if the given evaluation is a lower/upper bound.
@@ -198,7 +149,6 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             }
             // order based on saved entry
             orderFirst = savedEval->bestMove;
-            isFromTT = 1;
         }
     }
 #endif
@@ -206,19 +156,14 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        return thinkCaptures(alpha, beta, !isNullMovePruning);
+        return thinkCaptures(alpha, beta, res, !isNullMovePruning);
     }
 
 #ifdef DEBUG
     count_nodeVisited(0);
 #endif
 
-    orderFirstAttempts += isFromTT;
-    orderFirstSuccess += isFromTT;
-
-    makeNullMove();
-    int isInCheck = isAttackingKing();
-    makeNullMove();
+    int isInCheck = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
     // before generating moves, give the opponent a free move.
     // If we exceed beta, this would mean that my position is so good that the opponent's free move
@@ -233,9 +178,9 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             {
                 nullDepth = 0;
             }
-            g_searchParams.height++;
-            int nullEval = -think(nullDepth, -beta, -beta + 1, flags | IS_NULL_MOVE_PRUNING_FLAG);
-            g_searchParams.height--;
+            res->height++;
+            int nullEval = -think(nullDepth, -beta, -beta + 1, res, flags | IS_NULL_MOVE_PRUNING_FLAG);
+            res->height--;
             if (nullEval >= beta)
             {
                 makeNullMove();
@@ -261,13 +206,13 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     }
 
     // order most promising moves first
-    orderMoves(movelist, size, g_searchParams.height);
+    orderMoves(movelist, size, res->height);
 
     orderFirst = 0;
 
     // clear killer moves for this ply
-    killer_move(g_searchParams.height + 1, 0) = 0;
-    killer_move(g_searchParams.height + 1, 1) = 0;
+    killer_move(res->height + 1, 0) = 0;
+    killer_move(res->height + 1, 1) = 0;
 
     int hasLegalMoves = 0;
 
@@ -279,7 +224,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         Move m = movelist[i];
         makeMove(m);
 
-        if (isAttackingKing())
+        if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             unmakeMove(m);
             continue;
@@ -294,7 +239,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         // when searching this position for the first time.
         if (!hasLegalMoves && isRoot && depth == 1)
         {
-            currBestMove = m;
+            res->bestMove = m;
         }
         hasLegalMoves = 1;
 
@@ -305,10 +250,10 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
         count_move(m);
 #endif
 
-        g_searchParams.height++;
+        res->height++;
         int eval = 0;
         // LMR is done for remaining moves
-        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 2 && !isInCheck && !isAttackingKing())
+        if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 2 && !isInCheck && !isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             // From https://www.chessprogramming.org/Late_Move_Reductions
             int reduce = (int)(0.8 + log(depth) * log(mIdx) / 2.4);
@@ -320,23 +265,23 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             }
 
             // search with a null window (PVS)
-            eval = -think(newDepth, -alpha - 1, -alpha, flags);
+            eval = -think(newDepth, -alpha - 1, -alpha, res, flags);
             // must search again
             if (eval > alpha)
             {
-                eval = -think(depth - 1, -beta, -alpha, flags);
+                eval = -think(depth - 1, -beta, -alpha, res, flags);
             }
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha, flags);
+            eval = -think(depth - 1, -beta, -alpha, res, flags);
         }
-        g_searchParams.height--;
+        res->height--;
 
         unmakeMove(m);
 
         // make sure we are still allowed to think.
-        if (g_searchParams.stopThinking)
+        if (res->stopThinking)
         {
             return beta;
         }
@@ -350,14 +295,14 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
 #ifdef USE_TRANSPOSITION_TABLE
             if (!isNullMovePruning)
             {
-                writeToTranspositionTable(depth, beta, m, TT_UPPER);
+                writeToTranspositionTable(depth, beta, m, TT_UPPER, res->height);
             }
 #endif            
             // for moves that do not capture...
             if (!is_move_capt(m))
             {
                 // store killer move
-                addKillerMove(m, g_searchParams.height);
+                addKillerMove(m, res->height);
 
                 // update history moves
                 int bonus = 600 * depth * depth;
@@ -393,11 +338,8 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
             // set current best move in search only if this is the root node.
             if (isRoot)
             {
-                currBestMove = m;
+                res->bestMove = m;
             }
-
-            orderFirstSuccess -= isFromTT;
-            isFromTT = 0;
         }
     }
 
@@ -415,7 +357,7 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
 #ifdef USE_TRANSPOSITION_TABLE
     if (!isNullMovePruning)
     {
-        writeToTranspositionTable(depth, alpha, bestMove, nodeType);
+        writeToTranspositionTable(depth, alpha, bestMove, nodeType, res->height);
     }
 #endif
 
@@ -423,18 +365,14 @@ int think(int depth, int alpha, int beta, SearchFlags flags)
     return alpha;
 }
 
-int thinkCaptures(int alpha, int beta, int accessTT)
+int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
 {
 #ifdef DEBUG
     count_nodeVisited(1);
 #endif
     // avoids counting leaf nodes (as they have already been counted by the parent node)
-    nodesVisited += !accessTT;
-
-    if ((nodesVisited & 2047ULL) == 0ULL)
-    {
-        determineThinkAllowance();
-    }
+    res->nodesVisited += !accessTT;
+    determineThinkAllowance(res);
 
     // not capturing might be better
     int eval = evaluate();
@@ -443,7 +381,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 #ifdef USE_TRANSPOSITION_TABLE
         if (accessTT)
         {
-            writeToTranspositionTable(0, beta, 0, TT_UPPER);
+            writeToTranspositionTable(0, beta, 0, TT_UPPER, res->height);
         }
 #endif
         return beta;
@@ -472,19 +410,19 @@ int thinkCaptures(int alpha, int beta, int accessTT)
         Move m = movelist[i];
         makeMove(m);
 
-        if (isAttackingKing())
+        if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             unmakeMove(m);
             continue;
         }
 
-        g_searchParams.height++;
-        int eval = -thinkCaptures(-beta, -alpha, 0);
-        g_searchParams.height--;
+        res->height++;
+        int eval = -thinkCaptures(-beta, -alpha, res, 0);
+        res->height--;
 
         unmakeMove(m);
 
-        if (g_searchParams.stopThinking)
+        if (res->stopThinking)
         {
             return beta;
         }
@@ -497,7 +435,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 #ifdef USE_TRANSPOSITION_TABLE
             if (accessTT)
             {
-                writeToTranspositionTable(0, beta, 0, TT_UPPER);
+                writeToTranspositionTable(0, beta, 0, TT_UPPER, res->height);
             }
 #endif
             return beta;
@@ -513,7 +451,7 @@ int thinkCaptures(int alpha, int beta, int accessTT)
 #ifdef USE_TRANSPOSITION_TABLE
     if (accessTT)
     {
-        writeToTranspositionTable(0, alpha, 0, nodeType);
+        writeToTranspositionTable(0, alpha, 0, nodeType, res->height);
     }
 #endif
 

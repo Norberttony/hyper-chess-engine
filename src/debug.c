@@ -1,4 +1,3 @@
-
 #include "debug.h"
 
 static DebugStats debug = { 0 };
@@ -19,7 +18,6 @@ void count_print(void)
     printTT();
     printf("\n");
 }
-
 
 void printNodeCounts(void)
 {

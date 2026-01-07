@@ -1,13 +1,12 @@
-
 #include "uci.h"
 
 #define INPUT_BUFFER 5000
 
+static SearchResults res;
 
 void uciOk(void);
 void parseGo(char* line);
 void parsePos(char* line);
-
 
 void uciLoop(void)
 {
@@ -78,7 +77,7 @@ void uciLoop(void)
         }
         else if (!strncmp(line, "quit", 4))
         {
-            g_searchParams.stopThinking = -1;
+            res.stopThinking = -1;
             break;
         }
         else if (!strncmp(line, "uci", 3))
@@ -161,7 +160,7 @@ void uciLoop(void)
 #endif
         }
 
-        if (g_searchParams.stopThinking == -1)
+        if (res.stopThinking == -1)
         {
             break;
         }
@@ -236,12 +235,16 @@ void parseGo(char* line)
         inc = atoi(matchAt + 5);
     }
 
+    memset(&res, 0, sizeof(res));
+
     // interpret the commands
 
     // think infinitely by default
-    SearchParams *s = &g_searchParams;
-    s->thinkStart = getCurrentTime();
-    s->thinkingTime = -1;
+    SearchParams params =
+    {
+        .thinkStart = getCurrentTime(),
+        .thinkingTime = -1
+    };
 
     if (moveTime != -1)
     {
@@ -257,19 +260,19 @@ void parseGo(char* line)
         {
             time = 0;
         }
-        s->thinkingTime = time + inc / 2;
+        params.thinkingTime = time + inc / 2;
     }
 
     if (depth == -1)
     {
-        s->maxDepth = MAX_DEPTH;
+        params.maxDepth = MAX_DEPTH;
     }
     else
     {
-        s->maxDepth = depth;
+        params.maxDepth = depth;
     }
 
-    startThink();
+    startThink(&params, &res);
 }
 
 void parsePos(char* line)
@@ -344,7 +347,7 @@ void readInput(void)
         {
             if (!strncmp(input, "quit", 4) || !strncmp(input, "stop", 4))
             {
-                g_searchParams.stopThinking = 1;
+                res.stopThinking = 1;
             }
         }
     }
@@ -359,7 +362,7 @@ void readInput(void)
         });
         if (stop)
         {
-            g_searchParams.stopThinking = 1;
+            res.stopThinking = 1;
         }
     }
 #endif

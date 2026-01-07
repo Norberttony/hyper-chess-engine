@@ -3,11 +3,9 @@
 
 #include "bitboard-utility.h"
 
-
 #define get_rook_attacks(sq, blockers)   *(rookEntries[sq].ref + (((rookEntries[sq].mask & blockers) * rookEntries[sq].magic) >> (64 - rookEntries[sq].maskBitCount)))
 #define get_bishop_attacks(sq, blockers) *(bishopEntries[sq].ref + (((bishopEntries[sq].mask & blockers) * bishopEntries[sq].magic) >> (64 - bishopEntries[sq].maskBitCount)))
 #define get_queen_attacks(sq, blockers) (get_rook_attacks(sq, blockers) | get_bishop_attacks(sq, blockers))
-
 
 // to minimize cache misses for fetching attacks on a square, any magic relating to a square has
 // been grouped together in a struct
@@ -24,7 +22,6 @@ extern MagicSqEntry bishopEntries[64];
 
 extern U64 rookAttacks[102400];
 extern U64 bishopAttacks[5248];
-
 
 void initMagicBitboards(int isBishop);
 

@@ -1,4 +1,3 @@
-
 #include "move.h"
 
 const Move move_typeMask     = 0x7; // piece performing move

@@ -1,13 +1,12 @@
 #ifndef TRANSPOSITION_TABLE_HEADER
 #define TRANSPOSITION_TABLE_HEADER
 
+#include <limits.h>
+#include <string.h>
 #include "defines.h"
 #include "move.h"
 #include "make-unmake.h"
 #include "debug.h"
-
-#include <limits.h>
-#include <string.h>
 
 #ifdef WEB
 #define MAX_TT_SIZE_MB 64
@@ -33,7 +32,6 @@
 #define TT_getEvalVal(flags) ((flags & TT_evalValueMask) >> 10)
 #define TT_getEval(flags) (-(2 * TT_getEvalSign(flags) - 1) * TT_getEvalVal(flags))
 
-
 struct TranspositionEntry
 {
     U64 zobristHash; // to-do: I can store the first half of the zobrist hash and combine it with the table index
@@ -48,9 +46,6 @@ extern const int TT_evalValueMask;
 
 extern int TT_entries;
 
-// forward declaration.
-extern SearchParams g_searchParams;
-
 // [0] is replace by depth and [1] is always replace
 extern struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS];
 
@@ -61,7 +56,7 @@ struct TranspositionEntry* getTranspositionTableEntryPV(int myDepth);
 // there is no such entry.
 struct TranspositionEntry* getTranspositionTableEntry(void);
 
-void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType);
+void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType, int height);
 
 // prints the given eval in a specific format
 void printEval(int eval);

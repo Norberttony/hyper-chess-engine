@@ -1,4 +1,3 @@
-
 #include "transposition-table.h"
 
 struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
@@ -10,7 +9,6 @@ const int TT_evalValueMask = 0xFFFFFC00;
 
 // by default set the TT size to 32MB
 int TT_entries = TT_GET_NUMBER_OF_ENTRIES(32);
-
 
 // Courtesy of https://www.talkchess.com/forum/viewtopic.php?t=60264
 // Returns the hash of the position, sometimes factoring in the fifty move rule
@@ -85,7 +83,7 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
     return NULL;
 }
 
-void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
+void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType, int height)
 {
     if (depth < TT_MIN_DEPTH)
     {
@@ -97,14 +95,13 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType)
     int index = (int)(hash % TT_entries);
 
     // adjust mate scores in the TT
-    int ply = g_searchParams.height;
     if (eval >= MATE_SCORE)
     {
-        eval += ply;
+        eval += height;
     }
     else if (eval <= -MATE_SCORE)
     {
-        eval -= ply;
+        eval -= height;
     }
 
 #ifdef DEBUG
