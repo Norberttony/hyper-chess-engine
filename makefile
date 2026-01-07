@@ -44,7 +44,7 @@ web: $(WEB_OBJS)
 		-s WASM=1
 
 $(WEB_OBJS): $(WEB_OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	$(WEBCC) -c $(WEBCFLAGS) $^ -o $@
+	$(WEBCC) -DWEB -c $(WEBCFLAGS) $^ -o $@
 
 
 clean:
