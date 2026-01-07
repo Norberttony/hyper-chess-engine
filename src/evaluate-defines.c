@@ -1,4 +1,3 @@
-
 #include "evaluate-defines.h"
 
 // immobilizer receives a bonus for the pieces it immobilizes.
@@ -35,9 +34,9 @@ const int pieceValues[] =
     100,        // straddler
     300,        // retractor
     400,        // springer
-    1100,       // coordinator
+    1000,       // coordinator
     1300,       // immobilizer
-    700,        // chameleon
+    500,        // chameleon
     0           // king (priceless)
 };
 

@@ -66,7 +66,7 @@ void orderMoves(Move* moves, int count, int height)
         // add check bonus
         makeMove(m);
         makeNullMove();
-        if (isAttackingKing())
+        if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             score += checkBonus;
         }

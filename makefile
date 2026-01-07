@@ -2,6 +2,7 @@ CC := gcc
 CFLAGS := -Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=c11 -flto
 WEBCC := emcc
 WEBCFLAGS := -Wall -Werror -Wpedantic -Wno-parentheses -O3 -ffast-math -std=gnu23
+LDLIBS := -lm
 
 WEB_OBJ_DIR := web-obj
 OBJ_DIR := obj
@@ -17,7 +18,7 @@ NAME := bin/hyper-active
 
 # default build, a binary executable.
 all: $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) $(LDLIBS)
 
 debug: CFLAGS += -DDEBUG -g
 debug: all
@@ -29,9 +30,9 @@ $(OBJS): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -c $(CFLAGS) $^ -o $@
 
 profile:
-	$(CC) $(CFLAGS) -fprofile-generate $(SRCS) -o $(NAME)
+	$(CC) $(CFLAGS) -fprofile-generate $(SRCS) -o $(NAME) $(LDLIBS)
 	./$(NAME) < bench.txt
-	$(CC) $(CFLAGS) -fprofile-use $(SRCS) -o $(NAME)
+	$(CC) $(CFLAGS) -fprofile-use $(SRCS) -o $(NAME) $(LDLIBS)
 	rm -f bin/*.gcda
 
 # web build

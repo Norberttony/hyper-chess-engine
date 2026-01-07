@@ -1,4 +1,3 @@
-
 #include "magic-bitboards.h"
 
 // to prevent wrapping around bitboard
@@ -147,7 +146,6 @@ MagicSqEntry bishopEntries[64] =
     { 4611986253856374868ULL,   9024825867763712ULL,    bishopAttacks + 5152,   5 },
     { 2323859625016950804ULL,   18049651735527936ULL,   bishopAttacks + 5184,   6 }
 };
-
 
 void initMagicBitboards(int isBishop)
 {

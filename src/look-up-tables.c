@@ -1,4 +1,3 @@
-
 #include "look-up-tables.h"
 
 // [0] accesses 8th rank, [1] accesses 7th, etc.
@@ -17,10 +16,8 @@ U64 springerLeaps[64][64];
 
 U64 retractorCaptures[64][64];
 
-
 static const U64 not_a_file = 18374403900871474942ULL;
 static const U64 not_h_file =  9187201950435737471ULL;
-
 
 void populateRanksAndFiles(void)
 {
