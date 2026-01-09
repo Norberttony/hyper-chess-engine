@@ -1,21 +1,36 @@
-#ifndef DEFINES_HEADER
-#define DEFINES_HEADER
+#ifndef POSITION_DEFINES_HEADER
+#define POSITION_DEFINES_HEADER
 
-#include <ctype.h> // for tolower and toupper
-#include <stdlib.h>
 #include <stdint.h>
-#include "evaluate-defines.h"
 #include "bitboard-utility.h"
+#include "move.h"
+
+#define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 
 // determines "x-move-rule" which is "draw in x noncapturing moves"
 #define DRAW_MOVE_RULE 100
 
 // 30 capturable pieces that each extend the fifty move rule by 100 additional halfmoves.
 #define MAX_GAME_LENGTH (DRAW_MOVE_RULE * 30)
-#define get_zobrist_hash(sq, type, isWhite) zobristHashes[64 * type + sq + 64 * 7 * !isWhite]
 
-typedef uint32_t Move;
-typedef uint_fast8_t SearchFlags;
+// piece types
+enum
+{
+    _,
+    straddler,
+    retractor,
+    springer,
+    coordinator,
+    immobilizer,
+    chameleon,
+    king
+};
+
+// whose side it is to play
+enum
+{
+    white = 0, black = 8
+};
 
 typedef struct PositionState
 {
@@ -37,23 +52,6 @@ typedef struct Position
     PositionState* state;
 } Position;
 
-typedef struct SearchParams
-{
-    int thinkingTime;
-    int thinkStart;
-    int maxDepth;
-} SearchParams;
-
-typedef struct SearchResults
-{
-    int thinkingTime;
-    int thinkStart;
-    int stopThinking;
-    int height;
-    U64 nodesVisited;
-    Move bestMove;
-} SearchResults;
-
 extern Position g_pos;
 extern PositionState g_states[MAX_GAME_LENGTH];
 extern const char pieceFEN[];
@@ -72,11 +70,6 @@ extern U64 zobristHashes_halfmoves[ZOBRIST_HASH_COUNT_HALFMOVE + 1];
 #define REPEAT_TABLE_ENTRIES 32
 extern U64 repeatTable[REPEAT_TABLE_ENTRIES];
 extern int repeatTableIndex;
-
-// used for storing mate in x evaluations. extract_mate_scores will return the depth until mate.
-#define MAX_SCORE 4194303
-#define MATE_SCORE (MAX_SCORE - 10000)
-#define extract_mate_score(score) (MAX_SCORE - score)
 
 // prints all positions onto one board with FEN symbols
 void prettyPrintBoard(void);

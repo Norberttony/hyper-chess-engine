@@ -1,10 +1,7 @@
 #ifndef TEST_SUITE_HEADER
 #define TEST_SUITE_HEADER
 
-#include <stdio.h>
-#include <time.h>
-#include "defines.h"
-#include "perft.h"
+#include "bitboard-utility.h"
 
 #define NUM_TEST_SUITE_POSITIONS 49
 

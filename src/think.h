@@ -1,14 +1,8 @@
 #ifndef THINK_HEADER
 #define THINK_HEADER
 
-#include <math.h>
-#include "perft.h"
 #include "move.h"
-#include "move-ordering.h"
-#include "transposition-table.h"
-#include "evaluate.h"
-#include "utils.h"
-#include "debug.h"
+#include "search-defines.h"
 
 #define USE_TRANSPOSITION_TABLE
 

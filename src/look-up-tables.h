@@ -1,7 +1,6 @@
 #ifndef LOOK_UP_TABLES_HEADER
 #define LOOK_UP_TABLES_HEADER
 
-#include <stdlib.h>
 #include "bitboard-utility.h"
 
 extern U64 ranks[8];

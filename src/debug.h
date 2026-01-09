@@ -1,12 +1,10 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include <string.h>
 #include <stdint.h>
-
+#include "bitboard-utility.h"
+#include "search-defines.h"
 #include "move.h"
-#include "transposition-table.h"
-#include "evaluate.h"
 
 typedef struct DebugStats
 {

@@ -1,4 +1,6 @@
 #include "bitboard-utility.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 const U64 g_DebruinSequence64 = 0x2293565C76F3F43;
 const int g_DebruijnIndexes64[] = 

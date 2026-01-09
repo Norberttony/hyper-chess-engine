@@ -1,4 +1,11 @@
 #include "transposition-table.h"
+#include <limits.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "position-defines.h"
+#include "make-unmake.h"
+#include "debug.h"
 
 struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
 

@@ -1,4 +1,5 @@
 #include "look-up-tables.h"
+#include <stdlib.h>
 
 // [0] accesses 8th rank, [1] accesses 7th, etc.
 U64 ranks[8];

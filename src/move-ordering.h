@@ -1,9 +1,8 @@
 #ifndef MOVE_ORDERING_HEADER
 #define MOVE_ORDERING_HEADER
 
-#include "perft.h"
 #include "move.h"
-#include "evaluate.h"
+#include "search-defines.h"
 
 #define MAX_HISTORY 10000
 #define CONT_HISTORY_PLY 1

@@ -1,12 +1,7 @@
 #ifndef TRANSPOSITION_TABLE_HEADER
 #define TRANSPOSITION_TABLE_HEADER
 
-#include <limits.h>
-#include <string.h>
-#include "defines.h"
 #include "move.h"
-#include "make-unmake.h"
-#include "debug.h"
 
 #ifdef WEB
 #define MAX_TT_SIZE_MB 64

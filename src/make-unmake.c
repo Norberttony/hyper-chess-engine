@@ -1,4 +1,7 @@
 #include "make-unmake.h"
+#include "evaluate-defines.h"
+#include "position-defines.h"
+#include "look-up-tables.h"
 
 // this function assumes that the piece exists
 static inline __attribute__((always_inline)) void setPiece(int stp, int type, int sq)

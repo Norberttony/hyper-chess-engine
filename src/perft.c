@@ -1,4 +1,10 @@
 #include "perft.h"
+#include <stdio.h>
+#include "search-defines.h"
+#include "position-defines.h"
+#include "make-unmake.h"
+#include "look-up-tables.h"
+#include "magic-bitboards.h"
 
 void printMoveCounter(MoveCounter c)
 {

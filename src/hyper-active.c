@@ -8,17 +8,15 @@
 #endif
 
 // move generation
-#include "bitboard-utility.h"
 #include "magic-bitboards.h"
-#include "look-up-tables.h"
-#include "defines.h"
 #include "move.h"
 #include "perft.h"
 #include "uci.h"
+#include "look-up-tables.h"
+#include "evaluate-defines.h"
 
 // initializes the move generator
 void initMoveGen(void);
-
 
 #ifdef WEB
 EMSCRIPTEN_KEEPALIVE

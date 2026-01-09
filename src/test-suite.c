@@ -1,4 +1,8 @@
 #include "test-suite.h"
+#include <stdio.h>
+#include <time.h>
+#include "perft.h"
+#include "position-defines.h"
 
 pos positions[NUM_TEST_SUITE_POSITIONS] =
 {

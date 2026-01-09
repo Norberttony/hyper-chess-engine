@@ -2,17 +2,7 @@
 #define MOVE_HEADER
 
 #include <stdint.h>
-#include <stdlib.h>
-#include "magic-bitboards.h"
-#include "look-up-tables.h"
-#include "defines.h"
-
-// defines the max depth that the engine can calculate to.
-#define MAX_DEPTH 127
-
-// defines the maximum possible number of moves in any attainable position
-#define MAX_MOVES 256
-#define MAX_CAPTURES 90
+#include "bitboard-utility.h"
 
 // most moves are structured such that captured pieces are consecutively ordered
 #define get_type(move)  (move & 0x7)

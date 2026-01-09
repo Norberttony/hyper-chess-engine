@@ -1,26 +1,7 @@
 #ifndef EVALUATE_DEFINES_HEADER
 #define EVALUATE_DEFINES_HEADER
 
-#include "bitboard-utility.h"
-
-// piece types
-enum
-{
-    _,
-    straddler,
-    retractor,
-    springer,
-    coordinator,
-    immobilizer,
-    chameleon,
-    king
-};
-
-// whose side it is to play
-enum
-{
-    white = 0, black = 8
-};
+#include "position-defines.h"
 
 extern const int immBonus[];
 extern const int immLoSPen[];

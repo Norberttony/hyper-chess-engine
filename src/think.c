@@ -1,4 +1,14 @@
 #include "think.h"
+#include <math.h>
+#include <stdio.h>
+#include "perft.h"
+#include "move-ordering.h"
+#include "transposition-table.h"
+#include "evaluate.h"
+#include "utils.h"
+#include "debug.h"
+#include "position-defines.h"
+#include "make-unmake.h"
 
 // search flags
 const SearchFlags IS_PV_FLAG = 0x1;

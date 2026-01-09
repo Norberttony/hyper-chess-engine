@@ -1,4 +1,9 @@
 #include "evaluate.h"
+#include <stdio.h>
+#include "evaluate-defines.h"
+#include "position-defines.h"
+#include "look-up-tables.h"
+#include "magic-bitboards.h"
 
 struct EvalContext {
     U64 totalBoard;

@@ -1,4 +1,9 @@
 #include "move-ordering.h"
+#include <stdlib.h>
+#include "position-defines.h"
+#include "perft.h"
+#include "evaluate.h"
+// #include "evaluate-defines.h"
 
 Move orderFirst = 0;
 

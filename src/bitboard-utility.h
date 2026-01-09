@@ -1,9 +1,6 @@
 #ifndef BITBOARD_UTILITY_HEADER
 #define BITBOARD_UTILITY_HEADER
 
-#include <stdio.h>
-#include <stdlib.h>
-
 // definition of a bitboard
 typedef unsigned long long U64;
 
