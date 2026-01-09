@@ -1,13 +1,4 @@
-
 .vscode
-
-bin/*
-!bin/.gitkeep
-
-obj/*
-!obj/.gitkeep
-
-web-obj/*
-!web-obj/.gitkeep
-
+bin
+obj
 *.exe

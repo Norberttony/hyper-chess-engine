@@ -1,4 +1,3 @@
-
 # Hyper Active
 ![hyper-active-terminal](https://github.com/user-attachments/assets/fe4a394e-6109-449f-a825-deeaaab9f61b)
 
@@ -6,14 +5,20 @@ Hyper Active is a chess variant engine specifically designed and optimized for H
 
 The [linked website](https://www.carusos.org/Hyperchess/hyperchess.html) provides the rules of Hyper Chess. The non-MIT rules (where the death squares formed by the king and coordinator do not persist) are used.
 
+In addition to the main engine's code, the source code responsible for generating the DeBruijn constant and the magic numbers is available under ./de-bruijn-gen and ./magic-gen, respectively.
+
 Note: the liberty to not implement draw by material was taken.
 
 ## Build
-This project requires a GNU compiler that supports the C11 standard and can be run using the `gcc` command and the ability to run makefiles. Running `make` in the project directory will build the executable `bin/hyper-active.exe`. The makefile has been configured to automatically run the executable after building it. This has been tested to work on Windows with MSYS2 and Ubuntu 24.04 (Linux).
+This project requires a C compiler (such as gcc or clang) that supports the C11 standard and the ability to run makefiles. Running `make` in the project directory will build an executable in the ./bin directory. This has been tested to work on Windows with MSYS2 and Ubuntu 24.04 (Linux).
 
-Running `make profile` will use PGO in order to create an executable specially optimized for the platform it is running on. This may take several minutes depending on the device. There is also a `make profile-debug` option which will spit out cumulative statistics, while also using PGO.
+Running `make profile` will use PGO in order to create an executable specially optimized for the platform it is running on. This may take several minutes depending on the device.
 
-Running `make web` in the project directory will build a web assembly version of the engine that exposes some of the engine's functionality to the web browser, generating `bin/hyper-active.js` and `bin/hyper-active.wasm`. The Emscripten web compiler must be installed and accessible on the global path. This build requires a separate interface to properly use.
+Running `make TARGET=web` in the project directory will build a web assembly version of the engine that exposes some of the engine's functionality to the web browser, generating `bin/hyper-active.js` and `bin/hyper-active.wasm`. The Emscripten web compiler must be installed and accessible on the global path. This build requires a separate interface to properly use.
+
+Running `make DEBUG=1` will enable code that collects cumulative statistics and spits them out after every command. If it is reading from a file, it will only spit out statistics after running every command in the file.
+
+Trying to run `make profile TARGET=web` will not work.
 
 ## UCI Commands
 Here is a list of some of the UCI commands supported. These commands are useful for analyzing games.
