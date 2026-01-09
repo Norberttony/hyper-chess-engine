@@ -8,12 +8,12 @@
 #endif
 
 // move generation
-#include "magic-bitboards.h"
-#include "move.h"
-#include "perft.h"
-#include "uci.h"
-#include "look-up-tables.h"
-#include "evaluate-defines.h"
+#include "../movegen/magic-bitboards.h"
+#include "../movegen/move.h"
+#include "../search/perft.h"
+#include "../uci/uci.h"
+#include "../movegen/look-up-tables.h"
+#include "../eval/evaluate-defines.h"
 
 // initializes the move generator
 void initMoveGen(void);

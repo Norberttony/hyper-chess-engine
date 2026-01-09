@@ -1,7 +1,7 @@
 #ifndef TRANSPOSITION_TABLE_HEADER
 #define TRANSPOSITION_TABLE_HEADER
 
-#include "move.h"
+#include "../movegen/move.h"
 
 #ifdef WEB
 #define MAX_TT_SIZE_MB 64

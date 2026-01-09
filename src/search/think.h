@@ -1,7 +1,7 @@
 #ifndef THINK_HEADER
 #define THINK_HEADER
 
-#include "move.h"
+#include "../movegen/move.h"
 #include "search-defines.h"
 
 #define USE_TRANSPOSITION_TABLE

@@ -1,7 +1,7 @@
 #ifndef MAKE_UNMAKE_HEADER
 #define MAKE_UNMAKE_HEADER
 
-#include "move.h"
+#include "../movegen/move.h"
 
 void makeMove(Move);
 void unmakeMove(Move);

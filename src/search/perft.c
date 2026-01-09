@@ -1,10 +1,10 @@
 #include "perft.h"
 #include <stdio.h>
 #include "search-defines.h"
-#include "position-defines.h"
-#include "make-unmake.h"
-#include "look-up-tables.h"
-#include "magic-bitboards.h"
+#include "../movegen/position-defines.h"
+#include "../movegen/make-unmake.h"
+#include "../movegen/look-up-tables.h"
+#include "../movegen/magic-bitboards.h"
 
 void printMoveCounter(MoveCounter c)
 {

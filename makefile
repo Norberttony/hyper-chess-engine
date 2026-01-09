@@ -6,6 +6,17 @@ OBJ_DIR := obj
 SRC_DIR := src
 BIN_DIR := bin
 
+MODULE_DIRS := \
+	$(SRC_DIR)/debug \
+	$(SRC_DIR)/eval \
+	$(SRC_DIR)/movegen \
+	$(SRC_DIR)/search \
+	$(SRC_DIR)/uci \
+	$(SRC_DIR)/app
+PLATFORM_DIR := $(SRC_DIR)/platform
+
+ADDITIONAL_SRCS :=
+
 NAME := $(BIN_DIR)/hyper-active
 DEBUG ?= 0
 
@@ -19,7 +30,7 @@ endif
 
 TARGET ?= $(HOST_OS)
 
-# Choose default compiler based on the target
+# Special flags for each target
 ifeq ($(TARGET),web)
 	override CC := emcc
 	LDFLAGS += \
@@ -29,9 +40,12 @@ ifeq ($(TARGET),web)
 		-sWASM=1
 	NAME := $(NAME).js
 	OBJ_DIR := $(OBJ_DIR)/web
+	ADDITIONAL_SRCS += $(PLATFORM_DIR)/platform_web.c
 else ifeq ($(TARGET),windows)
 	NAME := $(NAME).exe
+	ADDITIONAL_SRCS += $(PLATFORM_DIR)/platform_win.c
 else ifeq ($(TARGET),linux)
+	ADDITIONAL_SRCS += $(PLATFORM_DIR)/platform_linux.c
 endif
 
 # EMCC for some reason requires the gnu23 standard when compiling
@@ -45,9 +59,8 @@ ifneq ($(DEBUG),0)
 	CFLAGS += -DDEBUG
 endif
 
-# build a list of src files (SRCS), obj files (OBJS), and the target name.
-SRCS := $(wildcard $(SRC_DIR)/*.c)
-OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+SRCS := $(foreach dir,$(MODULE_DIRS),$(wildcard $(dir)/*.c)) $(ADDITIONAL_SRCS)
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
 .PHONY: all clean profile
 
@@ -55,6 +68,7 @@ all: build_dir $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) $(LDLIBS) $(LDFLAGS)
 
 $(OBJS): $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	mkdir -p $(dir $@)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 profile: build_dir

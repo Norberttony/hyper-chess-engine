@@ -1,7 +1,7 @@
 #ifndef EVALUATE_HEADER
 #define EVALUATE_HEADER
 
-#include "move.h"
+#include "../movegen/move.h"
 
 #define imm_dist_penalty(sq) (20 * (sq >> 3))
 

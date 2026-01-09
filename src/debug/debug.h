@@ -2,9 +2,9 @@
 #define DEBUG_H
 
 #include <stdint.h>
-#include "bitboard-utility.h"
-#include "search-defines.h"
-#include "move.h"
+#include "../movegen/bitboard-utility.h"
+#include "../search/search-defines.h"
+#include "../movegen/move.h"
 
 typedef struct DebugStats
 {

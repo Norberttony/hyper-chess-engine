@@ -1,7 +1,7 @@
 #ifndef EVALUATE_DEFINES_HEADER
 #define EVALUATE_DEFINES_HEADER
 
-#include "position-defines.h"
+#include "../movegen/position-defines.h"
 
 extern const int immBonus[];
 extern const int immLoSPen[];

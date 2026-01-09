@@ -1,8 +1,8 @@
 #ifndef PERFT_HEADER
 #define PERFT_HEADER
 
-#include "bitboard-utility.h"
-#include "move.h"
+#include "../movegen/bitboard-utility.h"
+#include "../movegen/move.h"
 
 // general debug utilities that tend to be focused on counting the number of moves from the current
 // position to a certain depth.

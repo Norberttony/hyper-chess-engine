@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "position-defines.h"
-#include "make-unmake.h"
-#include "debug.h"
+#include "../movegen/position-defines.h"
+#include "../movegen/make-unmake.h"
+#include "../debug/debug.h"
 
 struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
 

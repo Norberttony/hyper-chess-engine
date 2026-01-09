@@ -4,7 +4,6 @@
 #include "magic-bitboards.h"
 #include "look-up-tables.h"
 #include "position-defines.h"
-#include "evaluate-defines.h"
 
 const Move move_typeMask     = 0x7; // piece performing move
 const Move move_fromMask     = 0x1F8; // from

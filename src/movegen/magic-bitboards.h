@@ -1,7 +1,7 @@
 #ifndef MAGIC_BITBOARDS
 #define MAGIC_BITBOARDS
 
-#include "bitboard-utility.h"
+#include "../movegen/bitboard-utility.h"
 
 #define get_rook_attacks(sq, blockers)   *(rookEntries[sq].ref + (((rookEntries[sq].mask & blockers) * rookEntries[sq].magic) >> (64 - rookEntries[sq].maskBitCount)))
 #define get_bishop_attacks(sq, blockers) *(bishopEntries[sq].ref + (((bishopEntries[sq].mask & blockers) * bishopEntries[sq].magic) >> (64 - bishopEntries[sq].maskBitCount)))

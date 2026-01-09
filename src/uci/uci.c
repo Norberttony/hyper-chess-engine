@@ -18,16 +18,15 @@
 #include <fcntl.h>
 #include <ctype.h>
 
-#include "move-ordering.h"
-#include "evaluate-defines.h"
-#include "search-defines.h"
-#include "position-defines.h"
-#include "transposition-table.h"
-#include "utils.h"
-#include "think.h"
-#include "perft.h"
-#include "test-suite.h"
-#include "debug.h"
+#include "../platform/platform.h"
+#include "../search/move-ordering.h"
+#include "../search/search-defines.h"
+#include "../search/transposition-table.h"
+#include "../search/think.h"
+#include "../search/perft.h"
+#include "../movegen/position-defines.h"
+#include "../debug/test-suite.h"
+#include "../debug/debug.h"
 
 #define INPUT_BUFFER 5000
 

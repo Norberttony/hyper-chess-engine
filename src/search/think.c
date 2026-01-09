@@ -3,12 +3,12 @@
 #include <stdio.h>
 #include "perft.h"
 #include "move-ordering.h"
-#include "transposition-table.h"
-#include "evaluate.h"
-#include "utils.h"
-#include "debug.h"
-#include "position-defines.h"
-#include "make-unmake.h"
+#include "../movegen/position-defines.h"
+#include "../movegen/make-unmake.h"
+#include "../search/transposition-table.h"
+#include "../eval/evaluate.h"
+#include "../debug/debug.h"
+#include "../platform/platform.h"
 
 // search flags
 const SearchFlags IS_PV_FLAG = 0x1;

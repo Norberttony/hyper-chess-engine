@@ -1,11 +1,11 @@
 #include "debug.h"
 #include <string.h>
 #include <stdio.h>
-#include "position-defines.h"
-#include "move.h"
-#include "transposition-table.h"
-#include "evaluate-defines.h"
-#include "evaluate.h"
+#include "../movegen/position-defines.h"
+#include "../movegen/move.h"
+#include "../search/transposition-table.h"
+#include "../eval/evaluate-defines.h"
+#include "../eval/evaluate.h"
 
 static DebugStats debug = { 0 };
 int rootDepth = 0;

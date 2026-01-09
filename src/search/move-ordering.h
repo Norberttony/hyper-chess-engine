@@ -1,7 +1,7 @@
 #ifndef MOVE_ORDERING_HEADER
 #define MOVE_ORDERING_HEADER
 
-#include "move.h"
+#include "../movegen/move.h"
 #include "search-defines.h"
 
 #define MAX_HISTORY 10000

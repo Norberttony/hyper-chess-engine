@@ -1,7 +1,7 @@
 #ifndef LOOK_UP_TABLES_HEADER
 #define LOOK_UP_TABLES_HEADER
 
-#include "bitboard-utility.h"
+#include "../movegen/bitboard-utility.h"
 
 extern U64 ranks[8];
 extern U64 files[8];

@@ -2,7 +2,7 @@
 #include <ctype.h> // for tolower and toupper
 #include <stdlib.h>
 #include <stdio.h>
-#include "evaluate-defines.h"
+#include "../eval/evaluate-defines.h"
 
 PositionState g_states[MAX_GAME_LENGTH];
 

@@ -2,8 +2,8 @@
 #define SEARCH_DEFINES_HEADER
 
 #include <stdint.h>
-#include "bitboard-utility.h"
-#include "move.h"
+#include "../movegen/bitboard-utility.h"
+#include "../movegen/move.h"
 
 // defines the maximum possible number of moves in any attainable position
 #define MAX_MOVES 256

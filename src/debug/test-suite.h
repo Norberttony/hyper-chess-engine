@@ -1,7 +1,7 @@
 #ifndef TEST_SUITE_HEADER
 #define TEST_SUITE_HEADER
 
-#include "bitboard-utility.h"
+#include "../movegen/bitboard-utility.h"
 
 #define NUM_TEST_SUITE_POSITIONS 49
 
