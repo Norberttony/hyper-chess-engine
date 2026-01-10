@@ -37,7 +37,7 @@ void uciLoop(void)
         fflush(stdout);
 
         // according to UCI, every command must end with a line break.
-        if (!readLine(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
+        if (readLine(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
         {
             if (inputFile != stdin)
             {

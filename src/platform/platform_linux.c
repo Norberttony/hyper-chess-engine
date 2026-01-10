@@ -37,5 +37,5 @@ int isLineWaiting(void)
 
 int readLine(char* buffer, int bufferSize, FILE* input)
 {
-    return fgets(buffer, bufferSize, input) != NULL;
+    return fgets(buffer, bufferSize, input) == NULL;
 }
