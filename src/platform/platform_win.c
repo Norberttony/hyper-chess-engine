@@ -2,6 +2,12 @@
 #include <windows.h>
 #include <stdio.h>
 
+#define BUFFER_SIZE 1024
+
+char inputBuffer[BUFFER_SIZE] = { 0 };
+int returnFromBuffer = 0;
+int inputBufferIdx = 0;
+
 int getCurrentTime(void)
 {
     return GetTickCount();
@@ -10,7 +16,7 @@ int getCurrentTime(void)
 // Source: https://www.youtube.com/watch?v=gVGadWuBqEA
 // Bluefever Software chess engine Vice
 // Modified the windows version to only listen to keyboard down events.
-int inputIsWaiting(void)
+int isLineWaiting(void)
 {
     static int init = 0, pipe;
     static HANDLE inh;
@@ -57,15 +63,70 @@ int inputIsWaiting(void)
             {
                 if (records[i].EventType == KEY_EVENT && records[i].Event.KeyEvent.bKeyDown)
                 {
-                    return 1;
+                    char ch = records[i].Event.KeyEvent.uChar.AsciiChar;
+                    if (ch != 0 && inputBufferIdx + 1 < BUFFER_SIZE)
+                    {
+                        inputBuffer[inputBufferIdx++] = ch;
+                        inputBuffer[inputBufferIdx] = '\0';
+
+                        // give user the impression that they are typing into
+                        // the terminal even though their inputs get eaten
+                        printf("%c", ch);
+                    }
+
+                    // handle backspace
+                    if (records[i].Event.KeyEvent.wVirtualKeyCode == VK_BACK)
+                    {
+                        printf(" ");
+                        printf("%c", ch);
+
+                        // remove the \b character that was just added
+                        if (inputBufferIdx > 1)
+                        {
+                            inputBufferIdx--;
+                            inputBuffer[inputBufferIdx--] = '\0';
+                        }
+                    }
+
+                    if (ch == '\r' || ch == '\n')
+                    {
+                        ReadConsoleInput(inh, &records[0], 1, &amt);
+                        returnFromBuffer = 1;
+                        printf("\n");
+                        return 1;
+                    }
                 }
-                else
-                {
-                    // eat input
-                    ReadConsoleInput(inh, &records[0], 1, &amt);
-                }
+                // eat input
+                ReadConsoleInput(inh, &records[0], 1, &amt);
             }
         }
         return 0;
+    }
+}
+
+int readLine(char* buffer, int bufferSize, FILE* input)
+{
+    if (returnFromBuffer)
+    {
+        // must copy over from stored input buffer into the given buffer
+        for (int i = 0; i == 0 || inputBuffer[i - 1] != '\0'; i++)
+        {
+            // avoid overflowing the given buffer
+            if (i + 1 == bufferSize)
+            {
+                buffer[i] = '\0';
+                break;
+            }
+            buffer[i] = inputBuffer[i];
+        }
+
+        returnFromBuffer = 0;
+        inputBufferIdx = 0;
+
+        return 0;
+    }
+    else
+    {
+        return fgets(buffer, bufferSize, input) == NULL;
     }
 }
