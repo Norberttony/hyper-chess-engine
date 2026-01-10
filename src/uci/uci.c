@@ -1,23 +1,9 @@
 #include "uci.h"
-// no idea if this is right, but unistd.h defines STDIN_FILENO for POSIX systems, and since
-// windows does not support POSIX natively, it receives an explicit macro for defining STDIN_FILENO
-#ifndef _WIN32
-#include <unistd.h>
-#else
-#define STDIN_FILENO 0
-#include <io.h>
-#endif
-
-#ifdef WEB
-#include <emscripten.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
-
 #include "../platform/platform.h"
 #include "../search/move-ordering.h"
 #include "../search/search-defines.h"
@@ -50,28 +36,8 @@ void uciLoop(void)
     {
         fflush(stdout);
 
-#ifdef WEB
-        // Allow browser to catch up
-        emscripten_sleep(100);
-#endif
-
         // according to UCI, every command must end with a line break.
-#ifdef WEB
-        char* toCopy = (char*)EM_ASM_PTR({
-            return channel.C_readline();
-        });
-        if (toCopy[0] == '\n')
-        {
-            free(toCopy);
-            continue;
-        }
-        for (int i = 0; i == 0 || toCopy[i - 1] != '\0'; i++)
-        {
-            line[i] = toCopy[i];
-        }
-        free(toCopy);
-#else
-        if (!fgets(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
+        if (!readLine(line, INPUT_BUFFER, inputFile) || line[0] == '\n')
         {
             if (inputFile != stdin)
             {
@@ -80,7 +46,6 @@ void uciLoop(void)
             }
             continue;
         }
-#endif
 
         if (inputFile != stdin)
         {
@@ -342,58 +307,18 @@ void parsePos(char* line)
     }
 }
 
-void readInput(void)
+void pollStop(void)
 {
-#ifndef WEB
-    int bytes;
-
-    char input[256] = "", *endc;
-
-    if (inputIsWaiting())
+    if (isLineWaiting())
     {
-        puts("info string Paused. Type in 'stop'/'quit' to stop or just press Enter to continue.");
-        do
-        {
-#ifdef _WIN32
-            bytes = _read(STDIN_FILENO, input, 256);
-#else
-            bytes = read(STDIN_FILENO, input, 256);
-#endif
-        }
-        while (bytes <= 0);
-        puts("info string Input received.");
+        char input[256] = "";
+        readLine(input, 256, stdin);
 
-        endc = strchr(input, '\n');
-
-        if (endc)
-        {
-            *endc = 0;
-        }
-
-        // if input is available
-        if (strlen(input) > 0)
-        {
-            if (!strncmp(input, "quit", 4) || !strncmp(input, "stop", 4))
-            {
-                res.stopThinking = 1;
-            }
-        }
-    }
-#endif
-#ifdef WEB
-    if (inputIsWaiting())
-    {
-        int stop = EM_ASM_INT({
-            const shouldStop = channel.input.startsWith("stop\n");
-            channel.dropline();
-            return shouldStop ? 1 : 0;
-        });
-        if (stop)
+        if (!strncmp(input, "quit", 4) || !strncmp(input, "stop", 4))
         {
             res.stopThinking = 1;
         }
     }
-#endif
 }
 
 void loadLAN(char* str)

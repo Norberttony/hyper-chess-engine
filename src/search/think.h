@@ -3,6 +3,7 @@
 
 #include "../movegen/move.h"
 #include "search-defines.h"
+#include "../uci/uci.h"
 
 #define USE_TRANSPOSITION_TABLE
 
@@ -19,8 +20,5 @@ void startThink(SearchParams* s, SearchResults* res);
 // a quiescent search, this function only performs min-max alphabeta pruning on sequences of
 // captures
 int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT);
-
-// forward declaration from uci.h
-void readInput(void);
 
 #endif

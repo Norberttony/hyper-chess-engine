@@ -23,7 +23,7 @@ static inline void determineThinkAllowance(SearchResults* s)
         {
             s->stopThinking = 1;
         }
-        readInput();
+        pollStop();
     }
 }
 

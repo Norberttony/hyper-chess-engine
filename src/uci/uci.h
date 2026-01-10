@@ -4,8 +4,8 @@
 // starts waiting for user input
 void uciLoop(void);
 
-// reads the input buffer to see if the engine should pause what it is doing and consider user input
-void readInput(void);
+// determines whether or not user has indicated to stop thinking
+void pollStop(void);
 
 // reads the string as a consecutive sequence of long algebraic notation
 // plays each of the given moves on the board
