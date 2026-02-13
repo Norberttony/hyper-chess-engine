@@ -1,6 +1,7 @@
 #include "think.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include "perft.h"
 #include "move-ordering.h"
 #include "../movegen/position-defines.h"
@@ -52,8 +53,11 @@ void startThink(SearchParams* s, SearchResults* res)
 #ifdef DEBUG
         count_startDepth(depth);
 #endif
+        PvLine line;
+        line.moveCount = 0;
+
         U64 prevNodes = res->nodesVisited;
-        int eval = think(depth, -MAX_SCORE, MAX_SCORE, res, IS_PV_FLAG);
+        int eval = think(depth, -MAX_SCORE, MAX_SCORE, res, &line, IS_PV_FLAG);
         U64 nodesVisitedDepth = res->nodesVisited - prevNodes;
 
         // handling checkmate (or stalemate) at the root
@@ -74,24 +78,22 @@ void startThink(SearchParams* s, SearchResults* res)
         printf(" depth %d nodes %lld time %d pv ",
             depth, res->nodesVisited, getCurrentTime() - s->thinkStart);
         saveRepeatTable();
-        if (res->stopThinking)
+
+        // print from the PV line
+        for (int i = 1; i < line.moveCount; i++)
         {
-            // at least print part of the current principal variation if
-            // prompted to stop thinking if we changed moves at the root but
-            // interrupted thinking, the root hasn't had enough time to put in
-            // the best move into the TT. So, we forcefully play it here and
-            // then play out the PV. This might still give an inaccurate PV
-            // (because of missing TT entries) but should be right a good
-            // amount of the time.
-            printMove(res->bestMove);
-            makeMove(res->bestMove);
-            printPrincipalVariation(depth - 1, 2 * (depth - 1));
-            unmakeMove(res->bestMove);
+            printMove(line.moves[i]);
+            makeMove(line.moves[i]);
         }
-        else
+
+        printPrincipalVariation(depth, depth);
+
+        // unplay the moves from the PV line
+        for (int i = line.moveCount - 1; i >= 1; i--)
         {
-            printPrincipalVariation(depth, 2 * depth);
+            unmakeMove(line.moves[i]);
         }
+
         restoreRepeatTable();
         puts("");
         depth++;
@@ -108,7 +110,7 @@ void startThink(SearchParams* s, SearchResults* res)
     return ;
 }
 
-int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
+int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, SearchFlags flags)
 {
     res->nodesVisited++;
     int isRoot = res->height == 0;
@@ -166,12 +168,15 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
     // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        return thinkCaptures(alpha, beta, res, !isNullMovePruning);
+        return thinkCaptures(alpha, beta, res, pLine, !isNullMovePruning);
     }
 
 #ifdef DEBUG
     count_nodeVisited(0);
 #endif
+
+    PvLine myLine;
+    myLine.moveCount = 0;
 
     int isInCheck = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
@@ -189,7 +194,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
                 nullDepth = 0;
             }
             res->height++;
-            int nullEval = -think(nullDepth, -beta, -beta + 1, res, flags | IS_NULL_MOVE_PRUNING_FLAG);
+            int nullEval = -think(nullDepth, -beta, -beta + 1, res, &myLine, flags | IS_NULL_MOVE_PRUNING_FLAG);
             res->height--;
             if (nullEval >= beta)
             {
@@ -275,16 +280,16 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
             }
 
             // search with a null window (PVS)
-            eval = -think(newDepth, -alpha - 1, -alpha, res, flags);
+            eval = -think(newDepth, -alpha - 1, -alpha, res, &myLine, flags);
             // must search again
             if (eval > alpha)
             {
-                eval = -think(depth - 1, -beta, -alpha, res, flags);
+                eval = -think(depth - 1, -beta, -alpha, res, &myLine, flags);
             }
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha, res, flags);
+            eval = -think(depth - 1, -beta, -alpha, res, &myLine, flags);
         }
         res->height--;
 
@@ -345,6 +350,12 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
             alpha = eval;
             bestMove = m;
 
+            // copy over pv to parent line
+            myLine.moves[0] = bestMove;
+            myLine.moveCount = myLine.moveCount == 0 ? 1 : myLine.moveCount;
+            memcpy(pLine->moves + 1, myLine.moves, myLine.moveCount * sizeof(Move));
+            pLine->moveCount = myLine.moveCount + 1;
+
             // set current best move in search only if this is the root node.
             if (isRoot)
             {
@@ -375,7 +386,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags)
     return alpha;
 }
 
-int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
+int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int accessTT)
 {
 #ifdef DEBUG
     count_nodeVisited(1);
@@ -415,6 +426,9 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
 
     int nodeType = TT_LOWER;
 
+    PvLine myLine;
+    myLine.moveCount = 0;
+
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -427,7 +441,7 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
         }
 
         res->height++;
-        int eval = -thinkCaptures(-beta, -alpha, res, 0);
+        int eval = -thinkCaptures(-beta, -alpha, res, &myLine, 0);
         res->height--;
 
         unmakeMove(m);
@@ -455,6 +469,12 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT)
         {
             nodeType = TT_EXACT;
             alpha = eval;
+
+            // copy over pv
+            myLine.moves[0] = m;
+            myLine.moveCount = myLine.moveCount == 0 ? 1 : myLine.moveCount;
+            memcpy(pLine->moves + 1, myLine.moves, myLine.moveCount * sizeof(Move));
+            pLine->moveCount = myLine.moveCount + 1;
         }
     }
 

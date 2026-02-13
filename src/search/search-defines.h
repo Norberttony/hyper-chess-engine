@@ -12,6 +12,8 @@
 // defines the max depth that the engine can calculate to.
 #define MAX_DEPTH 127
 
+#define PV_LINE_MOVES_MAX 256
+
 typedef uint_fast8_t SearchFlags;
 
 typedef struct SearchParams
@@ -30,6 +32,12 @@ typedef struct SearchResults
     U64 nodesVisited;
     Move bestMove;
 } SearchResults;
+
+typedef struct PvLine
+{
+    int moveCount;
+    Move moves[PV_LINE_MOVES_MAX];
+} PvLine;
 
 // used for storing mate in x evaluations. extract_mate_scores will return the depth until mate.
 #define MAX_SCORE 4194303

@@ -13,12 +13,12 @@
 // performs a min-max alpha-beta search from the current position to the given depth.
 // uses transposition table (if enabled) and performs a quiescent search at the fringe nodes.
 // returns the evaluation of the position.
-int think(int depth, int alpha, int beta, SearchResults* res, SearchFlags flags);
+int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, SearchFlags flags);
 
 void startThink(SearchParams* s, SearchResults* res);
 
 // a quiescent search, this function only performs min-max alphabeta pruning on sequences of
 // captures
-int thinkCaptures(int alpha, int beta, SearchResults* res, int accessTT);
+int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int accessTT);
 
 #endif
