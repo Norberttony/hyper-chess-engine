@@ -80,16 +80,14 @@ void startThink(SearchParams* s, SearchResults* res)
         saveRepeatTable();
 
         // print from the PV line
-        for (int i = 1; i < line.moveCount; i++)
+        for (int i = 0; i < line.moveCount; i++)
         {
             printMove(line.moves[i]);
             makeMove(line.moves[i]);
         }
 
-        printPrincipalVariation(depth, depth);
-
         // unplay the moves from the PV line
-        for (int i = line.moveCount - 1; i >= 1; i--)
+        for (int i = line.moveCount - 1; i >= 0; i--)
         {
             unmakeMove(line.moves[i]);
         }
@@ -115,6 +113,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
     res->nodesVisited++;
     int isRoot = res->height == 0;
     int distToRoot = res->height;
+    pLine->moveCount = 0;
 
     determineThinkAllowance(res);
 
@@ -176,7 +175,6 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
 #endif
 
     PvLine myLine;
-    myLine.moveCount = 0;
 
     int isInCheck = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
@@ -351,8 +349,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
             bestMove = m;
 
             // copy over pv to parent line
-            myLine.moves[0] = bestMove;
-            myLine.moveCount = myLine.moveCount == 0 ? 1 : myLine.moveCount;
+            pLine->moves[0] = bestMove;
             memcpy(pLine->moves + 1, myLine.moves, myLine.moveCount * sizeof(Move));
             pLine->moveCount = myLine.moveCount + 1;
 
@@ -395,6 +392,8 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int ac
     res->nodesVisited += !accessTT;
     determineThinkAllowance(res);
 
+    pLine->moveCount = 0;
+
     // not capturing might be better
     int eval = evaluate();
     if (eval >= beta)
@@ -427,7 +426,6 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int ac
     int nodeType = TT_LOWER;
 
     PvLine myLine;
-    myLine.moveCount = 0;
 
     for (int i = 0; i < size; i++)
     {
@@ -471,8 +469,7 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int ac
             alpha = eval;
 
             // copy over pv
-            myLine.moves[0] = m;
-            myLine.moveCount = myLine.moveCount == 0 ? 1 : myLine.moveCount;
+            pLine->moves[0] = m;
             memcpy(pLine->moves + 1, myLine.moves, myLine.moveCount * sizeof(Move));
             pLine->moveCount = myLine.moveCount + 1;
         }
