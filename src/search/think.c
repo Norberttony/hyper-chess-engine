@@ -175,6 +175,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
 #endif
 
     PvLine myLine;
+    myLine.moveCount = 0;
 
     int isInCheck = isAttackingKing(g_pos.notToPlay, g_pos.toPlay);
 
@@ -426,6 +427,7 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int ac
     int nodeType = TT_LOWER;
 
     PvLine myLine;
+    myLine.moveCount = 0;
 
     for (int i = 0; i < size; i++)
     {
