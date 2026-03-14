@@ -180,7 +180,8 @@ void parseGo(char* line)
 {
     int toPlay = g_pos.toPlay;
 
-    int depth = -1;
+    int depth = MAX_DEPTH;
+    U64 nodes = 0;
     int movesToGo = 20;
     int moveTime = -1;
     int time = -1;
@@ -199,6 +200,10 @@ void parseGo(char* line)
     if ((matchAt = strstr(line, "depth")))
     {
         depth = atoi(matchAt + 6);
+    }
+    if ((matchAt = strstr(line, "nodes")))
+    {
+        nodes = atoi(matchAt + 6);
     }
 
     if ((matchAt = strstr(line, "movestogo")))
@@ -235,7 +240,9 @@ void parseGo(char* line)
     SearchParams params =
     {
         .thinkStart = getCurrentTime(),
-        .thinkingTime = -1
+        .thinkingTime = -1,
+        .maxNodes = nodes,
+        .maxDepth = depth
     };
 
     if (moveTime != -1)
@@ -253,15 +260,6 @@ void parseGo(char* line)
             time = 0;
         }
         params.thinkingTime = time + inc / 2;
-    }
-
-    if (depth == -1)
-    {
-        params.maxDepth = MAX_DEPTH;
-    }
-    else
-    {
-        params.maxDepth = depth;
     }
 
     startThink(&params, &res);

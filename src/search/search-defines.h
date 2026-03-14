@@ -21,6 +21,7 @@ typedef struct SearchParams
     int thinkingTime;
     int thinkStart;
     int maxDepth;
+    U64 maxNodes;
 } SearchParams;
 
 typedef struct SearchResults

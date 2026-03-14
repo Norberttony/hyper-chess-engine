@@ -16,8 +16,12 @@ const SearchFlags IS_PV_FLAG = 0x1;
 const SearchFlags IS_NULL_MOVE_PRUNING_FLAG = 0x2;
 
 // returns 1 if the engine is still allowed to think and 0 otherwise
-static inline void determineThinkAllowance(SearchResults* s)
+static inline void determineThinkAllowance(SearchParams* p, SearchResults* s)
 {
+    if (p->maxNodes != 0 && p->maxNodes <= s->nodesVisited)
+    {
+        s->stopThinking = 1;
+    }
     if ((s->nodesVisited & 2047ULL) == 0ULL)
     {
         if (!(s->thinkingTime < 0 || (getCurrentTime() - s->thinkStart) < s->thinkingTime))
@@ -57,7 +61,7 @@ void startThink(SearchParams* s, SearchResults* res)
         line.moveCount = 0;
 
         U64 prevNodes = res->nodesVisited;
-        int eval = think(depth, -MAX_SCORE, MAX_SCORE, res, &line, IS_PV_FLAG);
+        int eval = think(depth, -MAX_SCORE, MAX_SCORE, s, res, &line, IS_PV_FLAG);
         U64 nodesVisitedDepth = res->nodesVisited - prevNodes;
 
         // handling checkmate (or stalemate) at the root
@@ -105,17 +109,17 @@ void startThink(SearchParams* s, SearchResults* res)
         puts("PANIC! HASH ERROR!");
     }
 
-    return ;
+    return;
 }
 
-int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, SearchFlags flags)
+int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* res, PvLine* pLine, SearchFlags flags)
 {
     res->nodesVisited++;
     int isRoot = res->height == 0;
     int distToRoot = res->height;
     pLine->moveCount = 0;
 
-    determineThinkAllowance(res);
+    determineThinkAllowance(params, res);
 
     // check for three fold repetition and checkmate
     if (isCheckmate())
@@ -167,7 +171,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
     // perform quiescent search at leaf nodes
     if (depth == 0)
     {
-        return thinkCaptures(alpha, beta, res, pLine, !isNullMovePruning);
+        return thinkCaptures(alpha, beta, params, res, pLine, !isNullMovePruning);
     }
 
 #ifdef DEBUG
@@ -193,7 +197,7 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
                 nullDepth = 0;
             }
             res->height++;
-            int nullEval = -think(nullDepth, -beta, -beta + 1, res, &myLine, flags | IS_NULL_MOVE_PRUNING_FLAG);
+            int nullEval = -think(nullDepth, -beta, -beta + 1, params, res, &myLine, flags | IS_NULL_MOVE_PRUNING_FLAG);
             res->height--;
             if (nullEval >= beta)
             {
@@ -279,16 +283,16 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
             }
 
             // search with a null window (PVS)
-            eval = -think(newDepth, -alpha - 1, -alpha, res, &myLine, flags);
+            eval = -think(newDepth, -alpha - 1, -alpha, params, res, &myLine, flags);
             // must search again
             if (eval > alpha)
             {
-                eval = -think(depth - 1, -beta, -alpha, res, &myLine, flags);
+                eval = -think(depth - 1, -beta, -alpha, params, res, &myLine, flags);
             }
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha, res, &myLine, flags);
+            eval = -think(depth - 1, -beta, -alpha, params, res, &myLine, flags);
         }
         res->height--;
 
@@ -384,16 +388,14 @@ int think(int depth, int alpha, int beta, SearchResults* res, PvLine* pLine, Sea
     return alpha;
 }
 
-int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int accessTT)
+int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res, PvLine* pLine, int accessTT)
 {
 #ifdef DEBUG
     count_nodeVisited(1);
 #endif
     // avoids counting leaf nodes (as they have already been counted by the parent node)
     res->nodesVisited += !accessTT;
-    determineThinkAllowance(res);
-
-    pLine->moveCount = 0;
+    determineThinkAllowance(params, res);
 
     // not capturing might be better
     int eval = evaluate();
@@ -441,7 +443,7 @@ int thinkCaptures(int alpha, int beta, SearchResults* res, PvLine* pLine, int ac
         }
 
         res->height++;
-        int eval = -thinkCaptures(-beta, -alpha, res, &myLine, 0);
+        int eval = -thinkCaptures(-beta, -alpha, params, res, &myLine, 0);
         res->height--;
 
         unmakeMove(m);
