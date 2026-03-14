@@ -139,7 +139,7 @@ void uciLoop(void)
             // read the name, and based on that, the value.
             if (!strncmp(cleaned + 10, "name hash value ", 16))
             {
-                int mb = atoi(cleaned + 26);
+                int mb = strtol(cleaned + 26, NULL, 10);
                 setTranspositionTableSize(mb);
             }
         }
@@ -193,43 +193,43 @@ void parseGo(char* line)
     if ((matchAt = strstr(line, "perft")))
     {
         puts("Move | Node count | Capture nodes | Pieces captured | Checkmates");
-        divide(atoi(matchAt + 6), 0);
+        divide(strtol(matchAt + 6, NULL, 10), 0);
         return;
     }
 
     if ((matchAt = strstr(line, "depth")))
     {
-        depth = atoi(matchAt + 6);
+        depth = strtol(matchAt + 6, NULL, 10);
     }
     if ((matchAt = strstr(line, "nodes")))
     {
-        nodes = atoi(matchAt + 6);
+        nodes = strtoull(matchAt + 6, NULL, 10);
     }
 
     if ((matchAt = strstr(line, "movestogo")))
     {
-        movesToGo = atoi(matchAt + 10);
+        movesToGo = strtol(matchAt + 10, NULL, 10);
     }
     if ((matchAt = strstr(line, "movetime")))
     {
-        moveTime = atoi(matchAt + 9);
+        moveTime = strtol(matchAt + 9, NULL, 10);
     }
 
     if ((matchAt = strstr(line, "wtime")) && toPlay == white)
     {
-        time = atoi(matchAt + 6);
+        time = strtol(matchAt + 6, NULL, 10);
     }
     if ((matchAt = strstr(line, "btime")) && toPlay == black)
     {
-        time = atoi(matchAt + 6);
+        time = strtol(matchAt + 6, NULL, 10);
     }
     if ((matchAt = strstr(line, "winc")) && toPlay == white)
     {
-        inc = atoi(matchAt + 5);
+        inc = strtol(matchAt + 5, NULL, 10);
     }
     if ((matchAt = strstr(line, "binc")) && toPlay == black)
     {
-        inc = atoi(matchAt + 5);
+        inc = strtol(matchAt + 5, NULL, 10);
     }
 
     memset(&res, 0, sizeof(res));

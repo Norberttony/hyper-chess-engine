@@ -235,7 +235,7 @@ int loadFEN(const char* fen)
     }
     else
     {
-        g_pos.state->halfmove = atoi(fen + i);
+        g_pos.state->halfmove = strtol(fen + i, NULL, 10);
     }
 
     // look for a space
@@ -259,7 +259,7 @@ int loadFEN(const char* fen)
     }
     else
     {
-        g_pos.fullmove = atoi(fen + i);
+        g_pos.fullmove = strtol(fen + i, NULL, 10);
     }
 
     return 1;
