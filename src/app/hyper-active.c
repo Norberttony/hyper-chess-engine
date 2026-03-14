@@ -41,8 +41,7 @@ void initMoveGen(void)
     // Initialization!
     generateZobristHashes();
     populateKingMoves();
-    populateRanksAndFiles(); // in order to use genDeathSquares (used by populateDeathSquares)
-    populateDeathSquares();
+    populateRanksAndFiles(); // in order to use
     populateSpringerLeaps();
     populateSpringerCaptures();
     populateRetractorCaptures();

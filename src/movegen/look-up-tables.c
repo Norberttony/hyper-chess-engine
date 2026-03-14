@@ -6,7 +6,6 @@ U64 ranks[8];
 U64 files[8];
 
 U64 kingMoves[64];
-U64 deathSquares[64][64][2];
 
 // where the springer captured given where it started and where it moved to
 U64 springerCaptures[64][64];
@@ -39,56 +38,6 @@ void populateRanksAndFiles(void)
             file |= 1ULL << (r * 8 + i);
         }
         files[i] = file;
-    }
-}
-
-U64 genDeathSquares1(int sq1, int sq2)
-{
-    // get files and ranks of both squares
-    int f1 = get_file(sq1);
-    int r1 = get_rank(sq1);
-
-    int f2 = get_file(sq2);
-    int r2 = get_rank(sq2);
-    
-    // if on same file/rank, no death squares
-    if (f1 == f2 || r1 == r2)
-    {
-        return 0ULL;
-    }
-
-    // use ranks and files bitboard to find intersections
-    return ranks[r1] & files[f2];
-}
-
-U64 genDeathSquares2(int sq1, int sq2)
-{
-    // get files and ranks of both squares
-    int f1 = get_file(sq1);
-    int r1 = get_rank(sq1);
-
-    int f2 = get_file(sq2);
-    int r2 = get_rank(sq2);
-    
-    // if on same file/rank, no death squares
-    if (f1 == f2 || r1 == r2)
-    {
-        return 0ULL;
-    }
-
-    // use ranks and files bitboard to find intersections
-    return ranks[r2] & files[f1];
-}
-
-void populateDeathSquares(void)
-{
-    for (int s1 = 0; s1 < 64; s1++)
-    {
-        for (int s2 = 0; s2 < 64; s2++)
-        {
-            deathSquares[s1][s2][0] = genDeathSquares1(s1, s2);
-            deathSquares[s1][s2][1] = genDeathSquares2(s1, s2);
-        }
     }
 }
 

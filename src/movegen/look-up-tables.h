@@ -7,7 +7,6 @@ extern U64 ranks[8];
 extern U64 files[8];
 
 extern U64 kingMoves[64];
-extern U64 deathSquares[64][64][2];
 
 // where the springer captured given where it started and where it moved to
 extern U64 springerCaptures[64][64];
@@ -22,13 +21,6 @@ extern U64 retractorCaptures[64][64];
 
 // populates ranks and files arrays (bitboards set to 1 if on either rank/file)
 void populateRanksAndFiles(void);
-
-// sq1 and sq2 are locations of king/coordinator, doesn't matter which is which.
-U64 genDeathSquares1(int sq1, int sq2);
-U64 genDeathSquares2(int sq1, int sq2);
-
-// populates deathSquares lookup table
-void populateDeathSquares(void);
 
 // generates moves for a king
 U64 genKingMoves(int sqIndex);
@@ -53,5 +45,31 @@ U64 genRetractorCapture(int startSq, int enemySq);
 
 // populates retractor capture lookup table
 void populateRetractorCaptures(void);
+
+inline U64 get_death_square_1(int sq1, int sq2)
+{
+    // get files and ranks of both squares
+    int f1 = get_file(sq1);
+    int r1 = get_rank(sq1);
+
+    int f2 = get_file(sq2);
+    int r2 = get_rank(sq2);
+
+    // use ranks and files bitboard to find intersections
+    return (U64)(f1 != f2 && r1 != r2) * (ranks[r1] & files[f2]);
+}
+
+inline U64 get_death_square_2(int sq1, int sq2)
+{
+    // get files and ranks of both squares
+    int f1 = get_file(sq1);
+    int r1 = get_rank(sq1);
+
+    int f2 = get_file(sq2);
+    int r2 = get_rank(sq2);
+
+    // use ranks and files bitboard to find intersections
+    return (U64)(f1 != f2 && r1 != r2) * (ranks[r2] & files[f1]);
+}
 
 #endif

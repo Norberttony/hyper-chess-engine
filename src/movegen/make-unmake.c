@@ -88,7 +88,7 @@ void makeMove(Move m)
             // top death square
             if (__builtin_expect(c1, 0))
             {
-                int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+                int top = pop_lsb(get_death_square_1(coordinateSq, to));
                 unsetPiece(notToPlay, c1, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, c1, toPlay);
             }
@@ -96,7 +96,7 @@ void makeMove(Move m)
             // bottom death square
             if (__builtin_expect(c2, 0))
             {
-                int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+                int bottom = pop_lsb(get_death_square_2(coordinateSq, to));
                 unsetPiece(notToPlay, c2, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, c2, toPlay);
             }
@@ -121,7 +121,7 @@ void makeMove(Move m)
             // top death square
             if (__builtin_expect(c2, 0))
             {
-                int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+                int top = pop_lsb(get_death_square_1(coordinateSq, to));
                 unsetPiece(notToPlay, c2, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, c2, toPlay);
             }
@@ -129,7 +129,7 @@ void makeMove(Move m)
             // bottom death square
             if (__builtin_expect(c3, 0))
             {
-                int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+                int bottom = pop_lsb(get_death_square_2(coordinateSq, to));
                 unsetPiece(notToPlay, c3, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, c3, toPlay);
             }
@@ -209,7 +209,7 @@ void makeMove(Move m)
             // consider coordinator moves
             if (__builtin_expect(get_b_cd1(m), 0))
             {
-                U64 death = deathSquares[to][coordinateSq][0];
+                U64 death = get_death_square_1(coordinateSq, to);
                 int top = pop_lsb(death);
                 unsetPiece(notToPlay, coordinator, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, coordinator, toPlay);
@@ -218,7 +218,7 @@ void makeMove(Move m)
             // other death square for coordinator
             if (__builtin_expect(get_b_cd2(m), 0))
             {
-                U64 death = deathSquares[to][coordinateSq][1];
+                U64 death = get_death_square_2(coordinateSq, to);
                 int bottom = pop_lsb(death);
                 unsetPiece(notToPlay, coordinator, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, coordinator, toPlay);
@@ -372,7 +372,7 @@ void unmakeMove(Move m)
             // top death square
             if (__builtin_expect(c1, 0))
             {
-                int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+                int top = pop_lsb(get_death_square_1(coordinateSq, to));
                 setPiece(notToPlay, c1, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, c1, toPlay);
             }
@@ -380,7 +380,7 @@ void unmakeMove(Move m)
             // bottom death square
             if (__builtin_expect(c2, 0))
             {
-                int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+                int bottom = pop_lsb(get_death_square_2(coordinateSq, to));
                 setPiece(notToPlay, c2, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, c2, toPlay);
             }
@@ -402,14 +402,14 @@ void unmakeMove(Move m)
 
             if (__builtin_expect(c2, 0))
             {
-                int top = pop_lsb(deathSquares[coordinateSq][to][0]);
+                int top = pop_lsb(get_death_square_1(coordinateSq, to));
                 setPiece(notToPlay, c2, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, c2, toPlay);
             }
 
             if (__builtin_expect(c3, 0))
             {
-                int bottom = pop_lsb(deathSquares[coordinateSq][to][1]);
+                int bottom = pop_lsb(get_death_square_2(coordinateSq, to));
                 setPiece(notToPlay, c3, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, c3, toPlay);
             }
@@ -427,10 +427,10 @@ void unmakeMove(Move m)
                 int isDeath4 = get_kb_c4(m);
 
                 U64 coordDeath =
-                    isDeath1 * deathSquares[cham1][to][0] |
-                    isDeath2 * deathSquares[cham1][to][1] |
-                    isDeath3 * deathSquares[cham2][to][0] |
-                    isDeath4 * deathSquares[cham2][to][1];
+                    isDeath1 * get_death_square_1(cham1, to) |
+                    isDeath2 * get_death_square_2(cham1, to) |
+                    isDeath3 * get_death_square_1(cham2, to) |
+                    isDeath4 * get_death_square_2(cham2, to);
                 
                 int deathSqC = pop_lsb(coordDeath);
                 setPiece(notToPlay, coordinator, deathSqC);
@@ -504,7 +504,7 @@ void unmakeMove(Move m)
             // consider coordinator captures
             if (__builtin_expect(get_b_cd1(m), 0))
             {
-                U64 death = deathSquares[to][coordinateSq][0];
+                U64 death = get_death_square_1(coordinateSq, to);;
                 int top = pop_lsb(death);
                 setPiece(notToPlay, coordinator, top);
                 zobristHashUpdate ^= get_zobrist_hash(top, coordinator, toPlay);
@@ -513,7 +513,7 @@ void unmakeMove(Move m)
             // other death square for coordinator
             if (__builtin_expect(get_b_cd2(m), 0))
             {
-                U64 death = deathSquares[to][coordinateSq][1];
+                U64 death = get_death_square_2(coordinateSq, to);;
                 int bottom = pop_lsb(death);
                 setPiece(notToPlay, coordinator, bottom);
                 zobristHashUpdate ^= get_zobrist_hash(bottom, coordinator, toPlay);

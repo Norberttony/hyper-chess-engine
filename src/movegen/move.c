@@ -309,10 +309,10 @@ int generateCoordinatorCaptures(int sq, U64 moves, Move* movelist)
         // capture bits (death squares with king)
         // note: coordinator potentially teaming up with a chameleon to take the king is not considered here.
         // the king is not considered to be a capturable piece
-        U64 death1 = deathSquares[kingSq][to][0];
+        U64 death1 = get_death_square_1(kingSq, to);
         move |= (g_pos.pieceList[pop_lsb(death1)] * ((g_pos.boards[notToPlay] & death1) > 0)) << 15;
 
-        U64 death2 = deathSquares[kingSq][to][1];
+        U64 death2 = get_death_square_2(kingSq, to);
         move |= (g_pos.pieceList[pop_lsb(death2)] * ((g_pos.boards[notToPlay] & death2) > 0)) << 18;
 
         movelist[size++] = move;
@@ -347,24 +347,24 @@ int generateKingMoves(int sq, U64 moves, Move* movelist, int capturesOnly)
         move |= g_pos.pieceList[to] << 15;
 
         // capture by coordinator death square
-        U64 deathco1 = deathSquares[coordSq][to][0] * (coordBoard > 0);
+        U64 deathco1 = get_death_square_1(coordSq, to) * (coordBoard > 0);
         move |= (g_pos.pieceList[pop_lsb(deathco1)] * ((g_pos.boards[notToPlay] & deathco1) > 0)) << 18;
 
-        U64 deathco2 = deathSquares[coordSq][to][1] * (coordBoard > 0);
+        U64 deathco2 = get_death_square_2(coordSq, to) * (coordBoard > 0);
         move |= (g_pos.pieceList[pop_lsb(deathco2)] * ((g_pos.boards[notToPlay] & deathco2) > 0)) << 21;
 
         // capture an enemy coordinator by coordinating with a chameleon, only against the coordinator
         // make sure a double capture doesn't happen (coordinator-king and chameleon-king both capture same coordinator)
-        U64 deathch1 = deathSquares[cham1][to][0] * (chamBoard > 0);
+        U64 deathch1 = get_death_square_1(cham1, to) * (chamBoard > 0);
         move |= (((g_pos.boards[notToPlay + coordinator] & deathch1) > 0) && (deathch1 != deathco1)) << 24;
 
-        U64 deathch2 = deathSquares[cham1][to][1] * (chamBoard > 0);
+        U64 deathch2 = get_death_square_2(cham1, to) * (chamBoard > 0);
         move |= (((g_pos.boards[notToPlay + coordinator] & deathch2) > 0) && (deathch2 != deathco2)) << 25;
 
-        U64 death = deathSquares[cham2][to][0] * (((chamBoard - 1) & chamBoard) > 0);
+        U64 death = get_death_square_1(cham2, to) * (((chamBoard - 1) & chamBoard) > 0);
         move |= (((g_pos.boards[notToPlay + coordinator] & death) > 0) && (death != deathco1 && death != deathch1)) << 26;
 
-        death = deathSquares[cham2][to][1] * (((chamBoard - 1) & chamBoard) > 0);
+        death = get_death_square_2(cham2, to) * (((chamBoard - 1) & chamBoard) > 0);
         move |= (((g_pos.boards[notToPlay + coordinator] & death) > 0) && (death != deathco2 && death != deathch2)) << 27;
 
         movelist[size] = move;
@@ -481,8 +481,8 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
         move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
 
         // coordinator moves
-        move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
-        move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
+        move |= move_cham_d1_mask * ((get_death_square_1(kingSq, to) & enemyCoordBoard) > 0);
+        move |= move_cham_d2_mask * ((get_death_square_2(kingSq, to) & enemyCoordBoard) > 0);
 
         movelist[size] = move;
         size += !capturesOnly || (move & move_captMask) > 0;
@@ -510,8 +510,8 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int captures
         move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
 
         // coordinator moves
-        move |= move_cham_d1_mask * ((deathSquares[to][kingSq][0] & enemyCoordBoard) > 0);
-        move |= move_cham_d2_mask * ((deathSquares[to][kingSq][1] & enemyCoordBoard) > 0);
+        move |= move_cham_d1_mask * ((get_death_square_1(kingSq, to) & enemyCoordBoard) > 0);
+        move |= move_cham_d2_mask * ((get_death_square_2(kingSq, to) & enemyCoordBoard) > 0);
 
         movelist[size] = move;
         size += !capturesOnly || (move & move_captMask) > 0;
