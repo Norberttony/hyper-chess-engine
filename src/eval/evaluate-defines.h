@@ -3,6 +3,9 @@
 
 #include "../movegen/position-defines.h"
 
+extern const int spaceWeight;
+extern const int forwMobilityWeight;
+extern const int otherMobilityWeight;
 extern const int immBonus[];
 extern const int immLoSPen[];
 extern const int immDistPenalties[8];

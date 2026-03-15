@@ -49,7 +49,7 @@ static inline __attribute__((always_inline)) int evalSpace(struct EvalContext *c
     U64 straddlers = g_pos.boards[side + straddler];
     U64 space = (getRearFill(straddlers, side) & ~straddlers) & spaceBitboards[side == black];
 
-    return 5 * countBits(space);
+    return spaceWeight * countBits(space);
 }
 
 static inline __attribute__((always_inline)) U64 getForwardMask(int sq, int side)
@@ -64,7 +64,8 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
 {
     int side = !reverseSide * g_pos.toPlay + reverseSide * g_pos.notToPlay;
 
-    int mobility = 0;
+    int forwMobility = 0;
+    int otherMobility = 0;
     U64 totalBoard = ctx->totalBoard;
 
     U64 myBoard = g_pos.boards[side + pieceType] & ~ctx->infl[(enemy + reverseSide) & 1];
@@ -73,16 +74,14 @@ static inline __attribute__((always_inline)) int evalMobility(struct EvalContext
         int sq = pop_lsb(myBoard);
         U64 moveBoard = get_queen_attacks(sq, totalBoard) & ~totalBoard;
         
-        // forward moves get a double bonus (ie. they're counted twice, once on forwardMoveBoard
-        // and another time on moveBoard)
         U64 forwardMoveBoard = getForwardMask(sq, side) & moveBoard;
-        mobility += 3 * countBits(forwardMoveBoard);
-        mobility += 2 * countBits(moveBoard);
+        forwMobility += countBits(forwardMoveBoard);
+        otherMobility += countBits(moveBoard & ~forwardMoveBoard);
 
         myBoard &= myBoard - 1;
     }
 
-    return mobility;
+    return forwMobilityWeight * forwMobility + otherMobilityWeight * otherMobility;
 }
 
 // immobilized material and penalties for badly-positioned immobilized pieces

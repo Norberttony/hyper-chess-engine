@@ -1,5 +1,10 @@
 #include "evaluate-defines.h"
 
+const int spaceWeight = 5;
+
+const int forwMobilityWeight = 5;
+const int otherMobilityWeight = 2;
+
 // immobilizer receives a bonus for the pieces it immobilizes.
 // some pieces don't lose their effectiveness (straddlers still teamwork, chameleon's primary uses
 // are immobilizing enemy immobilizer and/or dealing with coordinator, etc.)
