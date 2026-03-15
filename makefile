@@ -19,6 +19,7 @@ ADDITIONAL_SRCS :=
 
 NAME := $(BIN_DIR)/hyper-active
 DEBUG ?= 0
+STATS ?= 0
 
 # Determine the OS this is compiling on
 HOST_OS :=
@@ -55,8 +56,12 @@ else
 	CFLAGS += -std=c11
 endif
 
-ifneq ($(DEBUG),0)
+ifneq ($(STATS),0)
 	CFLAGS += -DDEBUG
+endif
+
+ifneq ($(DEBUG),0)
+	CFLAGS += -g -fno-omit-frame-pointer -fno-inline
 endif
 
 SRCS := $(foreach dir,$(MODULE_DIRS),$(wildcard $(dir)/*.c)) $(ADDITIONAL_SRCS)

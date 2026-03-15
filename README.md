@@ -16,7 +16,9 @@ Running `make profile` will use PGO in order to create an executable specially o
 
 Running `make TARGET=web` in the project directory will build a web assembly version of the engine that exposes some of the engine's functionality to the web browser, generating `bin/hyper-active.js` and `bin/hyper-active.wasm`. The Emscripten web compiler must be installed and accessible on the global path. This build requires a separate interface to properly use.
 
-Running `make DEBUG=1` will enable code that collects cumulative statistics and spits them out after every command. If it is reading from a file, it will only spit out statistics after running every command in the file.
+Running `make STATS=1` will enable code that collects cumulative statistics and spits them out after every command. If it is reading from a file, it will only spit out statistics after running every command in the file.
+
+Running `make DEBUG=1` will build with debug symbols and additional debug flags.
 
 Trying to run `make profile TARGET=web` will not work.
 

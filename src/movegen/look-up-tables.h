@@ -46,7 +46,7 @@ U64 genRetractorCapture(int startSq, int enemySq);
 // populates retractor capture lookup table
 void populateRetractorCaptures(void);
 
-inline U64 get_death_square_1(int sq1, int sq2)
+static inline U64 get_death_square_1(int sq1, int sq2)
 {
     // get files and ranks of both squares
     int f1 = get_file(sq1);
@@ -59,7 +59,7 @@ inline U64 get_death_square_1(int sq1, int sq2)
     return (U64)(f1 != f2 && r1 != r2) * (ranks[r1] & files[f2]);
 }
 
-inline U64 get_death_square_2(int sq1, int sq2)
+static inline U64 get_death_square_2(int sq1, int sq2)
 {
     // get files and ranks of both squares
     int f1 = get_file(sq1);
