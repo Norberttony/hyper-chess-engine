@@ -2,9 +2,13 @@
 #define LOOK_UP_TABLES_HEADER
 
 #include "../movegen/bitboard-utility.h"
+#include <stdint.h>
 
 extern U64 ranks[8];
 extern U64 files[8];
+
+extern U64 leftBound;
+extern U64 rightBound;
 
 extern U64 kingMoves[64];
 
@@ -70,6 +74,25 @@ inline U64 get_death_square_2(int sq1, int sq2)
 
     // use ranks and files bitboard to find intersections
     return (U64)(f1 != f2 && r1 != r2) * (ranks[r2] & files[f1]);
+}
+
+// returns the retractor's capture square given where it's moving from and moving to.
+inline U64 get_retractor_capture_sq(int from, int to)
+{
+    int relDir = from - to;
+
+    // ensure from/to are -1 to 1 file off, and that relDir masks correctly.
+    int fileDiff = get_file(from) - get_file(to);
+    int isRelDirInRange = relDir >= -9 && relDir <= 9 && fileDiff >= -1 && fileDiff <= 1;
+    uint32_t diffMask = (isRelDirInRange * 1ULL) << (isRelDirInRange * (relDir + 9));
+
+    // now check stuff for the capture square
+    int sq = from + relDir;
+    int isInRange = sq >= 0 && sq < 64 && (460039 & diffMask);
+    int isOnLeft = get_file(from) < 4;
+    U64 sqBoard = (1ULL * isInRange) << (sq * isInRange);
+    sqBoard &= isOnLeft * rightBound + !isOnLeft * leftBound;
+    return sqBoard;
 }
 
 #endif

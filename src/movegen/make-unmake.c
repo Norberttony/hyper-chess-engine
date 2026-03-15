@@ -161,7 +161,7 @@ void makeMove(Move m)
 
             if (__builtin_expect(c1, 0))
             {
-                int captSq = pop_lsb(retractorCaptures[from][to]);
+                int captSq = pop_lsb(get_retractor_capture_sq(from, to));
                 unsetPiece(notToPlay, c1, captSq);
                 zobristHashUpdate ^= get_zobrist_hash(captSq, c1, toPlay);
             }
@@ -227,7 +227,7 @@ void makeMove(Move m)
             // consider retractor moves
             if (__builtin_expect(get_b_cq(m), 0))
             {
-                int captSq = pop_lsb(retractorCaptures[from][to]);
+                int captSq = pop_lsb(get_retractor_capture_sq(from, to));
                 unsetPiece(notToPlay, retractor, captSq);
                 zobristHashUpdate ^= get_zobrist_hash(captSq, retractor, toPlay);
             }
@@ -456,7 +456,7 @@ void unmakeMove(Move m)
 
             if (__builtin_expect(c1, 0))
             {
-                int captSq = pop_lsb(retractorCaptures[from][to]);
+                int captSq = pop_lsb(get_retractor_capture_sq(from, to));
                 setPiece(notToPlay, c1, captSq);
                 zobristHashUpdate ^= get_zobrist_hash(captSq, c1, toPlay);
             }
@@ -522,7 +522,7 @@ void unmakeMove(Move m)
             // consider retractor captures
             if (__builtin_expect(get_b_cq(m), 0))
             {
-                int captSq = pop_lsb(retractorCaptures[from][to]);
+                int captSq = pop_lsb(get_retractor_capture_sq(from, to));
                 setPiece(notToPlay, retractor, captSq);
                 zobristHashUpdate ^= get_zobrist_hash(captSq, retractor, toPlay);
             }

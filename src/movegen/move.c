@@ -439,9 +439,9 @@ int generateRetractorCaptures(int sq, U64 moves, Move* movelist, int capturesOnl
         int to = pop_lsb(moves);
 
         // determine where retractor lands
-        int capturing = pop_lsb(retractorCaptures[sq][to]);
+        int capturing = pop_lsb(get_retractor_capture_sq(sq, to));
 
-        Move move = ((g_pos.pieceList[capturing] << 15) * ((g_pos.boards[g_pos.notToPlay] & retractorCaptures[sq][to]) > 0)) | (to << 9) | (sq << 3) | retractor;
+        Move move = ((g_pos.pieceList[capturing] << 15) * ((g_pos.boards[g_pos.notToPlay] & get_retractor_capture_sq(sq, to)) > 0)) | (to << 9) | (sq << 3) | retractor;
 
         movelist[size] = move;
         size += !capturesOnly || (move & move_captMask) > 0;
@@ -478,7 +478,7 @@ int generateChameleonRookMoves(int sq, U64 moves, Move* movelist, U64 straddlerU
         move |= ((straddlerDownBoard & toBoard) > 0) << 18;
 
         // also consider the possibility of this being a retractor move
-        move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
+        move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & get_retractor_capture_sq(sq, to)) > 0);
 
         // coordinator moves
         move |= move_cham_d1_mask * ((get_death_square_1(kingSq, to) & enemyCoordBoard) > 0);
@@ -507,7 +507,7 @@ int generateChameleonBishopMoves(int sq, U64 moves, Move* movelist, int captures
         Move move = (to << 9) | (sq << 3) | chameleon;
 
         // determine where retractor lands
-        move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & retractorCaptures[sq][to]) > 0);
+        move |= move_cham_q_mask * ((g_pos.boards[g_pos.notToPlay + retractor] & get_retractor_capture_sq(sq, to)) > 0);
 
         // coordinator moves
         move |= move_cham_d1_mask * ((get_death_square_1(kingSq, to) & enemyCoordBoard) > 0);

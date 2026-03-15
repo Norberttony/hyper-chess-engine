@@ -5,6 +5,9 @@
 U64 ranks[8];
 U64 files[8];
 
+U64 leftBound = 0xFEFEFEFEFEFEFEFE;
+U64 rightBound = 0x7F7F7F7F7F7F7F7F;
+
 U64 kingMoves[64];
 
 // where the springer captured given where it started and where it moved to

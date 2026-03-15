@@ -397,12 +397,12 @@ int isSquareControlledByRetractor(int stp, int sq, U64 notImmInfl, U64 totalBoar
         U64 cham2Board = (chamBoard - 1) & chamBoard;
 
         return
-            chamBoard  && retractorCaptures[pop_lsb(chamBoard)][sq] & ~totalBoard ||
-            cham2Board && retractorCaptures[pop_lsb(cham2Board)][sq] & ~totalBoard;
+            chamBoard  && get_retractor_capture_sq(pop_lsb(chamBoard), sq) & ~totalBoard ||
+            cham2Board && get_retractor_capture_sq(pop_lsb(cham2Board), sq) & ~totalBoard;
     }
 
     // ensures that retractor attacks king AND can land one square away
-    return retractorBoard && retractorCaptures[retractorSq][sq] & ~totalBoard;
+    return retractorBoard && get_retractor_capture_sq(retractorSq, sq) & ~totalBoard;
 }
 
 int isSquareControlledBySpringer(int stp, int sq, U64 notImmInfl, U64 totalBoard, int inclCham)
