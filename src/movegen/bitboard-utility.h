@@ -44,13 +44,7 @@ static inline int flipSq(int sq)
 
 static inline int countBits(U64 board)
 {
-    int c = 0;
-    while (board)
-    {
-        c++;
-        board &= board - 1;
-    }
-    return c;
+    return __builtin_popcountll(board);
 }
 
 #endif
