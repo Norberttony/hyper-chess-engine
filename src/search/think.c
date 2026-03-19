@@ -393,6 +393,8 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #ifdef DEBUG
     count_nodeVisited(1);
 #endif
+    pLine->moveCount = 0;
+
     // avoids counting leaf nodes (as they have already been counted by the parent node)
     res->nodesVisited += !accessTT;
     determineThinkAllowance(params, res);
