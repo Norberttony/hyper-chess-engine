@@ -342,7 +342,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
             }
 #ifdef DEBUG
             count_nodeType(TT_UPPER);
-            count_betaCutoff(mIdx, m);
+            count_betaCutoff(mIdx, m, 0);
 #endif
             return beta;
         }
@@ -431,6 +431,7 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
     PvLine myLine;
     myLine.moveCount = 0;
 
+    int mIdx = -1;
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
@@ -441,6 +442,7 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
             unmakeMove(m);
             continue;
         }
+        mIdx++;
 
         res->height++;
         int eval = -thinkCaptures(-beta, -alpha, params, res, &myLine, 0);
@@ -463,6 +465,9 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
             {
                 writeToTranspositionTable(0, beta, 0, TT_UPPER, res->height);
             }
+#endif
+#ifdef DEBUG
+            count_betaCutoff(mIdx, m, 1);
 #endif
             return beta;
         }

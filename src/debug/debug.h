@@ -16,7 +16,11 @@ typedef struct DebugStats
     U64 nodesPerDepth[MAX_DEPTH];
     // how much each depth has occurred (ie. how many times has the engine searched at depth 1?)
     U64 depthCounts[MAX_DEPTH];
-    
+
+    U64 totalCutoffs;
+    U64 totalQsCutoffs;
+
+    U64 cutoffsQs[MAX_MOVES];
     U64 cutoffs[MAX_MOVES];
     U64 cutoffsPType[2][8];
     U64 cutoffsPTypeIdx[2][8];
@@ -41,7 +45,7 @@ void count_clear(void);
 
 void count_startDepth(int depth);
 void count_move(Move m);
-void count_betaCutoff(int moveIdx, Move move);
+void count_betaCutoff(int moveIdx, Move move, int isQs);
 void count_nodeVisited(int isQuiescent);
 void count_NMP(int success, int depth, int betaMargin);
 void count_TT_write(int isCollision);

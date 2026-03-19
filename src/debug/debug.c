@@ -37,11 +37,19 @@ void printNodeCounts(void)
     printf("Total quiescent nodes visited: %lld\n", debug.qNodesVisited);
     
     // display percentage of first few cutoffs
-    printf("Cutoffs... ");
-    for (int i = 0; i < 8; i++)
+    printf("Cutoffs for nonquiescent search: ");
+    for (int i = 0; i < 5; i++)
     {
         U64 cutoffs = debug.cutoffs[i];
-        printf("%d: %lld (%.3lf%%); ", i + 1, cutoffs, (double)(100 * cutoffs) / cutNodes);
+        printf("%d: %lld (%.3lf%%); ", i + 1, cutoffs, (double)(100 * cutoffs) / debug.totalCutoffs);
+    }
+    printf("\n");
+
+    printf("Cutoffs for quiescent search: ");
+    for (int i = 0; i < 5; i++)
+    {
+        U64 cutoffs = debug.cutoffsQs[i];
+        printf("%d: %lld (%.3lf%%); ", i + 1, cutoffs, (double)(100 * cutoffs) / debug.totalQsCutoffs);
     }
     printf("\n");
 
@@ -189,9 +197,18 @@ void count_move(Move m)
     }
 }
 
-void count_betaCutoff(int moveIdx, Move move)
+void count_betaCutoff(int moveIdx, Move move, int isQs)
 {
-    debug.cutoffs[moveIdx]++;
+    if (isQs)
+    {
+        debug.cutoffsQs[moveIdx]++;
+        debug.totalQsCutoffs++;
+    }
+    else
+    {
+        debug.cutoffs[moveIdx]++;
+        debug.totalCutoffs++;
+    }
     debug.cutoffsPType[is_move_capt(move)][get_type(move)]++;
     debug.cutoffsPTypeIdx[is_move_capt(move)][get_type(move)] += moveIdx;
 
