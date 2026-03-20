@@ -411,6 +411,12 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #endif
         return beta;
     }
+
+    if (eval + DELTA_PRUNING_MARGIN < alpha)
+    {
+        return alpha;
+    }
+
     if (eval > alpha)
     {
         alpha = eval;
