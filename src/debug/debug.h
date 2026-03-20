@@ -45,7 +45,7 @@ void count_clear(void);
 
 void count_startDepth(int depth);
 void count_move(Move m);
-void count_betaCutoff(int moveIdx, Move move, int isQs);
+void count_betaCutoff(int moveIdx, Move move, int isQs, int depth);
 void count_nodeVisited(int isQuiescent);
 void count_NMP(int success, int depth, int betaMargin);
 void count_TT_write(int isCollision);

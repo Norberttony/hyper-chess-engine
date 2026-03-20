@@ -342,7 +342,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
             }
 #ifdef DEBUG
             count_nodeType(TT_UPPER);
-            count_betaCutoff(mIdx, m, 0);
+            count_betaCutoff(mIdx, m, 0, depth);
 #endif
             return beta;
         }
@@ -469,7 +469,7 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
             }
 #endif
 #ifdef DEBUG
-            count_betaCutoff(mIdx, m, 1);
+            count_betaCutoff(mIdx, m, 1, 0);
 #endif
             return beta;
         }

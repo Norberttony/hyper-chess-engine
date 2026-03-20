@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "../movegen/position-defines.h"
 #include "../movegen/move.h"
+#include "../search/move-ordering.h"
 #include "../search/transposition-table.h"
 #include "../eval/evaluate-defines.h"
 #include "../eval/evaluate.h"
@@ -197,7 +198,7 @@ void count_move(Move m)
     }
 }
 
-void count_betaCutoff(int moveIdx, Move move, int isQs)
+void count_betaCutoff(int moveIdx, Move move, int isQs, int depth)
 {
     if (isQs)
     {
@@ -208,21 +209,21 @@ void count_betaCutoff(int moveIdx, Move move, int isQs)
     {
         debug.cutoffs[moveIdx]++;
         debug.totalCutoffs++;
-    }
-    debug.cutoffsPType[is_move_capt(move)][get_type(move)]++;
-    debug.cutoffsPTypeIdx[is_move_capt(move)][get_type(move)] += moveIdx;
+        debug.cutoffsPType[is_move_capt(move)][get_type(move)]++;
+        debug.cutoffsPTypeIdx[is_move_capt(move)][get_type(move)] += moveIdx;
 
-    // record occurrence on heatmap
-    if (!is_move_capt(move))
-    {
-        // determine to square
-        int to = get_to(move);
-        int t = get_type(move);
-        if (g_pos.toPlay == black)
+        // record occurrence on heatmap
+        if (!is_move_capt(move))
         {
-            to = debug_getSq(to, t);
+            // determine to square
+            int to = get_to(move);
+            int t = get_type(move);
+            if (g_pos.toPlay == black)
+            {
+                to = debug_getSq(to, t);
+            }
+            debug.cutoffHeatmaps[t][to]++;
         }
-        debug.cutoffHeatmaps[t][to]++;
     }
 }
 

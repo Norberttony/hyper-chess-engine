@@ -56,10 +56,7 @@ void orderMoves(Move* moves, int count, int height)
     for (int i = 0; i < count; i++)
     {
         Move m = moves[i];
-        int fromSq = get_from(m);
-        int toSq = get_to(m);
         int isCapt = is_move_capt(m);
-        int stmIdx = g_pos.toPlay == black;
 
         int score = 0;
 
@@ -74,7 +71,7 @@ void orderMoves(Move* moves, int count, int height)
             score += (m == killers[0]) * (killerValue - killerFalloff);
 
             // add history value
-            score += historyValues[stmIdx][fromSq][toSq];
+            score += history_value(m);
 
             // add continuation history value
             for (int i = 0; i < CONT_HISTORY_PLY; i++)
@@ -131,9 +128,8 @@ void addKillerMove(Move m, int height)
     killer_move(height, 1) = !isStored * m + isStored * killer_move(height, 1);
 }
 
-void updateHistory(Move m, int bonus)
+void updateHistory(const Move m, int bonus)
 {
-    int from = get_from(m);
     int to = get_to(m);
 
     // clamp bonus between -MAX_HISTORY and MAX_HISTORY to avoid oversaturated history values
@@ -147,8 +143,7 @@ void updateHistory(Move m, int bonus)
     }
 
     // apply the history gravity formula, which gives smaller bonuses if the history move was expected
-    int s = g_pos.toPlay == black;
-    historyValues[s][from][to] += bonus - historyValues[s][from][to] * abs(bonus) / MAX_HISTORY;
+    history_value(m) += bonus - history_value(m) * abs(bonus) / MAX_HISTORY;
 
     // continuation history
     for (int i = 0; i < CONT_HISTORY_PLY; i++)

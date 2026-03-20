@@ -8,6 +8,7 @@
 #define CONT_HISTORY_PLY 1
 
 #define killer_move(depth, idx) killerMoves[depth][idx]
+#define history_value(move) historyValues[g_pos.toPlay == black][get_from(move)][get_to(move)]
 
 extern Move orderFirst; // the move to order first
 extern Move killerMoves[MAX_DEPTH + 1][2];
