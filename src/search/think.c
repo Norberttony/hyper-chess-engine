@@ -411,6 +411,7 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #endif
         return beta;
     }
+
     if (eval > alpha)
     {
         alpha = eval;
@@ -437,6 +438,10 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
     for (int i = 0; i < size; i++)
     {
         Move m = movelist[i];
+        if (eval + moveCaptureValue(m) < alpha - DELTA_PRUNING_MARGIN)
+        {
+            continue;
+        }
         makeMove(m);
 
         if (isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
