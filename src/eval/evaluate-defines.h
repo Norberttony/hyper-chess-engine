@@ -7,7 +7,7 @@ extern const int spaceWeight;
 extern const int forwMobilityWeight;
 extern const int otherMobilityWeight;
 extern const int immBonus[];
-extern const int immLoSPen[];
+extern const int losPen[8][5];
 extern const int immDistPenalties[8];
 extern const int pieceValues[];
 extern int pieceSquareTables[8][64];

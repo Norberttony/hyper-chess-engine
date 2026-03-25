@@ -20,10 +20,17 @@ const int immBonus[] =
     400         // king
 };
 
-// Penalties based on how many open lines of sight are against the immobilizer.
-const int immLoSPen[] =
+// Penalties based on how many open lines of sight are against the piece type.
+const int losPen[8][5] =
 {
-    0, 60, 70, 80, 90
+    { 0, 0, 0, 0, 0 },          // empty
+    { 0, 3, 5, 7, 10 },         // straddler
+    { 0, 10, 20, 30, 40 },      // retractor
+    { 0, 10, 20, 30, 40 },      // springer
+    { 0, 50, 60, 70, 80 },      // coordinator
+    { 0, 60, 70, 80, 90 },      // immobilizer
+    { 0, 15, 25, 35, 45 },      // chameleon
+    { 0, 100, 110, 120, 130 }   // king
 };
 
 // the penalty to apply based on how far (in ranks) the immobilizer is from the home rank.

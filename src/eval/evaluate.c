@@ -25,6 +25,30 @@ const U64 spaceBitboards[2] = {
     4340410373568986940ULL, // black
 };
 
+static inline __attribute__((always_inline)) int countLoS(U64 piece, U64 diags, U64 lines)
+{
+    // determines whether to test left to right (-1) or up to down (1)
+    int testUpDn = (piece & ranks[0] | piece & ranks[7]) > 0;
+    int testLtRt = (piece & files[7] | piece & files[0]) > 0;
+    int onlyTest = testUpDn - testLtRt;
+
+    // count lines of sight for the immobilizer
+    int los = 
+        // top left to bottom right diagonal
+        (((piece << 9 | piece >> 9) & diags) == 0) * (onlyTest == 0) +
+        // up to down
+        (((piece << 8 | piece >> 8) & lines) == 0) * (onlyTest <= 0) +
+        // top right to bottom left
+        (((piece << 7 | piece >> 7) & diags) == 0) * (onlyTest == 0) +
+        // left to right
+        (((piece << 1 | piece >> 1) & lines) == 0) * (onlyTest >= 0);
+
+    // handle a corner case (well, literally, the immobilizer being in the corner)
+    los *= !(testUpDn && testLtRt);
+
+    return los;
+}
+
 static inline __attribute__((always_inline)) U64 getRearFill(U64 b, int toPlay)
 {
     if (toPlay == black)
@@ -149,6 +173,10 @@ static inline __attribute__((always_inline)) int evalImmPieces(struct EvalContex
         int captDistBonus = (PSQT(piece, side, sq) * (8 * qCount * (piece != immobilizer) + 5 * rCount * enemR)) / 200;
         evaluation -= captDistBonus;
 
+        // calculate LoS penalty for this piece
+        int los = countLoS(1ULL << sq, totalBoard, totalBoard);
+        evaluation -= losPen[piece][los];
+
         // flat bonus for piece being unable to move.
         int flatBonus = immBonus[piece];
         evaluation -= flatBonus;
@@ -180,26 +208,9 @@ static inline __attribute__((always_inline)) int evalImmLoS(struct EvalContext *
     U64 myImmobilizer = ctx->immobilizers[mineValue];
     int myImmImm = ctx->immImm[mineValue];
 
-    // determines whether to test left to right (-1) or up to down (1)
-    int testUpDn = (myImmobilizer & ranks[0] | myImmobilizer & ranks[7]) > 0;
-    int testLtRt = (myImmobilizer & files[7] | myImmobilizer & files[0]) > 0;
-    int onlyTest = testUpDn - testLtRt;
+    int myImmLoS = countLoS(myImmobilizer, diags, lines);
 
-    // count lines of sight for the immobilizer
-    int myImmLoS = 
-        // top left to bottom right diagonal
-        (((myImmobilizer << 9 | myImmobilizer >> 9) & diags) == 0) * (onlyTest == 0) +
-        // up to down
-        (((myImmobilizer << 8 | myImmobilizer >> 8) & lines) == 0) * (onlyTest <= 0) +
-        // top right to bottom left
-        (((myImmobilizer << 7 | myImmobilizer >> 7) & diags) == 0) * (onlyTest == 0) +
-        // left to right
-        (((myImmobilizer << 1 | myImmobilizer >> 1) & lines) == 0) * (onlyTest >= 0);
-
-    // handle a corner case (well, literally, the immobilizer being in the corner)
-    myImmLoS *= !(testUpDn && testLtRt);
-
-    int eval = -immLoSPen[myImmLoS] * myImmImm * (myImmobilizer > 0);
+    int eval = -losPen[immobilizer][myImmLoS] * myImmImm * (myImmobilizer > 0);
 
 #ifdef DEBUG
     if (EVAL_DBG_PRINT)
