@@ -272,6 +272,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
         res->height++;
         int eval = 0;
         // LMR is done for remaining moves
+        int alphaScore = alpha > bestValue ? alpha : bestValue;
         if (!isPV && !is_move_capt(m) && mIdx >= 3 && depth >= 2 && !isInCheck && !isAttackingKing(g_pos.toPlay, g_pos.notToPlay))
         {
             // From https://www.chessprogramming.org/Late_Move_Reductions
@@ -284,16 +285,16 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
             }
 
             // search with a null window (PVS)
-            eval = -think(newDepth, -alpha - 1, -alpha, params, res, &myLine, flags);
+            eval = -think(newDepth, -alphaScore - 1, -alphaScore, params, res, &myLine, flags);
             // must search again
-            if (eval > alpha)
+            if (eval > alphaScore)
             {
-                eval = -think(depth - 1, -beta, -alpha, params, res, &myLine, flags);
+                eval = -think(depth - 1, -beta, -alphaScore, params, res, &myLine, flags);
             }
         }
         else
         {
-            eval = -think(depth - 1, -beta, -alpha, params, res, &myLine, flags);
+            eval = -think(depth - 1, -beta, -alphaScore, params, res, &myLine, flags);
         }
         res->height--;
 
