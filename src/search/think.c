@@ -155,11 +155,11 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
                 }
                 else if (savedNodeType == TT_LOWER && alpha >= savedVal)
                 {
-                    return alpha;
+                    return savedVal - (savedVal >= MATE_SCORE) * distToRoot + (savedVal <= -MATE_SCORE) * distToRoot;
                 }
                 else if (savedNodeType == TT_UPPER && beta <= savedVal)
                 {
-                    return beta;
+                    return savedVal - (savedVal >= MATE_SCORE) * distToRoot + (savedVal <= -MATE_SCORE) * distToRoot;
                 }
             }
             // order based on saved entry
@@ -236,6 +236,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
 
     int mIdx = -1;
 
+    int bestValue = -MAX_SCORE;
     Move bestMove = 0;
     for (int i = 0; i < size; i++)
     {
@@ -298,9 +299,13 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
 
         unmakeMove(m);
 
+        bestValue = eval > bestValue ? eval : bestValue;
+
         // make sure we are still allowed to think.
         if (res->stopThinking)
         {
+            // since we haven't considered all of the nodes here, we can't really
+            // be certain about the parent's node value...
             return beta;
         }
 
@@ -313,7 +318,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
 #ifdef USE_TRANSPOSITION_TABLE
             if (!isNullMovePruning)
             {
-                writeToTranspositionTable(depth, beta, m, TT_UPPER, res->height);
+                writeToTranspositionTable(depth, bestValue, m, TT_UPPER, res->height);
             }
 #endif            
             // for moves that do not capture...
@@ -344,7 +349,7 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
             count_nodeType(TT_UPPER);
             count_betaCutoff(mIdx, m, 0, depth);
 #endif
-            return beta;
+            return bestValue;
         }
 
         if (eval > alpha)
@@ -380,12 +385,12 @@ int think(int depth, int alpha, int beta, SearchParams* params, SearchResults* r
 #ifdef USE_TRANSPOSITION_TABLE
     if (!isNullMovePruning)
     {
-        writeToTranspositionTable(depth, alpha, bestMove, nodeType, res->height);
+        writeToTranspositionTable(depth, bestValue, bestMove, nodeType, res->height);
     }
 #endif
 
     // return best evaluation
-    return alpha;
+    return bestValue;
 }
 
 int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res, PvLine* pLine, int accessTT)
