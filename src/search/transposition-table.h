@@ -34,10 +34,10 @@ struct TranspositionEntry
     uint32_t flags;
 };
 
-extern const int TT_nodeTypeMask;
-extern const int TT_depthMask;
-extern const int TT_evalSignMask;
-extern const int TT_evalValueMask;
+extern const uint32_t TT_nodeTypeMask;
+extern const uint32_t TT_depthMask;
+extern const uint32_t TT_evalSignMask;
+extern const uint32_t TT_evalValueMask;
 
 extern int TT_entries;
 
