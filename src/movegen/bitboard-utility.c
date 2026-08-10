@@ -28,7 +28,24 @@ void printBitboard(U64 bitboard)
     printf("%llu\n\n", bitboard);
 }
 
+// srand and rand courtesy of
+// https://stackoverflow.com/questions/3958795/different-rand-results-on-windows-and-linux
+static int rand_state;
+
+void my_srand(int seed)
+{
+    rand_state = seed;
+}
+
+int my_rand()
+{
+    int const a = 1103515245;
+    int const c = 12345;
+    rand_state = a * rand_state + c;
+    return (rand_state >> 16) & 0x7FFF;
+}
+
 U64 randomU64(void)
 {
-    return ((U64)(rand() & 0xFFFF) << 48) | ((U64)(rand() & 0xFFFF) << 32) | ((U64)(rand() & 0xFFFF) << 16) | (U64)(rand() & 0xFFFF);
+    return ((U64)(my_rand() & 0xFFFF) << 48) | ((U64)(my_rand() & 0xFFFF) << 32) | ((U64)(my_rand() & 0xFFFF) << 16) | (U64)(my_rand() & 0xFFFF);
 }

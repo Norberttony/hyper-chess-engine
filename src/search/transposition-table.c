@@ -9,10 +9,10 @@
 
 struct TranspositionEntry transpositionTable[MAX_TT_ENTRIES][TT_BUCKETS] = { 0 };
 
-const int TT_nodeTypeMask = 0x3;
-const int TT_depthMask = 0x1FC;
-const int TT_evalSignMask = 0x200;
-const int TT_evalValueMask = 0xFFFFFC00;
+const uint32_t TT_nodeTypeMask = 0x3;
+const uint32_t TT_depthMask = 0x1FC;
+const uint32_t TT_evalSignMask = 0x200;
+const uint32_t TT_evalValueMask = 0xFFFFFC00;
 
 // by default set the TT size to 32MB
 int TT_entries = TT_GET_NUMBER_OF_ENTRIES(32);
@@ -63,8 +63,8 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
     U64 hash = getTranspositionHash();
 
     int index = (int)(hash % TT_entries);
-    struct TranspositionEntry* depthEntry = &transpositionTable[index][0];
-    struct TranspositionEntry* alwaysEntry = &transpositionTable[index][1];
+    struct TranspositionEntry* depthEntry = transpositionTable[index];
+    struct TranspositionEntry* alwaysEntry = transpositionTable[index] + 1;
 
     // get the first hit and use that as the evaluation.
     // note: this does not prevent search instability.
@@ -116,7 +116,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType,
 #endif
 
     // always replace any entry here
-    uint32_t flags = ((uint32_t)abs(eval) << 10) | ((eval < 0) << 9) | (depth << 2) | nodeType;
+    uint32_t flags = ((uint32_t)abs(eval) << 10) | ((uint32_t)(eval < 0) << 9) | ((uint32_t)depth << 2) | (uint32_t)nodeType;
     transpositionTable[index][1] = (struct TranspositionEntry){ hash, bestMove, flags }; 
 
     // only replace if the depth is better

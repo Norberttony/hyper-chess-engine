@@ -28,6 +28,8 @@ enum
 };
 
 void printBitboard(U64 bitboard);
+void my_srand(int seed);
+int my_rand();
 U64 randomU64(void);
 
 // reflects the square vertically with the board center
