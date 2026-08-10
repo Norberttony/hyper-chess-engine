@@ -441,7 +441,7 @@ void printPieceList(void)
 
 void generateZobristHashes(void)
 {
-    srand(5465875);
+    my_srand(5465875);
     for (int i = 0; i < ZOBRIST_HASH_COUNT; i++)
     {
         zobristHashes[i] = randomU64();
