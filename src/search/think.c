@@ -412,10 +412,10 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #ifdef USE_TRANSPOSITION_TABLE
         if (accessTT)
         {
-            writeToTranspositionTable(0, beta, 0, TT_UPPER, res->height);
+            writeToTranspositionTable(0, eval, 0, TT_UPPER, res->height);
         }
 #endif
-        return beta;
+        return eval;
     }
     if (eval > alpha)
     {
@@ -439,6 +439,7 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
     PvLine myLine;
     myLine.moveCount = 0;
 
+    int bestValue = -MAX_SCORE;
     int mIdx = -1;
     for (int i = 0; i < size; i++)
     {
@@ -453,8 +454,11 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
         mIdx++;
 
         res->height++;
-        int eval = -thinkCaptures(-beta, -alpha, params, res, &myLine, 0);
+        int alphaScore = alpha > bestValue ? alpha : bestValue;
+        int eval = -thinkCaptures(-beta, -alphaScore, params, res, &myLine, 0);
         res->height--;
+
+        bestValue = eval > bestValue ? eval : bestValue;
 
         unmakeMove(m);
 
@@ -471,13 +475,13 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #ifdef USE_TRANSPOSITION_TABLE
             if (accessTT)
             {
-                writeToTranspositionTable(0, beta, 0, TT_UPPER, res->height);
+                writeToTranspositionTable(0, bestValue, 0, TT_UPPER, res->height);
             }
 #endif
 #ifdef DEBUG
             count_betaCutoff(mIdx, m, 1, 0);
 #endif
-            return beta;
+            return bestValue;
         }
 
         if (eval > alpha)
@@ -495,10 +499,10 @@ int thinkCaptures(int alpha, int beta, SearchParams* params, SearchResults* res,
 #ifdef USE_TRANSPOSITION_TABLE
     if (accessTT)
     {
-        writeToTranspositionTable(0, alpha, 0, nodeType, res->height);
+        writeToTranspositionTable(0, bestValue, 0, nodeType, res->height);
     }
 #endif
 
     // return best evaluation
-    return alpha;
+    return bestValue;
 }
