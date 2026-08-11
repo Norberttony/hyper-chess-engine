@@ -39,7 +39,7 @@ int main(void)
 void initMoveGen(void)
 {
     // Initialization!
-    generateZobristHashes();
+    generateZobristHashes(4057944790447421800ULL);
     populateKingMoves();
     populateRanksAndFiles(); // in order to use
     populateSpringerLeaps();

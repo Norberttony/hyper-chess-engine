@@ -91,7 +91,7 @@ int convertFENToValue(const char v);
 void printPieceList(void);
 
 // generates zobrist hashes
-void generateZobristHashes(void);
+void generateZobristHashes(U64 seed);
 
 // returns the number of times the current position has been repeated.
 int getNumberOfRepeats(void);
