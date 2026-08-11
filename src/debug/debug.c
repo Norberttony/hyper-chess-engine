@@ -149,7 +149,7 @@ void printTT(void)
     printf("%lld reads, %lld hits, %lld misses\n", reads, debug.TT_hits, debug.TT_misses);
     printf("Hit rate: %.3lf%%\n", (double)(100 * debug.TT_hits) / reads);
     printf("Current usage: %lld / %d (%.3lf%%)\n",
-        debug.TT_entriesUsed, TT_entries, (double)(100 * debug.TT_entriesUsed) / (TT_BUCKETS * TT_entries));
+        debug.TT_entriesUsed, TT_BUCKETS * TT_entries, (double)(100 * debug.TT_entriesUsed) / (TT_BUCKETS * TT_entries));
     printf("\n");
 }
 

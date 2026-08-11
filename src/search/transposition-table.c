@@ -92,11 +92,6 @@ struct TranspositionEntry* getTranspositionTableEntry(void)
 
 void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType, int height)
 {
-    if (depth < TT_MIN_DEPTH)
-    {
-        return;
-    }
-
     U64 hash = getTranspositionHash();
 
     int index = (int)(hash % TT_entries);
@@ -112,7 +107,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType,
     }
 
 #ifdef DEBUG
-    count_TT_write(transpositionTable[index][1].zobristHash != 0);
+    count_TT_write(transpositionTable[index][1].zobristHash != 0ULL);
 #endif
 
     // always replace any entry here
@@ -123,7 +118,7 @@ void writeToTranspositionTable(int depth, int eval, Move bestMove, int nodeType,
     if (TT_getDepth(transpositionTable[index][0].flags) < depth)
     {
 #ifdef DEBUG
-        count_TT_write(transpositionTable[index][0].zobristHash != 0);
+        count_TT_write(transpositionTable[index][0].zobristHash != 0ULL);
 #endif
         transpositionTable[index][0] = (struct TranspositionEntry){ hash, bestMove, flags }; 
     }

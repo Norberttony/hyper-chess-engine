@@ -66,6 +66,13 @@ void uciLoop(void)
         else if (!strncmp(line, "go", 2))
         {
             parseGo(line);
+            if (inputFile == stdin)
+            {
+#ifdef DEBUG
+                // if the debug part of the program is being tested OR if the file was just closed.
+                count_print();
+#endif
+            }
         }
         else if (!strncmp(line, "quit", 4))
         {
@@ -142,14 +149,6 @@ void uciLoop(void)
                 int mb = strtol(cleaned + 26, NULL, 10);
                 setTranspositionTableSize(mb);
             }
-        }
-
-        if (inputFile == stdin)
-        {
-#ifdef DEBUG
-            // if the debug part of the program is being tested OR if the file was just closed.
-            count_print();
-#endif
         }
 
         if (res.stopThinking == -1)
